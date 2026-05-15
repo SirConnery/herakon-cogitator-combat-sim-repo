@@ -11,10 +11,14 @@ static func get_database() -> Dictionary:
 	c1.offence_icons = 1
 	c1.defence_icons = 0
 	c1.morale_icons = 0
-	db[c1.card_id] = c1
 	
 	var fx1 = CardEffect.new()
 	fx1.effect_type = CardData.EffectType.GAIN_DICE
 	fx1.target_type = CardData.TargetType.SELF
-	fx1.value = 2
+	fx1.value = 1
+	
+	c1.general_ability = fx1
+	
+	db[c1.card_id] = c1
+	
 	return db

@@ -64,6 +64,7 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 			if on_event.is_valid(): on_event.call("early_termination", [])
 			break
 		
+		# Reset pools to basic dice value baselines at the start of every round frame
 		var atk_offence_pool: int = atk_dice_offence
 		var atk_defence_pool: int = atk_dice_defence
 		atk_card_morale = 0
@@ -72,36 +73,56 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		var def_defence_pool: int = def_dice_defence
 		def_card_morale = 0
 		
-		var atk_card_id: int = atk["combat_deck"][randi() % atk["combat_deck"].size()]
-		var def_card_id: int = def["combat_deck"][randi() % def["combat_deck"].size()]
+		# Draw a random card from combat deck
+		var atk_idx: int = randi() % atk["combat_deck"].size()
+		var def_idx: int = randi() % def["combat_deck"].size()
 		
+		# Remove the drawn card from combat deck
+		var atk_card_id: int = atk["combat_deck"].pop_at(atk_idx)
+		var def_card_id: int = def["combat_deck"].pop_at(def_idx)
+		
+		# Place drawn card at play area
 		atk["play_area"][round_index] = atk_card_id
 		def["play_area"][round_index] = def_card_id
 		
 		if on_event.is_valid(): on_event.call("round_start", [round_index, atk_card_id, def_card_id])
 		
-		# Card stack evaluation
+		# --- 1. PERSISTENT ICON EVALUATION ---
+		# Keeps your visual timeline accumulation loop explicit and right in front of you
 		for i in range(round_index + 1):
-			var atk_c_stats: Array = card_db[atk["play_area"][i]]
-			var def_c_stats: Array = card_db[def["play_area"][i]]
+			var hist_atk_stats: Array = card_db[atk["play_area"][i]]
+			var hist_def_stats: Array = card_db[def["play_area"][i]]
 			
-			atk_offence_pool += atk_c_stats[0]
-			atk_defence_pool += atk_c_stats[1]
-			atk_card_morale += atk_c_stats[2]
+			atk_offence_pool += hist_atk_stats[0]
+			atk_defence_pool += hist_atk_stats[1]
+			atk_card_morale += hist_atk_stats[2]
 			
-			def_offence_pool += def_c_stats[0]
-			def_defence_pool += def_c_stats[1]
-			def_card_morale += def_c_stats[2]
-			
-			# Basic Ability Hook Sandbox
-			if atk["play_area"][i] == 2:
-				for squad in atk["squads"]:
-					if squad["tier"] == 1 and squad["alive_figures"].size() > 0:
-						atk_offence_pool += 2
-						if on_event.is_valid(): on_event.call("ability_triggered", ["Attacker", "Card ID 2 grants +2 Offence"])
+			def_offence_pool += hist_def_stats[0]
+			def_defence_pool += hist_def_stats[1]
+			def_card_morale += hist_def_stats[2]
+
+		# Package calculated totals for the ability modifier filter pass
+		var local_pools = {
+			"atk_offence": atk_offence_pool, "atk_defence": atk_defence_pool, "atk_card_morale": atk_card_morale,
+			"def_offence": def_offence_pool, "def_defence": def_defence_pool, "def_card_morale": def_card_morale
+		}
+		
+		# --- 2. DELEGATE TO INSTANT CARD ABILITY HELPERS ---
+		
+		_resolve_instant_ability(atk_card_id, card_db, local_pools, true, on_event)
+		_resolve_instant_ability(def_card_id, card_db, local_pools, false, on_event)
+		
+		# Extract your modified counts back to the local tracking scope
+		atk_offence_pool = local_pools["atk_offence"]
+		atk_defence_pool = local_pools["atk_defence"]
+		atk_card_morale = local_pools["atk_card_morale"]
+		
+		def_offence_pool = local_pools["def_offence"]
+		def_defence_pool = local_pools["def_defence"]
+		def_card_morale = local_pools["def_card_morale"]
 
 		if on_event.is_valid():
-			on_event.call("pools_updated", ["Attacker", atk_offence_pool, atk_defence_pool])
+			on_event.call("pools_updated", ["Attacker", atk_offence_pool, atk_defence_pool,])
 			on_event.call("pools_updated", ["Defender", def_offence_pool, def_defence_pool])
 
 		# --- ASSESS DAMAGE STEP ---
@@ -189,3 +210,51 @@ static func _calculate_current_morale(player_state: Dictionary) -> int:
 			if squad["alive_figures"][i] > 0 and not squad["figures_routed"][i]:
 				total += squad["morale_value"]
 	return total
+
+
+#region CardAbilities
+
+static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, running_pools: Dictionary, is_attacker: bool, on_event: Callable) -> void:
+	var active_stats: Array = card_db[active_card_id]
+	
+	# Index 3 is our nested effects list array: [ [type, target, val], [type, target, val] ]
+	var effects_list: Array = active_stats[3]
+	if effects_list.is_empty():
+		return
+		
+	var role_label := "Attacker" if is_attacker else "Defender"
+	
+	# Loop through every packed sub-array ability block sequentially
+	for fx in effects_list:
+		var effect_type: int = fx[0] # CardData.EffectType (0 = NONE, 1 = GAIN_DICE)
+		var target_type: int = fx[1] # CardData.TargetType (0 = SELF, 1 = OPPONENT)
+		var value: int       = fx[2] # Magnitude value
+		
+		# --- ABILITY TYPE 1: GAIN_DICE ---
+		if effect_type == 1: # CardData.EffectType.GAIN_DICE
+			if on_event.is_valid(): 
+				on_event.call("ability_triggered", [role_label, active_card_id, "Resolved GAIN_DICE (Count: %d)" % value])			
+			# Track the combined outcome of the bonus dice rolled by this ability
+			var bonus_offence: int = 0
+			var bonus_defence: int = 0
+			var bonus_morale: int = 0
+			
+			for d in range(value):
+				var die: Array[int] = _roll_custom_die()
+				bonus_offence += die[0]
+				bonus_defence += die[1]
+				bonus_morale += die[2]
+			
+			# Send the event log showing the results of these specific bonus dice
+			if on_event.is_valid():
+				on_event.call("bonus_dice_rolled", [role_label, bonus_offence, bonus_defence, bonus_morale])
+			
+			# 0 stands for SELF, 1 stands for OPPONENT
+			var target_is_attacker := is_attacker if target_type == 0 else not is_attacker
+			var target_prefix := "atk_" if target_is_attacker else "def_"
+			
+			running_pools[target_prefix + "offence"] += bonus_offence
+			running_pools[target_prefix + "defence"] += bonus_defence
+			running_pools[target_prefix + "card_morale"] += bonus_morale
+			
+		# --- FUTURE ABILITY TYPES GO HERE ---

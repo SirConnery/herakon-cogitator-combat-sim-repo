@@ -2,7 +2,7 @@ extends Resource
 class_name CardData
 
 enum EffectType { NONE, GAIN_DICE }
-enum TargetType { SELF, ENEMY }
+enum TargetType { SELF, OPPONENT }
 
 @export var card_id: int
 @export var card_name: String

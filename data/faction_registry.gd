@@ -14,8 +14,8 @@ static func get_database() -> Dictionary:
 	# --- SPACE MARINES (SM) ---
 	db[FactionID.SM] = {
 		"name": "Space Marines",
-		"upgrade_deck": [1],
-		"combat_deck": [1], # 10 cards
+		"upgrade_deck": [1,1,1,1,1],
+		"combat_deck": [1,1,1,1,1], # 10 cards
 		"units": [
 			{"unit_name": "Scouts", "tier": 0, "space_unit": false, "unit_count": 6, "combat_value": 1, "health_value": 2, "morale_value": 2},
 			{"unit_name": "Space Marines", "tier": 1, "space_unit": false, "unit_count": 6, "combat_value": 2, "health_value": 3, "morale_value": 3},
@@ -27,8 +27,8 @@ static func get_database() -> Dictionary:
 	# --- ORKS ---
 	db[FactionID.ORKS] = {
 		"name": "Orks",
-		"upgrade_deck": [1],
-		"combat_deck": [1], # 10 cards
+		"upgrade_deck": [1,1,1,1,1],
+		"combat_deck": [1,1,1,1,1], # 10 cards
 		"units": [
 			{"unit_name": "Ork Boyz", "tier": 0, "space_unit": false, "unit_count": 9, "combat_value": 2, "health_value": 2, "morale_value": 1},
 			{"unit_name": "Nobz", "tier": 1, "space_unit": false, "unit_count": 6, "combat_value": 2, "health_value": 4, "morale_value": 2},

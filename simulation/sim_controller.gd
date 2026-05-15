@@ -60,7 +60,10 @@ func run_single_verbose_battle() -> void:
 				print("\n--- COMBAT ROUND %d ---" % (data[0] + 1))
 				print("  Cards Drawn -> Attacker Card ID: %d | Defender Card ID: %d" % [data[1], data[2]])
 			"ability_triggered":
-				print("  [*] CARD EFFECT: %s Player resolved: '%s'" % [data[0], data[1]])
+				var card_id: int = data[1]
+				var raw_db: Dictionary = CardRegistry.get_database()
+				var card_name: String = raw_db[card_id].card_name
+				print("  [*] CARD EFFECT: %s played %s. %s" % [data[0], card_name, data[2]])
 			"pools_updated":
 				print("  Current Action Frame -> %s Pool: %d ⚔️, %d 🛡️" % [data[0], data[1], data[2]])
 			"damage_calculated":
@@ -80,7 +83,10 @@ func run_single_verbose_battle() -> void:
 				print("\n[STALEMATE] End of Phase 3. Counting standing figures -> Attacker: %d, Defender: %d" % [data[0], data[1]])
 			"tiebreaker_morale":
 				print("[STALEMATE] Figure parity detected. Evaluating final Morale Pools -> Attacker: %d, Defender: %d" % [data[0], data[1]])
-
+			"bonus_dice_rolled":
+				print("   ↳ 🎲 %s Bonus Roll Results: +%d 💥 Offence | +%d 🛡️ Defence | +%d 🦅 Morale" % [
+		data[0], data[1], data[2], data[3]])
+			
 	# Run the combat crucible sandbox using your custom logging strings
 	var attacker_won: bool = SimCombatEngine.run_full_match(match_state, flat_card_db, debugger_hook)
 	
@@ -160,16 +166,41 @@ func _get_weighted_matchup_string(atk_weight: int, def_weight: int) -> String:
 
 func _flatten_card_database(cards: Dictionary) -> Dictionary:
 	var flat_db: Dictionary = {}
+	
 	for id in cards:
 		var card: CardData = cards[id]
-		var gen_type: int = CardData.EffectType.NONE
-		var gen_target: int = CardData.TargetType.SELF
-		var gen_value: int = 0
+		
+		# Index 3 will hold our list of packed ability block arrays
+		var flat_effects_list: Array = []
+		
+		# 1. Check and pack the General Ability if it exists
 		if card.general_ability:
-			gen_type = card.general_ability.effect_type
-			gen_target = card.general_ability.target_type
-			gen_value = card.general_ability.value
-		flat_db[id] = [card.offence_icons, card.defence_icons, card.morale_icons, gen_type, gen_target, gen_value]
+			var gen_fx_array: Array = [
+				card.general_ability.effect_type,
+				card.general_ability.target_type,
+				card.general_ability.value
+			]
+			flat_effects_list.append(gen_fx_array)
+			
+		# 2. Check and pack the Unit Ability if it exists 
+		# (This automatically unlocks support for your secondary card text!)
+		if card.unit_ability:
+			var unit_fx_array: Array = [
+				card.unit_ability.effect_type,
+				card.unit_ability.target_type,
+				card.unit_ability.value
+			]
+			flat_effects_list.append(unit_fx_array)
+			
+		# 3. Assemble the complete optimized card structure
+		# Structure Layout: [ offence, defence, morale, [ [type, target, val], [type, target, val] ] ]
+		flat_db[id] = [
+			card.offence_icons, 
+			card.defence_icons, 
+			card.morale_icons, 
+			flat_effects_list
+		]
+		
 	return flat_db
 
 func _prepare_faction_blueprint(faction_id: int, factions: Dictionary, randomized_tiers: PackedInt32Array) -> Dictionary:
