@@ -63,7 +63,7 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		if _count_living_units(atk) == 0 or _count_living_units(def) == 0:
 			if on_event.is_valid(): on_event.call("early_termination", [])
 			break
-			
+		
 		var atk_offence_pool: int = atk_dice_offence
 		var atk_defence_pool: int = atk_dice_defence
 		atk_card_morale = 0

@@ -35,16 +35,25 @@ func run_single_verbose_battle() -> void:
 	var attacker_blueprint: Dictionary = _prepare_faction_blueprint(attacker_faction, raw_factions, attacker_tiers)
 	var defender_blueprint: Dictionary = _prepare_faction_blueprint(defender_faction, raw_factions, defender_tiers)
 	
+	var attacker_power: int = _calculate_squads_weight(attacker_blueprint["selected_units"])
+	var defender_power: int = _calculate_squads_weight(defender_blueprint["selected_units"])
+	
 	var match_state: Dictionary = _instantiate_match_state(attacker_blueprint, defender_blueprint)
 	
 	# --- YOUR LOGGING OBSERVER CALLBACK ---
 	var debugger_hook: Callable = func(event_type: String, data: Array):
 		match event_type:
 			"combat_start":
+				var atk_side: Dictionary = data[0]
+				var def_side: Dictionary = data[1]
+				var stage_str: String = GameStage.keys()[current_stage].capitalize()
 				print("\n==================  STARTED COMBAT ==================")
-				print("Matchup Scale Classification: %s" % _get_matchup_string(att_count, def_count))
+				print("Game stage: %s" % stage_str)
+				print("Matchup Scale Classification: %s" % _get_weighted_matchup_string(attacker_power, defender_power))
+				print("Attacker Forces: %s" % _format_squad_composition_string(atk_side["squads"]))
+				print("Defender Forces: %s" % _format_squad_composition_string(def_side["squads"]))
 			"dice_pool_calculated":
-				print("[DICE CODES] Calculated Combat Values -> Attacker: %d, Defender: %d" % [data[0], data[1]])
+				print("Calculated Combat Values -> Attacker: %d, Defender: %d" % [data[0], data[1]])
 			"dice_rolled":
 				print("  -> %s Rolls: %d Offence, %d Defence, %d Morale, %d Overall Morale)" % [data[0], data[1], data[2], data[3], data[4]])
 			"round_start":
@@ -124,9 +133,28 @@ func _roll_weighted_index(weights: PackedFloat32Array) -> int:
 			return i
 	return 0
 
-func _get_matchup_string(att: int, def: int) -> String:
-	if att == def: return "Equal Matchup"
-	return "AttLarger" if att > def else "AttSmaller"
+## Calculates the total structural combat weight of a generated squad list
+func _calculate_squads_weight(selected_units: Array) -> int:
+	var total_weight := 0
+	for unit in selected_units:
+		total_weight += unit["combat_value"] + unit["health_value"] + unit["morale_value"]
+	return total_weight
+
+## Compares the total calculated power weights to classify the matchup thresholds
+func _get_weighted_matchup_string(atk_weight: int, def_weight: int) -> String:
+	var max_weight := float(max(atk_weight, def_weight))
+	if max_weight == 0: return "Equal Matchup"
+	
+	var difference_pct = abs(atk_weight - def_weight) / max_weight
+	
+	# Define a tolerance threshold (e.g., within 15% of each other is considered an "Equal" fight)	
+	if difference_pct <= 0.25:
+		return "Equal Matchup (Power: %d vs %d)" % [atk_weight, def_weight]
+	elif atk_weight > def_weight:
+		return "AttLarger (Power: %d vs %d)" % [atk_weight, def_weight]
+	else:
+		return "AttSmaller (Power: %d vs %d)" % [atk_weight, def_weight]
+
 
 # --- Data Flattening Infrastructure Utilities ---
 
@@ -196,3 +224,22 @@ func _build_match_units(selected_units: Array) -> Array[Dictionary]:
 			"figures_routed": figures_routed
 		})
 	return runtime_squads
+
+## Helper function to dynamically count duplicates and pretty-print composition rosters
+func _format_squad_composition_string(squads: Array) -> String:
+	if squads.is_empty():
+		return "None"
+		
+	var counts: Dictionary = {}
+	for s in squads:
+		var u_name: String = s["name"]
+		if counts.has(u_name):
+			counts[u_name] += 1
+		else:
+			counts[u_name] = 1
+			
+	var items: Array[String] = []
+	for unit_name in counts:
+		items.append("%dx %s" % [counts[unit_name], unit_name])
+		
+	return ", ".join(items)
