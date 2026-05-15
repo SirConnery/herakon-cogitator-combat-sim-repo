@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://blegqx44cm1q1"]
+
+[ext_resource type="Script" uid="uid://dyhmvs851d3kp" path="res://simulation/sim_controller.gd" id="1_6hove"]
+
+[node name="SimController" type="Node" unique_id=390564033]
+script = ExtResource("1_6hove")
