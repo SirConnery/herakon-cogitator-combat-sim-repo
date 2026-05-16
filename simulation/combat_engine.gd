@@ -58,6 +58,26 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		on_event.call("dice_rolled", ["Attacker", atk_dice_offence, atk_dice_defence, atk_dice_morale,  _calculate_current_morale(atk) + atk_dice_morale])
 		on_event.call("dice_rolled", ["Defender", def_dice_offence, def_dice_defence, def_dice_morale, _calculate_current_morale(def) + def_dice_morale])
 
+	# --- INITIAL CARD DRAW (5 CARDS EACH) ---
+	atk["cards_in_hand"] = []
+	def["cards_in_hand"] = []
+	
+	# Draw up to 5 cards for Attacker
+	var atk_draw_count: int = min(5, atk["combat_deck"].size())
+	for i in range(atk_draw_count):
+		# drawing randomly from deck to hand, popping to remove it
+		var draw_idx: int = randi() % atk["combat_deck"].size()
+		atk["cards_in_hand"].append(atk["combat_deck"].pop_at(draw_idx))
+		
+	# Draw up to 5 cards for Defender
+	var def_draw_count: int = min(5, def["combat_deck"].size())
+	for i in range(def_draw_count):
+		var draw_idx: int = randi() % def["combat_deck"].size()
+		def["cards_in_hand"].append(def["combat_deck"].pop_at(draw_idx))
+
+	if on_event.is_valid():
+		on_event.call("cards_drawn_to_hand", [atk["cards_in_hand"], def["cards_in_hand"]])
+	
 	# --- PHASE 2: THE 3-ROUND CARD PLAY LOOP ---
 	for round_index in range(3):
 		if _count_living_units(atk) == 0 or _count_living_units(def) == 0:
@@ -73,13 +93,14 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		var def_defence_pool: int = def_dice_defence
 		def_card_morale = 0
 		
-		# Draw a random card from combat deck
-		var atk_idx: int = randi() % atk["combat_deck"].size()
-		var def_idx: int = randi() % def["combat_deck"].size()
+		# --- SELECT & PLAY CARD FROM HAND ---
+		# Pick a random card from the hand
+		var atk_idx: int = randi() % atk["cards_in_hand"].size()
+		var def_idx: int = randi() % def["cards_in_hand"].size()
 		
-		# Remove the drawn card from combat deck
-		var atk_card_id: int = atk["combat_deck"].pop_at(atk_idx)
-		var def_card_id: int = def["combat_deck"].pop_at(def_idx)
+		# Pop it out of the hand array
+		var atk_card_id: int = atk["cards_in_hand"].pop_at(atk_idx)
+		var def_card_id: int = def["cards_in_hand"].pop_at(def_idx)
 		
 		# Place drawn card at play area
 		atk["play_area"][round_index] = atk_card_id
@@ -88,7 +109,6 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		if on_event.is_valid(): on_event.call("round_start", [round_index, atk_card_id, def_card_id])
 		
 		# --- 1. PERSISTENT ICON EVALUATION ---
-		# Keeps your visual timeline accumulation loop explicit and right in front of you
 		for i in range(round_index + 1):
 			var hist_atk_stats: Array = card_db[atk["play_area"][i]]
 			var hist_def_stats: Array = card_db[def["play_area"][i]]
@@ -108,7 +128,6 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		}
 		
 		# --- 2. DELEGATE TO INSTANT CARD ABILITY HELPERS ---
-		
 		_resolve_instant_ability(atk_card_id, card_db, local_pools, true, on_event)
 		_resolve_instant_ability(def_card_id, card_db, local_pools, false, on_event)
 		

@@ -9,6 +9,8 @@ enum GameStage { EARLY, MID, LATE }
 @export var attacker_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.SM
 @export var defender_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.ORKS
 
+@onready var card_db: Dictionary = CardRegistry.get_database()
+
 func _ready() -> void:
 	if is_combat_debugger_used:
 		print("--- COUPLING SINGLE MATCH OBSERVER SANDBOX ---")
@@ -54,15 +56,17 @@ func run_single_verbose_battle() -> void:
 				print("Defender Forces: %s" % _format_squad_composition_string(def_side["squads"]))
 			"dice_pool_calculated":
 				print("Calculated Combat Values -> Attacker: %d, Defender: %d" % [data[0], data[1]])
+				print("\n=== PHASE 1.0: ROLL DICE STEP ===")
 			"dice_rolled":
 				print("  -> %s Rolls: %d Offence, %d Defence, %d Morale, %d Overall Morale)" % [data[0], data[1], data[2], data[3], data[4]])
+			"cards_drawn_to_hand":
+				_print_cards_drawn(data[0], data[1])
 			"round_start":
 				print("\n--- COMBAT ROUND %d ---" % (data[0] + 1))
 				print("  Cards Drawn -> Attacker Card ID: %d | Defender Card ID: %d" % [data[1], data[2]])
 			"ability_triggered":
 				var card_id: int = data[1]
-				var raw_db: Dictionary = CardRegistry.get_database()
-				var card_name: String = raw_db[card_id].card_name
+				var card_name: String = card_db[card_id].card_name
 				print("  [*] CARD EFFECT: %s played %s. %s" % [data[0], card_name, data[2]])
 			"pools_updated":
 				print("  Current Action Frame -> %s Pool: %d ⚔️, %d 🛡️" % [data[0], data[1], data[2]])
@@ -256,6 +260,8 @@ func _build_match_units(selected_units: Array) -> Array[Dictionary]:
 		})
 	return runtime_squads
 
+#region Helper functions
+
 ## Helper function to dynamically count duplicates and pretty-print composition rosters
 func _format_squad_composition_string(squads: Array) -> String:
 	if squads.is_empty():
@@ -274,3 +280,24 @@ func _format_squad_composition_string(squads: Array) -> String:
 		items.append("%dx %s" % [counts[unit_name], unit_name])
 		
 	return ", ".join(items)
+
+func _print_cards_drawn(atk_drawn_ids: Array, def_drawn_ids: Array) -> void:
+	print("\n=== PHASE 1.5: DRAWING COMBAT HANDS ===")
+	
+	print("Attacker Draws:")
+	for card_id in atk_drawn_ids:
+		# Fetch the CardData object from the dictionary
+		var card: CardData = card_db.get(card_id)
+		# Safe fallback just in case an ID doesn't exist in the database
+		var card_name: String = card.card_name if card != null else "Card #" + str(card_id)
+		print("  - " + card_name)
+		
+	print("") # Spacer
+	
+	print("Defender Draws:")
+	for card_id in def_drawn_ids:
+		var card: CardData = card_db.get(card_id)
+		var card_name: String = card.card_name if card != null else "Card #" + str(card_id)
+		print("  - " + card_name)
+		
+	print("=======================================\n")
