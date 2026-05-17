@@ -58,12 +58,12 @@ func run_single_logged_battle() -> void:
 				print("Calculated Combat Values -> Attacker: %d, Defender: %d" % [data[0], data[1]])
 				print("\n=== PHASE 1.0: ROLL DICE STEP ===")
 			"dice_rolled":
-				print("  -> %s Rolls: %d Offence, %d Defence, %d Morale, %d Overall Morale)" % [data[0], data[1], data[2], data[3], data[4]])
+				print("  -> %s Rolls: %d ⚔️, %d 🛡️, %d 🦅, %d Overall 🦅)" % [data[0], data[1], data[2], data[3], data[4]])
 			"cards_drawn_to_hand":
 				_print_cards_drawn(data[0], data[1])
 			"round_start":
 				print("")
-				print("\n--- COMBAT ROUND %d ---" % (data[0] + 1))
+				print("\n🔄--- COMBAT ROUND %d ---" % (data[0] + 1))
 			"unit_status_logged":
 				print("    📊 %s units unrouted: %s" % [data[0], data[1]])
 				print("    📊 %s units routed: %s" % [data[0], data[2]])
@@ -86,12 +86,12 @@ func run_single_logged_battle() -> void:
 				print("  -----[ASSESS DAMAGE STEP]-----")
 				print("Net Impact: Defender suffers %d 💥 | Attacker suffers %d 💥" % [data[0], data[1]])
 			"unit_routed":
-				print("    -> ⚠️ %s '%s' took %d damage and was forced to ROUT!" % [data[0], data[1], data[2]])
+				print("    -> 🏳️ %s '%s' took %d damage and was forced to ROUT!" % [data[0], data[1], data[2]])
 			"damage_absorbed":
 				print("    -> 🛡️ %s '%s' safely absorbed %d damage while routed." % [data[0], data[1], data[2]])
 			"unit_destroyed":
 				var cond = "ROUTED" if data[3] else "HEALTHY"
-				print("    -> 💥 %s '%s' (%s) took %d damage and was completely DESTROYED!" % [data[0], data[1], cond, data[2]])
+				print("    -> 💀 %s '%s' (%s) took %d damage and was completely DESTROYED!" % [data[0], data[1], cond, data[2]])
 			"early_termination":
 				print("\n[ALERT] Sudden Death! An entire side has been eliminated from the theater.")
 			"victory_wipeout":
@@ -101,7 +101,7 @@ func run_single_logged_battle() -> void:
 			"tiebreaker_morale":
 				print("[STALEMATE] Figure parity detected. Evaluating final Morale Pools -> Attacker: %d, Defender: %d" % [data[0], data[1]])
 			"bonus_dice_rolled":
-				print("   ↳ 🎲 %s Dice roll: +%d 💥 | +%d 🛡️ | +%d 🦅 " % [
+				print("   ↳ 🎲 %s Dice roll: +%d ⚔️ | +%d 🛡️ | +%d 🦅 " % [
 		data[0], data[1], data[2], data[3]])
 			
 	# Run the combat crucible sandbox using your custom logging strings

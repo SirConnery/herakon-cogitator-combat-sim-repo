@@ -197,8 +197,8 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		
 		if on_event.is_valid(): on_event.call("damage_calculated", [net_damage_to_defender, net_damage_to_attacker])
 		
-		_apply_forbidden_stars_damage(def, net_damage_to_defender, on_event)
-		_apply_forbidden_stars_damage(atk, net_damage_to_attacker, on_event)
+		_apply_forbidden_stars_damage(def, net_damage_to_defender, round_index, on_event)
+		_apply_forbidden_stars_damage(atk, net_damage_to_attacker, round_index, on_event)
 
 	# --- PHASE 3: FINAL COMBAT RESOLUTION ---
 	var atk_survivors: int = _count_living_units(atk)
@@ -234,46 +234,156 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 	return final_atk_morale >= final_def_morale
 
 
-static func _apply_forbidden_stars_damage(player_state: Dictionary, total_damage: int, on_event: Callable) -> void:
+static func _apply_forbidden_stars_damage(player_state: Dictionary, total_damage: int, round_index: int, on_event: Callable) -> void:
 	var squads: Array = player_state["squads"]
 	var side_name: String = player_state["name"]
 	
 	while total_damage > 0:
-		var target: Dictionary = _find_valid_damage_target(squads)
-		if target.is_empty(): break
-			
-		var squad: Dictionary = target["squad"]
-		var idx: int = target["index"]
-		
-		if squad["figures_routed"][idx]:
-			if total_damage >= squad["health_value"]:
-				if on_event.is_valid(): on_event.call("unit_destroyed", [side_name, squad["name"], squad["health_value"], true])
-				total_damage -= squad["health_value"]
-				squad["alive_figures"][idx] = 0
-			else:
-				if on_event.is_valid(): on_event.call("damage_absorbed", [side_name, squad["name"], total_damage, true])
-				total_damage = 0
-		else:
-			if total_damage >= squad["health_value"]:
-				if on_event.is_valid(): on_event.call("unit_destroyed", [side_name, squad["name"], squad["health_value"], false])
-				total_damage -= squad["health_value"]
-				squad["alive_figures"][idx] = 0
-				squad["figures_routed"][idx] = true
-			else:
-				if on_event.is_valid(): on_event.call("unit_routed", [side_name, squad["name"], total_damage])
-				squad["figures_routed"][idx] = true
-				total_damage = 0
+		# --- ROUTING PROTECTION CHECK ---
+		# Count if there are any living, unrouted units left in the theater.
+		var has_unrouted_units: bool = false
+		for squad in squads:
+			for i in range(squad["alive_figures"].size()):
+				if squad["alive_figures"][i] > 0 and not squad["figures_routed"][i]:
+					has_unrouted_units = true
+					break
+			if has_unrouted_units: break
 
-static func _find_valid_damage_target(squads: Array) -> Dictionary:
-	var routed_fallback: Dictionary = {}
+		# --------------------------------------------------
+		# STEP 1: PERFECT ABSORPTION (0 DEATHS STRATEGY)
+		# --------------------------------------------------
+		# Find the smallest unit that can take the entire damage pool and live.
+		# CRITICAL FIX: If unrouted units exist, ONLY they can absorb damage.
+		var perfect_target: Dictionary = {}
+		var smallest_surviving_hp: int = 9999
+		
+		for squad in squads:
+			for i in range(squad["alive_figures"].size()):
+				if squad["alive_figures"][i] > 0:
+					# If healthy units exist, skip any unit that is already routed
+					if has_unrouted_units and squad["figures_routed"][i]:
+						continue
+						
+					var hp_left = squad["alive_figures"][i]
+					if total_damage < hp_left and hp_left < smallest_surviving_hp:
+						smallest_surviving_hp = hp_left
+						perfect_target = {"squad": squad, "index": i}
+						
+		if not perfect_target.is_empty():
+			var squad = perfect_target["squad"]
+			var idx = perfect_target["index"]
+			var was_routed = squad["figures_routed"][idx]
+			
+			if was_routed:
+				if on_event.is_valid():
+					on_event.call("damage_absorbed", [side_name, squad["name"], total_damage, true])
+			else:
+				if on_event.is_valid():
+					on_event.call("unit_routed", [side_name, squad["name"], total_damage])
+				squad["figures_routed"][idx] = true
+				
+			squad["alive_figures"][idx] -= total_damage
+			total_damage = 0
+			break
+
+		# --------------------------------------------------
+		# STEP 2: LETHAL DAMAGE FALLBACKS
+		# --------------------------------------------------
+		var sacrifice_target: Dictionary = {}
+		
+		if round_index < 2:
+			# ==================================================
+			# ROUNDS 1-2: ASSET SURVIVAL MODE
+			# ==================================================
+			# Pass our routing protection rule down into the filters
+			var highest_health_unit: Dictionary = _find_highest_health_living_unit(squads, has_unrouted_units)
+			
+			if not highest_health_unit.is_empty():
+				var big_squad = highest_health_unit["squad"]
+				var big_idx = highest_health_unit["index"]
+				var big_hp = big_squad["alive_figures"][big_idx]
+				
+				var lowest_tier_unit: Dictionary = _find_lowest_tier_living_unit(squads, has_unrouted_units)
+				var low_squad = lowest_tier_unit["squad"]
+				var low_idx = lowest_tier_unit["index"]
+				var low_hp = low_squad["alive_figures"][low_idx]
+				
+				# Can destroying EXACTLY ONE filtered low-tier unit save our filtered high-health unit?
+				if lowest_tier_unit["squad"] != highest_health_unit["squad"] and (total_damage - low_hp) < big_hp:
+					sacrifice_target = lowest_tier_unit
+				else:
+					sacrifice_target = highest_health_unit
+		else:
+			# ==================================================
+			# ROUND 3: ENDGAME TIEBREAKER PRESERVATION MODE
+			# ==================================================
+			var lowest_priority: float = 9999.0
+			
+			for squad in squads:
+				for i in range(squad["alive_figures"].size()):
+					if squad["alive_figures"][i] > 0:
+						# CRITICAL FIX: If healthy units exist, routed units cannot take hits
+						if has_unrouted_units and squad["figures_routed"][i]:
+							continue
+							
+						var priority: float = float(squad["morale_value"]) / float(squad["health_value"])
+						
+						if priority < lowest_priority:
+							lowest_priority = priority
+							sacrifice_target = {"squad": squad, "index": i}
+						elif abs(priority - lowest_priority) < 0.001 and not sacrifice_target.is_empty():
+							if squad["figures_routed"][i] and not sacrifice_target["squad"]["figures_routed"][sacrifice_target["index"]]:
+								sacrifice_target = {"squad": squad, "index": i}
+
+		if sacrifice_target.is_empty():
+			break # Completely wiped out
+			
+		var squad = sacrifice_target["squad"]
+		var idx = sacrifice_target["index"]
+		var was_routed = squad["figures_routed"][idx]
+		var hp_to_kill = squad["alive_figures"][idx]
+		
+		if on_event.is_valid():
+			on_event.call("unit_destroyed", [side_name, squad["name"], hp_to_kill, was_routed])
+			
+		total_damage -= hp_to_kill
+		squad["alive_figures"][idx] = 0
+		squad["figures_routed"][idx] = true
+
+static func _find_highest_health_living_unit(squads: Array, restrict_to_unrouted: bool) -> Dictionary:
+	var target: Dictionary = {}
+	var max_hp: int = -1
+	
 	for squad in squads:
 		for i in range(squad["alive_figures"].size()):
 			if squad["alive_figures"][i] > 0:
-				if not squad["figures_routed"][i]:
-					return {"squad": squad, "index": i}
-				elif routed_fallback.is_empty():
-					routed_fallback = {"squad": squad, "index": i}
-	return routed_fallback
+				# Rule restriction: Skip if we are targeting unrouted only, but this guy is routed
+				if restrict_to_unrouted and squad["figures_routed"][i]:
+					continue
+					
+				var current_hp = squad["alive_figures"][i]
+				if current_hp > max_hp:
+					max_hp = current_hp
+					target = {"squad": squad, "index": i}
+	return target
+
+
+static func _find_lowest_tier_living_unit(squads: Array, restrict_to_unrouted: bool) -> Dictionary:
+	var target: Dictionary = {}
+	var lowest_tier: int = 9999
+	
+	for squad in squads:
+		if squad["tier"] < lowest_tier:
+			for i in range(squad["alive_figures"].size()):
+				if squad["alive_figures"][i] > 0:
+					# Rule restriction: Skip if we are targeting unrouted only, but this guy is routed
+					if restrict_to_unrouted and squad["figures_routed"][i]:
+						continue
+						
+					lowest_tier = squad["tier"]
+					target = {"squad": squad, "index": i}
+					break 
+	return target
 
 static func _count_living_units(player_state: Dictionary) -> int:
 	var count: int = 0
