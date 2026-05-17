@@ -192,7 +192,7 @@ func _flatten_card_database(cards: Dictionary) -> Dictionary:
 				card.general_ability.value,
 				card.general_ability.pool_type,
 				0, # (0 = General Ability, 1 = Unit Ability)
-				[] # General abilities never require units (Empty Array)
+				0  # Index 5: Default placeholder for General abilities
 			]
 			flat_effects_list.append(gen_fx_array)
 			
@@ -204,7 +204,7 @@ func _flatten_card_database(cards: Dictionary) -> Dictionary:
 				card.unit_ability.value,
 				card.unit_ability.pool_type,
 				1, # (0 = General Ability, 1 = Unit Ability)
-				card.required_unit_types # Index 5: Array of all valid required unit type IDs
+				card.required_unit_types # Index 5: Raw single integer enum value
 			]
 			flat_effects_list.append(unit_fx_array)
 			
@@ -262,6 +262,7 @@ func _build_match_units(selected_units: Array) -> Array[Dictionary]:
 		runtime_squads.append({
 			"name": b["unit_name"], 
 			"tier": b["tier"], 
+			"unit_type": b["unit_type"],
 			"space_unit": b["space_unit"], 
 			"combat_value": b["combat_value"], 
 			"health_value": b["health_value"], 

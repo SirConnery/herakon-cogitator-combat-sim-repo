@@ -62,14 +62,11 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 	atk["cards_in_hand"] = []
 	def["cards_in_hand"] = []
 	
-	# Draw up to 5 cards for Attacker
 	var atk_draw_count: int = min(5, atk["combat_deck"].size())
 	for i in range(atk_draw_count):
-		# drawing randomly from deck to hand, popping to remove it
 		var draw_idx: int = randi() % atk["combat_deck"].size()
 		atk["cards_in_hand"].append(atk["combat_deck"].pop_at(draw_idx))
 		
-	# Draw up to 5 cards for Defender
 	var def_draw_count: int = min(5, def["combat_deck"].size())
 	for i in range(def_draw_count):
 		var draw_idx: int = randi() % def["combat_deck"].size()
@@ -79,7 +76,6 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		on_event.call("cards_drawn_to_hand", [atk["cards_in_hand"], def["cards_in_hand"]])
 	
 	# --- INITIALIZE PERSISTENT RUNNING POOLS OUTSIDE THE LOOP ---
-	# These baseline dice values are set once and will persist and grow over all 3 rounds
 	var atk_offence_pool: int = atk_dice_offence
 	var atk_defence_pool: int = atk_dice_defence
 	
@@ -94,25 +90,19 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		
 		if on_event.is_valid(): on_event.call("round_start", [round_index])
 		
-		# UPDATED: Correctly logs the current, active persistent dice values at the start of each round pass
-		if on_event.is_valid(): 
-			on_event.call("dice_rolled", ["Attacker", atk_offence_pool, atk_defence_pool, atk_dice_morale,  _calculate_current_morale(atk) + atk_dice_morale])
-			on_event.call("dice_rolled", ["Defender", def_offence_pool, def_defence_pool, def_dice_morale, _calculate_current_morale(def) + def_dice_morale])
-		
 		# --- SELECT & PLAY CARD FROM HAND ---
-		# Pick a random card from the hand
 		var atk_idx: int = randi() % atk["cards_in_hand"].size()
 		var def_idx: int = randi() % def["cards_in_hand"].size()
 		
-		# Pop it out of the hand array
 		var atk_card_id: int = atk["cards_in_hand"].pop_at(atk_idx)
 		var def_card_id: int = def["cards_in_hand"].pop_at(def_idx)
 		
-		# Place drawn card at play area
 		atk["play_area"][round_index] = atk_card_id
 		def["play_area"][round_index] = def_card_id
 		
-		# Track timeline card icons independently for this round frame pass
+		# ==================================================
+		# STAGE 1: STANDALONE TIMELINE PRINTED ICON SEPARATION
+		# ==================================================
 		var timeline_atk_offence: int = 0
 		var timeline_atk_defence: int = 0
 		var timeline_atk_morale: int = 0
@@ -121,7 +111,6 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		var timeline_def_defence: int = 0
 		var timeline_def_morale: int = 0
 		
-		# --- 1. PERSISTENT ICON EVALUATION ---
 		for i in range(round_index + 1):
 			var hist_atk_stats: Array = card_db[atk["play_area"][i]]
 			var hist_def_stats: Array = card_db[def["play_area"][i]]
@@ -134,7 +123,7 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 			timeline_def_defence += hist_def_stats[1]
 			timeline_def_morale += hist_def_stats[2]
 
-		# Package calculated totals for the ability modifier filter pass
+		# Package dice pools safely for text capability modifications
 		var local_pools = {
 			"atk_offence": atk_offence_pool, 
 			"atk_defence": atk_defence_pool, 
@@ -145,11 +134,13 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 			"def_card_morale": def_card_morale
 		}
 		
-		# --- 2. DELEGATE TO INSTANT CARD ABILITY HELPERS ---
+		# ==================================================
+		# STAGE 2: STANDALONE CARD TEXT ABILITY RESOLUTION
+		# ==================================================
 		_resolve_instant_ability(atk_card_id, card_db, local_pools, true, state, on_event)
 		_resolve_instant_ability(def_card_id, card_db, local_pools, false, state, on_event)
 		
-		# Extract your modified counts back to the local tracking scope
+		# Extract text capability modifications back into persistent arrays
 		atk_offence_pool = local_pools["atk_offence"]
 		atk_defence_pool = local_pools["atk_defence"]
 		atk_card_morale = local_pools["atk_card_morale"]
@@ -158,7 +149,9 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		def_defence_pool = local_pools["def_defence"]
 		def_card_morale = local_pools["def_card_morale"]
 
-		# Calculate combined values for processing execution rules
+		# ==================================================
+		# STAGE 3: MERGE POOLS AND ASSESS NET PASS IMPACT
+		# ==================================================
 		var final_atk_offence: int = atk_offence_pool + timeline_atk_offence
 		var final_atk_defence: int = atk_defence_pool + timeline_atk_defence
 		
@@ -267,42 +260,47 @@ static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, r
 	var role_label := "Attacker" if is_attacker else "Defender"
 	var side_data: Dictionary = state["attacker"] if is_attacker else state["defender"]
 	
+	# --- STEP 1: PRE-CALCULATE UNIT REQUIREMENT ELIGIBILITY ---
+	var unit_requirements_passed := false
+	var req_unit_type: int = 0
+	
+	# Extract the single integer requirement from the layout
+	for fx in effects_list:
+		if fx[4] == 1: # Unit Ability block identifier
+			req_unit_type = int(fx[5]) if fx.size() > 5 else 0
+			break
+			
+	if req_unit_type == 0: # 0 corresponds to CardData.UnitType.NONE
+		unit_requirements_passed = true
+	else:
+		# Scan live squads to find an unrouted figure matching the single integer ID directly
+		for squad in side_data["squads"]:
+			var squad_unit_type: int = int(squad.get("unit_type", -1))
+			if squad_unit_type == req_unit_type:
+				# <-- FIX: Walk through the nested arrays to confirm a valid figure is standing
+				for i in range(squad["alive_figures"].size()):
+					if squad["alive_figures"][i] > 0 and not squad["figures_routed"][i]:
+						unit_requirements_passed = true
+						break
+			if unit_requirements_passed:
+				break
+					
+	# --- STEP 2: PROCESS THE EFFECTS TIMELINE ---
 	var general_phase_started := false
 	var unit_phase_started := false
-	var unit_requirement_failed := false
 	
-	# Loop through every packed sub-array ability block sequentially
 	for fx in effects_list:
 		var source_type: int = fx[4] if fx.size() > 4 else 0 
-		var req_unit_types: Array = fx[5] if fx.size() > 5 else [] # Index 5 is now an Array
 		
-		# --- CONDITION VALIDATION FOR UNIT ABILITIES ---
-		if source_type == 1:
-			if unit_requirement_failed:
-				continue
-				
-			var has_valid_unit := false
-			
-			# If the requirement list is completely empty, it passes automatically
-			if req_unit_types.is_empty():
-				has_valid_unit = true
-			else:
-				# Scan our live squads to see if at least one matches ANY allowed requirement type
-				for squad in side_data["squads"]:
-					# Using .get() safely returns a default fallback value (like -1) if the key is missing instead of crashing
-					var squad_unit_type: int = squad.get("unit_type", -1)
-					
-					if squad_unit_type in req_unit_types:
-						if squad["alive_figures"].size() > 0 and not squad.get("is_routed", false):
-							has_valid_unit = true
-							break # Found a valid unrouted unit, break squad check loop!
-			
-			if not has_valid_unit:
-				unit_requirement_failed = true
+		# If this is a unit ability and our validation check failed, skip block processing frame
+		if source_type == 1 and not unit_requirements_passed:
+			if not unit_phase_started:
+				unit_phase_started = true 
 				if on_event.is_valid():
-					on_event.call("ability_failed_requirements", [role_label, active_card_id, req_unit_types])
-				continue
+					on_event.call("ability_failed_requirements", [role_label, active_card_id, [req_unit_type]])
+			continue
 		
+		# Unpack tracking fields for current layout block pass
 		var effect_type: int = fx[0] 
 		var target_type: int = fx[1] 
 		var value: int       = fx[2] 

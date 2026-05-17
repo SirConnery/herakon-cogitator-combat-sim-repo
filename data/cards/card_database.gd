@@ -14,7 +14,7 @@ static func get_database() -> Dictionary:
 	card.offence_icons = 1
 	card.defence_icons = 0
 	card.morale_icons = 0
-	card.required_unit_types = [CardData.UnitType.SCOUTS, CardData.UnitType.SPACE_MARINES]
+	card.required_unit_types = CardData.UnitType.SCOUTS
 	
 	general_fx = CardEffect.new()
 	general_fx.effect_type = CardData.EffectType.GAIN_DICE

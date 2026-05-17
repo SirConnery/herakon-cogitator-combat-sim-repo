@@ -47,4 +47,4 @@ enum UnitType {
 @export_category("Abilities")
 @export var general_ability: CardEffect
 @export var unit_ability: CardEffect
-@export var required_unit_types: Array[UnitType] = []
+@export var required_unit_types: int
