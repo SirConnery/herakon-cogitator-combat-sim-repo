@@ -76,7 +76,7 @@ func run_single_logged_battle() -> void:
 				print(" [%s] Processing %s Abilities..." % [role, block_label])
 			"ability_triggered":
 				var card_id: int = data[0]
-				var card_name: String = card_db[card_id].card_name
+				var card_name: String = get_card_metadata(card_id, "card_name")
 				print("  [*] %s. %s" % [card_name, data[1]])
 			"pools_updated":
 				print("")
@@ -87,6 +87,19 @@ func run_single_logged_battle() -> void:
 				print("Net Impact: Defender suffers %d 💥 | Attacker suffers %d 💥" % [data[0], data[1]])
 			"unit_routed":
 				print("    -> 🏳️ %s '%s' took %d damage and was forced to ROUT!" % [data[0], data[1], data[2]])
+			"unit_rallied":
+				var role: String = data[0]
+				var squad_name: String = data[1]
+				var health: int = data[2]
+				var card_id: int = data[3]
+				print("    -> 🤝 %s successfully RALLIED '%s' (Health: %d) using Card #%d!" % [role, squad_name, health, card_id])
+			"unit_ability_not_resolved":
+				var role: String = data[0]
+				var card_id: int = data[1]
+				var card_name: String = get_card_metadata(card_id, "card_name")
+				var req_unit: String = get_card_metadata(card_id, "required_unit_types")
+				
+				print("    -> 🚫 %s Unit Ability SKIPPED: '%s' requires an unrouted '%s' unit (Card #%d)." % [role, card_name, req_unit, card_id])
 			"damage_absorbed":
 				print("    -> 🛡️ %s '%s' safely absorbed %d damage while routed." % [data[0], data[1], data[2]])
 			"unit_destroyed":
@@ -186,31 +199,16 @@ func _flatten_card_database(cards: Dictionary) -> Dictionary:
 	
 	for id in cards:
 		var card: CardData = cards[id]
-		
 		var flat_effects_list: Array = []
 		
 		# 1. Check and pack the General Ability if it exists
-		if card.general_ability:
-			var gen_fx_array: Array = [
-				card.general_ability.effect_type,
-				card.general_ability.target_type,
-				card.general_ability.value,
-				card.general_ability.pool_type,
-				0, # (0 = General Ability, 1 = Unit Ability)
-				0  # Index 5: Default placeholder for General abilities
-			]
+		if card.general_ability and card.general_ability.effect_type != CardData.EffectType.NONE:
+			var gen_fx_array = _flatten_single_effect(card.general_ability, 0, 0)
 			flat_effects_list.append(gen_fx_array)
 			
 		# 2. Check and pack the Unit Ability if it exists 
-		if card.unit_ability:
-			var unit_fx_array: Array = [
-				card.unit_ability.effect_type,
-				card.unit_ability.target_type,
-				card.unit_ability.value,
-				card.unit_ability.pool_type,
-				1, # (0 = General Ability, 1 = Unit Ability)
-				card.required_unit_types # Index 5: Raw single integer enum value
-			]
+		if card.unit_ability and card.unit_ability.effect_type != CardData.EffectType.NONE:
+			var unit_fx_array = _flatten_single_effect(card.unit_ability, 1, card.required_unit_types)
 			flat_effects_list.append(unit_fx_array)
 			
 		# 3. Assemble the complete optimized card structure
@@ -222,6 +220,35 @@ func _flatten_card_database(cards: Dictionary) -> Dictionary:
 		]
 		
 	return flat_db
+
+# --- RECURSIVE FLATTENING HELPER ---
+func _flatten_single_effect(fx: CardEffect, is_unit_val: int, req_unit_val: int) -> Array:
+	# If this is a choice effect, index 2 doesn't hold an integer value.
+	# Instead, it recursively packs an array of other flattened effect arrays!
+	var value_slot: Variant = fx.value
+	
+	if fx.effect_type == CardData.EffectType.CHOICE:
+		var flattened_choices: Array = []
+		
+		# CRITICAL FIX: Use .get() to safely pull the dynamic property data at runtime
+		var raw_choices = fx.get("choices")
+		var choices_array: Array = raw_choices if raw_choices is Array else []
+		
+		for sub_fx in choices_array:
+			# Sub-choices inherit the unit ability status/requirements of their parent container
+			var flat_sub = _flatten_single_effect(sub_fx, is_unit_val, req_unit_val)
+			flattened_choices.append(flat_sub)
+			
+		value_slot = flattened_choices # Swap the integer value for our collection of arrays
+		
+	return [
+		fx.effect_type,    # Index 0
+		fx.target_type,    # Index 1
+		value_slot,        # Index 2 (Integer OR Array of sub-arrays)
+		fx.pool_type,      # Index 3
+		is_unit_val,       # Index 4 (0 = General Ability, 1 = Unit Ability)
+		req_unit_val       # Index 5 (Raw single integer unit requirement enum value)
+	]
 
 func _prepare_faction_blueprint(faction_id: int, factions: Dictionary, randomized_tiers: PackedInt32Array) -> Dictionary:
 	var faction_raw = factions[faction_id]
@@ -318,3 +345,25 @@ func _print_cards_drawn(atk_drawn_ids: Array, def_drawn_ids: Array) -> void:
 		print("  - " + card_name)
 		
 	print("=======================================")
+
+
+func get_card_metadata(card_id: int, property_name: String) -> Variant:
+	if not card_db.has(card_id):
+		push_error("Metadata Error: Card ID %d not found." % card_id)
+		return null
+		
+	var card: CardData = card_db[card_id]
+	
+	# 2. Check if the property actually exists on the CardData object
+	if not property_name in card:
+		push_error("Metadata Error: Property '%s' does not exist on CardData." % property_name)
+		return null
+		
+	# 3. Dynamic lookup
+	var value: Variant = card.get(property_name)
+	
+	# 4. Smart Conversion: If they asked for the unit type requirement, convert the enum to a pretty string
+	if property_name == "required_unit_types" and value is int:
+		return CardData.UnitType.keys()[value].capitalize()
+		
+	return value

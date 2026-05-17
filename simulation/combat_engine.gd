@@ -397,7 +397,6 @@ static func _calculate_current_morale_from_units(player_state: Dictionary) -> in
 
 
 #region CardAbilities
-
 # ==============================================================================
 # CARD ABILITY RESOLUTION SYSTEM (FUNCTION-POINTER LOOKUP ARCHITECTURE)
 # ==============================================================================
@@ -408,15 +407,12 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.GAIN_SPECIFIC_DICE: _execute_gain_specific_dice,
 	CardData.EffectType.RALLY: _execute_rally,
 	
-	# Any multi-choice card in the future routes through here first!
+	# Any multi-choice card routes through here first!
 	CardData.EffectType.CHOICE: _execute_choice_selection, 
 }
 
 static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, running_pools: Dictionary, is_attacker: bool, state: Dictionary, on_event: Callable) -> void:
-	# 1. Look up the raw flat array out of your optimized database
 	var card_data: Array = card_db[active_card_id]
-	
-	# Index 3 in your flatten function holds the pre-packed flat_effects_list
 	var effects_list: Array = card_data[3]
 	if effects_list.is_empty():
 		return
@@ -427,9 +423,7 @@ static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, r
 	var general_phase_started := false
 	var unit_phase_started := false
 	
-	# 2. Iterate through your primitive nested effect arrays
 	for fx in effects_list:
-		# Index 4 holds the block identifier (0 = General, 1 = Unit)
 		var is_unit_fx: bool = (fx[4] == 1)
 		
 		# --- PHASE BOUNDARY LOGGING ---
@@ -442,21 +436,18 @@ static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, r
 
 		# --- REQUIREMENT VALIDATION ---
 		if is_unit_fx:
-			# Index 5 holds the raw single integer enum value for the required unit type
 			var req_unit: int = fx[5]
 			if req_unit != 0 and not _has_active_unit_type(side_data, req_unit):
 				if on_event.is_valid():
-					on_event.call("ability_failed_requirements", [role_label, active_card_id, [req_unit]])
-				continue # Skip this unit effect block safely
+					on_event.call("unit_ability_not_resolved", [role_label, active_card_id, [req_unit]])
+				continue
 		
 		# --- LOOKUP TABLE ROUTING ---
-		# Index 0 holds the raw integer effect_type enum value
 		var effect_type: int = fx[0]
 		if EFFECT_RESOLVERS.has(effect_type):
-			# Forward the raw effect array payload down the static lookup dictionary
 			EFFECT_RESOLVERS[effect_type].call(fx, running_pools, side_data, role_label, active_card_id, on_event)
 		else:
-			push_error("Engine missing registration profile for flat EffectType key: %d" % effect_type)
+			print("    -> ⚠️ Engine skipped unresolved effect type code (%d) - check your map." % effect_type)
 
 # --- Shared Validation Helpers ---
 
@@ -465,7 +456,7 @@ static func _has_active_unit_type(side_data: Dictionary, required_type: int) -> 
 		if int(squad.get("unit_type", -1)) == required_type:
 			for i in range(squad["alive_figures"].size()):
 				if squad["alive_figures"][i] > 0 and not squad["figures_routed"][i]:
-					return true # Valid standing unit confirmed
+					return true
 	return false
 
 static func _has_any_routed_units(side_data: Dictionary) -> bool:
@@ -504,24 +495,19 @@ static func _execute_choice_selection(fx: Array, pools: Dictionary, side_data: D
 					valid_options.append(sub_fx)
 					
 			_:
-				# Any other general effect types default to always being valid
 				valid_options.append(sub_fx)
 				
 	var final_pool: Array = valid_options if not valid_options.is_empty() else options
 	var rolled_index := randi() % final_pool.size()
 	var chosen_sub_fx: Array = final_pool[rolled_index]
 	
-	if on_event.is_valid():
-		on_event.call("ability_triggered", [card_id, "Choice card rolled Option from filtered pool."])
-		
+	# Let the sub-resolver handle the logs cleanly so we don't trigger dual logs!
 	var sub_effect_type: int = chosen_sub_fx[0]
 	if EFFECT_RESOLVERS.has(sub_effect_type):
 		EFFECT_RESOLVERS[sub_effect_type].call(chosen_sub_fx, pools, side_data, role, card_id, on_event)
 
 static func _execute_gain_dice(fx: Array, pools: Dictionary, _side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
-	var val: int = fx[2] # Index 2 is value
-	
-	# Derive the target prefix cleanly right inside the function based on the role
+	var val: int = fx[2]
 	var prefix := "atk_" if role == "Attacker" else "def_"
 	
 	if on_event.is_valid(): 
@@ -539,12 +525,9 @@ static func _execute_gain_dice(fx: Array, pools: Dictionary, _side_data: Diction
 	pools[prefix + "defence"] += b_defence
 	pools[prefix + "card_morale"] += b_morale
 
-
 static func _execute_gain_specific_dice(fx: Array, pools: Dictionary, _side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
-	var val: int = fx[2]       # Index 2 is value
-	var pool_type: int = fx[3] # Index 3 is pool_type
-	
-	# Derive target prefix cleanly right inside the function based on the role
+	var val: int = fx[2]
+	var pool_type: int = fx[3]
 	var prefix := "atk_" if role == "Attacker" else "def_"
 	
 	if on_event.is_valid(): 
@@ -552,15 +535,15 @@ static func _execute_gain_specific_dice(fx: Array, pools: Dictionary, _side_data
 		
 	var b_offence := 0; var b_defence := 0; var b_morale := 0
 	
-	if pool_type == 0: # Random pool
+	if pool_type == 0:
 		for d in range(val):
 			var die := _roll_custom_die()
 			b_offence += die[0]; b_defence += die[1]; b_morale += die[2]
 	else:
 		match pool_type:
-			1: b_offence = val # Offence
-			2: b_defence = val # Defence
-			3: b_morale = val  # Morale
+			1: b_offence = val
+			2: b_defence = val
+			3: b_morale = val
 			
 	if on_event.is_valid(): 
 		on_event.call("bonus_dice_rolled", [role, b_offence, b_defence, b_morale])
@@ -569,8 +552,7 @@ static func _execute_gain_specific_dice(fx: Array, pools: Dictionary, _side_data
 	pools[prefix + "defence"] += b_defence
 	pools[prefix + "card_morale"] += b_morale
 
-static func _execute_rally(fx: Array, _pools: Dictionary, side_data: Dictionary, _role: String, card_id: int, on_event: Callable) -> void:
-	# Index 2 holds the value (e.g., how many figures we can rally, typically 1)
+static func _execute_rally(fx: Array, _pools: Dictionary, side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
 	var val: int = fx[2]
 	
 	if on_event.is_valid():
@@ -581,25 +563,22 @@ static func _execute_rally(fx: Array, _pools: Dictionary, side_data: Dictionary,
 		var target_idx: int = -1
 		var highest_health: int = -1
 		
-		# --- SCAN FOR THE HIGHEST HEALTH ROUTED UNIT ---
 		for squad in side_data["squads"]:
 			for i in range(squad["alive_figures"].size()):
 				var hp: int = squad["alive_figures"][i]
-				# Must be alive and currently routed
 				if hp > 0 and squad["figures_routed"][i]:
-					# Prioritize the highest current health
 					if hp > highest_health:
 						highest_health = hp
 						target_squad = squad
 						target_idx = i
 						
-		# --- EXECUTE THE RALLY ACTION IF A TARGET WAS FOUND ---
 		if not target_squad.is_empty():
 			target_squad["figures_routed"][target_idx] = false
 			
 			if on_event.is_valid():
-				on_event.call("ability_triggered", [card_id, "  -> Successfully RALLIED '%s' (Health: %d)" % [target_squad["name"], highest_health]])
+				# Matches your formatted debugger call
+				on_event.call("unit_rallied", [role, target_squad["name"], highest_health, card_id])
 		else:
 			if on_event.is_valid() and rally_count == 0:
-				on_event.call("ability_triggered", [card_id, "  -> Rally skipped: No routed units found in the theater."])
-			break # Exit early if there are no more routed figures left to process
+				on_event.call("rally_skipped", [role, card_id])
+			break
