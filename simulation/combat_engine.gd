@@ -403,6 +403,24 @@ static func _calculate_current_morale_from_units(player_state: Dictionary) -> in
 
 #region CardAbilities
 
+# ==============================================================================
+# CARD ABILITY RESOLUTION SYSTEM (FUNCTION-POINTER LOOKUP ARCHITECTURE)
+# ==============================================================================
+
+# Fast-reference shortcuts for our flattened card array indexes
+const FX_TYPE = 0
+const FX_TARGET = 1
+const FX_VALUE = 2
+const FX_POOL = 3
+const FX_IS_UNIT_ABILITY = 4
+const FX_REQ_UNIT_TYPE = 5
+
+# High-speed static O(1) integer-key lookup map for atomic card text actions
+static var EFFECT_RESOLVERS = {
+	CardData.EffectType.GAIN_DICE: _execute_gain_dice,
+	CardData.EffectType.GAIN_SPECIFIC_DICE: _execute_gain_specific_dice,
+}
+
 static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, running_pools: Dictionary, is_attacker: bool, state: Dictionary, on_event: Callable) -> void:
 	var active_stats: Array = card_db[active_card_id]
 	var effects_list: Array = active_stats[3]
@@ -412,114 +430,91 @@ static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, r
 	var role_label := "Attacker" if is_attacker else "Defender"
 	var side_data: Dictionary = state["attacker"] if is_attacker else state["defender"]
 	
-	# --- STEP 1: PRE-CALCULATE UNIT REQUIREMENT ELIGIBILITY ---
-	var unit_requirements_passed := false
-	var req_unit_type: int = 0
-	
-	# Extract the single integer requirement from the layout
-	for fx in effects_list:
-		if fx[4] == 1: # Unit Ability block identifier
-			req_unit_type = int(fx[5]) if fx.size() > 5 else 0
-			break
-			
-	if req_unit_type == 0: # 0 corresponds to CardData.UnitType.NONE
-		unit_requirements_passed = true
-	else:
-		# Scan live squads to find an unrouted figure matching the single integer ID directly
-		for squad in side_data["squads"]:
-			var squad_unit_type: int = int(squad.get("unit_type", -1))
-			if squad_unit_type == req_unit_type:
-				# <-- FIX: Walk through the nested arrays to confirm a valid figure is standing
-				for i in range(squad["alive_figures"].size()):
-					if squad["alive_figures"][i] > 0 and not squad["figures_routed"][i]:
-						unit_requirements_passed = true
-						break
-			if unit_requirements_passed:
-				break
-					
-	# --- STEP 2: PROCESS THE EFFECTS TIMELINE ---
 	var general_phase_started := false
 	var unit_phase_started := false
 	
 	for fx in effects_list:
-		var source_type: int = fx[4] if fx.size() > 4 else 0 
+		var is_unit_fx: bool = (fx[FX_IS_UNIT_ABILITY] == 1)
 		
-		# If this is a unit ability and our validation check failed, skip block processing frame
-		if source_type == 1 and not unit_requirements_passed:
-			if not unit_phase_started:
-				unit_phase_started = true 
-				if on_event.is_valid():
-					on_event.call("ability_failed_requirements", [role_label, active_card_id, [req_unit_type]])
-			continue
-		
-		# Unpack tracking fields for current layout block pass
-		var effect_type: int = fx[0] 
-		var target_type: int = fx[1] 
-		var value: int       = fx[2] 
-		var pool_type: int   = fx[3] if fx.size() > 3 else 0
-		
-		# --- PHASE BOUNDARY: GENERAL ABILITY BLOCK START ---
-		if source_type == 0 and not general_phase_started:
+		# --- PHASE BOUNDARY LOGGING ---
+		if not is_unit_fx and not general_phase_started:
 			general_phase_started = true
-			if on_event.is_valid():
-				on_event.call("ability_block_started", [role_label, "General"])
-				
-		# --- PHASE BOUNDARY: UNIT ABILITY BLOCK START ---
-		elif source_type == 1 and not unit_phase_started:
+			if on_event.is_valid(): on_event.call("ability_block_started", [role_label, "General"])
+		elif is_unit_fx and not unit_phase_started:
 			unit_phase_started = true
-			if on_event.is_valid():
-				on_event.call("ability_block_started", [role_label, "Unit"])
+			if on_event.is_valid(): on_event.call("ability_block_started", [role_label, "Unit"])
+
+		# --- REQUIREMENT VALIDATION ---
+		if is_unit_fx:
+			var req_unit: int = fx[FX_REQ_UNIT_TYPE]
+			if req_unit != 0 and not _has_active_unit_type(side_data, req_unit):
+				if on_event.is_valid():
+					on_event.call("ability_failed_requirements", [role_label, active_card_id, [req_unit]])
+				continue # Skip this card text effect frame safely
 		
-		# Set up target destination prefixes
-		var target_is_attacker := is_attacker if target_type == 0 else not is_attacker
-		var target_prefix := "atk_" if target_is_attacker else "def_"
+		# --- LOOKUP TABLE ROUTING ---
+		var effect_type: int = fx[FX_TYPE]
+		if EFFECT_RESOLVERS.has(effect_type):
+			# Resolve dynamic targeting alignments
+			var target_is_attacker := is_attacker if fx[FX_TARGET] == 0 else not is_attacker
+			var target_prefix := "atk_" if target_is_attacker else "def_"
+			
+			# O(1) Jump directly to the isolated mechanic subroutine
+			EFFECT_RESOLVERS[effect_type].call(fx, running_pools, target_prefix, role_label, active_card_id, on_event)
+		else:
+			push_error("Engine missing registration profile for EffectType integer key: %d" % effect_type)
+
+# --- Shared Validation Helpers ---
+
+static func _has_active_unit_type(side_data: Dictionary, required_type: int) -> bool:
+	for squad in side_data["squads"]:
+		if int(squad.get("unit_type", -1)) == required_type:
+			for i in range(squad["alive_figures"].size()):
+				if squad["alive_figures"][i] > 0 and not squad["figures_routed"][i]:
+					return true # Valid standing unit confirmed
+	return false
+
+# ==============================================================================
+# ATOMIC MECHANIC RESOLVERS
+# ==============================================================================
+
+static func _execute_gain_dice(fx: Array, pools: Dictionary, prefix: String, role: String, card_id: int, on_event: Callable) -> void:
+	var val: int = fx[FX_VALUE]
+	if on_event.is_valid(): 
+		on_event.call("ability_triggered", [card_id, "Resolved GAIN_DICE (Count: %d)" % val])
+	
+	var b_offence := 0; var b_defence := 0; var b_morale := 0
+	for d in range(val):
+		var die := _roll_custom_die()
+		b_offence += die[0]; b_defence += die[1]; b_morale += die[2]
 		
-		# --- ABILITY TYPE 1: GAIN_DICE ---
-		if effect_type == 1: 
-			if on_event.is_valid(): 
-				on_event.call("ability_triggered", [active_card_id, "Resolved GAIN_DICE (Count: %d)" % value])            
+	if on_event.is_valid(): on_event.call("bonus_dice_rolled", [role, b_offence, b_defence, b_morale])
+	
+	pools[prefix + "offence"] += b_offence
+	pools[prefix + "defence"] += b_defence
+	pools[prefix + "card_morale"] += b_morale
+
+
+static func _execute_gain_specific_dice(fx: Array, pools: Dictionary, prefix: String, role: String, card_id: int, on_event: Callable) -> void:
+	var val: int = fx[FX_VALUE]
+	var pool_type: int = fx[FX_POOL]
+	if on_event.is_valid(): 
+		on_event.call("ability_triggered", [card_id, "Resolved GAIN_SPECIFIC_DICE (Count: %d)" % val])
+		
+	var b_offence := 0; var b_defence := 0; var b_morale := 0
+	
+	if pool_type == 0: # CardData.DicePoolType.RANDOM
+		for d in range(val):
+			var die := _roll_custom_die()
+			b_offence += die[0]; b_defence += die[1]; b_morale += die[2]
+	else:
+		match pool_type:
+			1: b_offence = val # OFFENCE
+			2: b_defence = val # DEFENCE
+			3: b_morale = val  # MORALE
 			
-			var bonus_offence: int = 0
-			var bonus_defence: int = 0
-			var bonus_morale: int = 0
-			
-			for d in range(value):
-				var die: Array[int] = _roll_custom_die()
-				bonus_offence += die[0]
-				bonus_defence += die[1]
-				bonus_morale += die[2]
-			
-			if on_event.is_valid():
-				on_event.call("bonus_dice_rolled", [role_label, bonus_offence, bonus_defence, bonus_morale])
-			
-			running_pools[target_prefix + "offence"] += bonus_offence
-			running_pools[target_prefix + "defence"] += bonus_defence
-			running_pools[target_prefix + "card_morale"] += bonus_morale
-			
-		# --- ABILITY TYPE 2: GAIN_SPECIFIC_DICE ---
-		elif effect_type == 2: 
-			if on_event.is_valid(): 
-				on_event.call("ability_triggered", [active_card_id, "Resolved GAIN_SPECIFIC_DICE (Count: %d)" % value])
-			
-			var bonus_offence: int = 0
-			var bonus_defence: int = 0
-			var bonus_morale: int = 0
-			
-			if pool_type == 0: 
-				for d in range(value):
-					var die: Array[int] = _roll_custom_die()
-					bonus_offence += die[0]
-					bonus_defence += die[1]
-					bonus_morale += die[2]
-			else:
-				match pool_type:
-					1: bonus_offence = value 
-					2: bonus_defence = value 
-					3: bonus_morale = value  
-					
-			if on_event.is_valid():
-				on_event.call("bonus_dice_rolled", [role_label, bonus_offence, bonus_defence, bonus_morale])
-				
-			running_pools[target_prefix + "offence"] += bonus_offence
-			running_pools[target_prefix + "defence"] += bonus_defence
-			running_pools[target_prefix + "card_morale"] += bonus_morale
+	if on_event.is_valid(): on_event.call("bonus_dice_rolled", [role, b_offence, b_defence, b_morale])
+	
+	pools[prefix + "offence"] += b_offence
+	pools[prefix + "defence"] += b_defence
+	pools[prefix + "card_morale"] += b_morale
