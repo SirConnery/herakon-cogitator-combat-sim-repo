@@ -25,7 +25,7 @@ static func get_database() -> Dictionary:
 	unit_fx.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
 	unit_fx.target_type = CardData.TargetType.SELF
 	unit_fx.value = 1
-	unit_fx.pool_type = CardData.DicePoolType.RANDOM	
+	unit_fx.pool_type = CardData.DicePoolType.RANDOM
 	
 	card.general_ability = general_fx
 	card.unit_ability = unit_fx

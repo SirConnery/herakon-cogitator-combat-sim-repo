@@ -240,7 +240,6 @@ static func _apply_forbidden_stars_damage(player_state: Dictionary, total_damage
 	
 	while total_damage > 0:
 		# --- ROUTING PROTECTION CHECK ---
-		# Count if there are any living, unrouted units left in the theater.
 		var has_unrouted_units: bool = false
 		for squad in squads:
 			for i in range(squad["alive_figures"].size()):
@@ -252,15 +251,12 @@ static func _apply_forbidden_stars_damage(player_state: Dictionary, total_damage
 		# --------------------------------------------------
 		# STEP 1: PERFECT ABSORPTION (0 DEATHS STRATEGY)
 		# --------------------------------------------------
-		# Find the smallest unit that can take the entire damage pool and live.
-		# CRITICAL FIX: If unrouted units exist, ONLY they can absorb damage.
 		var perfect_target: Dictionary = {}
 		var smallest_surviving_hp: int = 9999
 		
 		for squad in squads:
 			for i in range(squad["alive_figures"].size()):
 				if squad["alive_figures"][i] > 0:
-					# If healthy units exist, skip any unit that is already routed
 					if has_unrouted_units and squad["figures_routed"][i]:
 						continue
 						
@@ -270,19 +266,20 @@ static func _apply_forbidden_stars_damage(player_state: Dictionary, total_damage
 						perfect_target = {"squad": squad, "index": i}
 						
 		if not perfect_target.is_empty():
-			var squad = perfect_target["squad"]
-			var idx = perfect_target["index"]
-			var was_routed = squad["figures_routed"][idx]
+			# Reuse/declare targets safely inside this specific scope branch
+			var target_squad: Dictionary = perfect_target["squad"]
+			var target_idx: int = perfect_target["index"]
+			var target_was_routed: bool = target_squad["figures_routed"][target_idx]
 			
-			if was_routed:
+			if target_was_routed:
 				if on_event.is_valid():
-					on_event.call("damage_absorbed", [side_name, squad["name"], total_damage, true])
+					on_event.call("damage_absorbed", [side_name, target_squad["name"], total_damage, true])
 			else:
 				if on_event.is_valid():
-					on_event.call("unit_routed", [side_name, squad["name"], total_damage])
-				squad["figures_routed"][idx] = true
+					on_event.call("unit_routed", [side_name, target_squad["name"], total_damage])
+				target_squad["figures_routed"][target_idx] = true
 				
-			squad["alive_figures"][idx] -= total_damage
+			target_squad["alive_figures"][target_idx] -= total_damage
 			total_damage = 0
 			break
 
@@ -295,7 +292,6 @@ static func _apply_forbidden_stars_damage(player_state: Dictionary, total_damage
 			# ==================================================
 			# ROUNDS 1-2: ASSET SURVIVAL MODE
 			# ==================================================
-			# Pass our routing protection rule down into the filters
 			var highest_health_unit: Dictionary = _find_highest_health_living_unit(squads, has_unrouted_units)
 			
 			if not highest_health_unit.is_empty():
@@ -308,7 +304,6 @@ static func _apply_forbidden_stars_damage(player_state: Dictionary, total_damage
 				var low_idx = lowest_tier_unit["index"]
 				var low_hp = low_squad["alive_figures"][low_idx]
 				
-				# Can destroying EXACTLY ONE filtered low-tier unit save our filtered high-health unit?
 				if lowest_tier_unit["squad"] != highest_health_unit["squad"] and (total_damage - low_hp) < big_hp:
 					sacrifice_target = lowest_tier_unit
 				else:
@@ -322,7 +317,6 @@ static func _apply_forbidden_stars_damage(player_state: Dictionary, total_damage
 			for squad in squads:
 				for i in range(squad["alive_figures"].size()):
 					if squad["alive_figures"][i] > 0:
-						# CRITICAL FIX: If healthy units exist, routed units cannot take hits
 						if has_unrouted_units and squad["figures_routed"][i]:
 							continue
 							
@@ -338,17 +332,18 @@ static func _apply_forbidden_stars_damage(player_state: Dictionary, total_damage
 		if sacrifice_target.is_empty():
 			break # Completely wiped out
 			
-		var squad = sacrifice_target["squad"]
-		var idx = sacrifice_target["index"]
-		var was_routed = squad["figures_routed"][idx]
-		var hp_to_kill = squad["alive_figures"][idx]
+		# Distinct variable naming profiles down here avoids cross-block compilation warnings
+		var final_squad: Dictionary = sacrifice_target["squad"]
+		var final_idx: int = sacrifice_target["index"]
+		var final_was_routed: bool = final_squad["figures_routed"][final_idx]
+		var hp_to_kill: int = final_squad["alive_figures"][final_idx]
 		
 		if on_event.is_valid():
-			on_event.call("unit_destroyed", [side_name, squad["name"], hp_to_kill, was_routed])
+			on_event.call("unit_destroyed", [side_name, final_squad["name"], hp_to_kill, final_was_routed])
 			
 		total_damage -= hp_to_kill
-		squad["alive_figures"][idx] = 0
-		squad["figures_routed"][idx] = true
+		final_squad["alive_figures"][final_idx] = 0
+		final_squad["figures_routed"][final_idx] = true
 
 static func _find_highest_health_living_unit(squads: Array, restrict_to_unrouted: bool) -> Dictionary:
 	var target: Dictionary = {}
@@ -407,23 +402,22 @@ static func _calculate_current_morale_from_units(player_state: Dictionary) -> in
 # CARD ABILITY RESOLUTION SYSTEM (FUNCTION-POINTER LOOKUP ARCHITECTURE)
 # ==============================================================================
 
-# Fast-reference shortcuts for our flattened card array indexes
-const FX_TYPE = 0
-const FX_TARGET = 1
-const FX_VALUE = 2
-const FX_POOL = 3
-const FX_IS_UNIT_ABILITY = 4
-const FX_REQ_UNIT_TYPE = 5
-
 # High-speed static O(1) integer-key lookup map for atomic card text actions
 static var EFFECT_RESOLVERS = {
 	CardData.EffectType.GAIN_DICE: _execute_gain_dice,
 	CardData.EffectType.GAIN_SPECIFIC_DICE: _execute_gain_specific_dice,
+	CardData.EffectType.RALLY: _execute_rally,
+	
+	# Any multi-choice card in the future routes through here first!
+	CardData.EffectType.CHOICE: _execute_choice_selection, 
 }
 
 static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, running_pools: Dictionary, is_attacker: bool, state: Dictionary, on_event: Callable) -> void:
-	var active_stats: Array = card_db[active_card_id]
-	var effects_list: Array = active_stats[3]
+	# 1. Look up the raw flat array out of your optimized database
+	var card_data: Array = card_db[active_card_id]
+	
+	# Index 3 in your flatten function holds the pre-packed flat_effects_list
+	var effects_list: Array = card_data[3]
 	if effects_list.is_empty():
 		return
 		
@@ -433,8 +427,10 @@ static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, r
 	var general_phase_started := false
 	var unit_phase_started := false
 	
+	# 2. Iterate through your primitive nested effect arrays
 	for fx in effects_list:
-		var is_unit_fx: bool = (fx[FX_IS_UNIT_ABILITY] == 1)
+		# Index 4 holds the block identifier (0 = General, 1 = Unit)
+		var is_unit_fx: bool = (fx[4] == 1)
 		
 		# --- PHASE BOUNDARY LOGGING ---
 		if not is_unit_fx and not general_phase_started:
@@ -446,23 +442,21 @@ static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, r
 
 		# --- REQUIREMENT VALIDATION ---
 		if is_unit_fx:
-			var req_unit: int = fx[FX_REQ_UNIT_TYPE]
+			# Index 5 holds the raw single integer enum value for the required unit type
+			var req_unit: int = fx[5]
 			if req_unit != 0 and not _has_active_unit_type(side_data, req_unit):
 				if on_event.is_valid():
 					on_event.call("ability_failed_requirements", [role_label, active_card_id, [req_unit]])
-				continue # Skip this card text effect frame safely
+				continue # Skip this unit effect block safely
 		
 		# --- LOOKUP TABLE ROUTING ---
-		var effect_type: int = fx[FX_TYPE]
+		# Index 0 holds the raw integer effect_type enum value
+		var effect_type: int = fx[0]
 		if EFFECT_RESOLVERS.has(effect_type):
-			# Resolve dynamic targeting alignments
-			var target_is_attacker := is_attacker if fx[FX_TARGET] == 0 else not is_attacker
-			var target_prefix := "atk_" if target_is_attacker else "def_"
-			
-			# O(1) Jump directly to the isolated mechanic subroutine
-			EFFECT_RESOLVERS[effect_type].call(fx, running_pools, target_prefix, role_label, active_card_id, on_event)
+			# Forward the raw effect array payload down the static lookup dictionary
+			EFFECT_RESOLVERS[effect_type].call(fx, running_pools, side_data, role_label, active_card_id, on_event)
 		else:
-			push_error("Engine missing registration profile for EffectType integer key: %d" % effect_type)
+			push_error("Engine missing registration profile for flat EffectType key: %d" % effect_type)
 
 # --- Shared Validation Helpers ---
 
@@ -474,12 +468,62 @@ static func _has_active_unit_type(side_data: Dictionary, required_type: int) -> 
 					return true # Valid standing unit confirmed
 	return false
 
+static func _has_any_routed_units(side_data: Dictionary) -> bool:
+	for squad in side_data["squads"]:
+		for i in range(squad["alive_figures"].size()):
+			if squad["alive_figures"][i] > 0 and squad["figures_routed"][i]:
+				return true
+	return false
+
+static func _has_reached_max_dice(pools: Dictionary, prefix: String) -> bool:
+	var side_dice: int = pools[prefix + "offence"] + pools[prefix + "defence"] + pools[prefix + "card_morale"]
+	return side_dice >= 8
+
 # ==============================================================================
 # ATOMIC MECHANIC RESOLVERS
 # ==============================================================================
 
-static func _execute_gain_dice(fx: Array, pools: Dictionary, prefix: String, role: String, card_id: int, on_event: Callable) -> void:
-	var val: int = fx[FX_VALUE]
+static func _execute_choice_selection(fx: Array, pools: Dictionary, side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
+	var options: Array = fx[2]
+	if options.is_empty():
+		return
+		
+	var prefix := "atk_" if role == "Attacker" else "def_"
+	var valid_options: Array = []
+	
+	for sub_fx in options:
+		var effect_type: int = sub_fx[0]
+		
+		match effect_type:
+			CardData.EffectType.RALLY:
+				if _has_any_routed_units(side_data):
+					valid_options.append(sub_fx)
+			
+			CardData.EffectType.GAIN_DICE, CardData.EffectType.GAIN_SPECIFIC_DICE:
+				if not _has_reached_max_dice(pools, prefix):
+					valid_options.append(sub_fx)
+					
+			_:
+				# Any other general effect types default to always being valid
+				valid_options.append(sub_fx)
+				
+	var final_pool: Array = valid_options if not valid_options.is_empty() else options
+	var rolled_index := randi() % final_pool.size()
+	var chosen_sub_fx: Array = final_pool[rolled_index]
+	
+	if on_event.is_valid():
+		on_event.call("ability_triggered", [card_id, "Choice card rolled Option from filtered pool."])
+		
+	var sub_effect_type: int = chosen_sub_fx[0]
+	if EFFECT_RESOLVERS.has(sub_effect_type):
+		EFFECT_RESOLVERS[sub_effect_type].call(chosen_sub_fx, pools, side_data, role, card_id, on_event)
+
+static func _execute_gain_dice(fx: Array, pools: Dictionary, _side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
+	var val: int = fx[2] # Index 2 is value
+	
+	# Derive the target prefix cleanly right inside the function based on the role
+	var prefix := "atk_" if role == "Attacker" else "def_"
+	
 	if on_event.is_valid(): 
 		on_event.call("ability_triggered", [card_id, "Resolved GAIN_DICE (Count: %d)" % val])
 	
@@ -488,33 +532,74 @@ static func _execute_gain_dice(fx: Array, pools: Dictionary, prefix: String, rol
 		var die := _roll_custom_die()
 		b_offence += die[0]; b_defence += die[1]; b_morale += die[2]
 		
-	if on_event.is_valid(): on_event.call("bonus_dice_rolled", [role, b_offence, b_defence, b_morale])
+	if on_event.is_valid(): 
+		on_event.call("bonus_dice_rolled", [role, b_offence, b_defence, b_morale])
 	
 	pools[prefix + "offence"] += b_offence
 	pools[prefix + "defence"] += b_defence
 	pools[prefix + "card_morale"] += b_morale
 
 
-static func _execute_gain_specific_dice(fx: Array, pools: Dictionary, prefix: String, role: String, card_id: int, on_event: Callable) -> void:
-	var val: int = fx[FX_VALUE]
-	var pool_type: int = fx[FX_POOL]
+static func _execute_gain_specific_dice(fx: Array, pools: Dictionary, _side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
+	var val: int = fx[2]       # Index 2 is value
+	var pool_type: int = fx[3] # Index 3 is pool_type
+	
+	# Derive target prefix cleanly right inside the function based on the role
+	var prefix := "atk_" if role == "Attacker" else "def_"
+	
 	if on_event.is_valid(): 
 		on_event.call("ability_triggered", [card_id, "Resolved GAIN_SPECIFIC_DICE (Count: %d)" % val])
 		
 	var b_offence := 0; var b_defence := 0; var b_morale := 0
 	
-	if pool_type == 0: # CardData.DicePoolType.RANDOM
+	if pool_type == 0: # Random pool
 		for d in range(val):
 			var die := _roll_custom_die()
 			b_offence += die[0]; b_defence += die[1]; b_morale += die[2]
 	else:
 		match pool_type:
-			1: b_offence = val # OFFENCE
-			2: b_defence = val # DEFENCE
-			3: b_morale = val  # MORALE
+			1: b_offence = val # Offence
+			2: b_defence = val # Defence
+			3: b_morale = val  # Morale
 			
-	if on_event.is_valid(): on_event.call("bonus_dice_rolled", [role, b_offence, b_defence, b_morale])
+	if on_event.is_valid(): 
+		on_event.call("bonus_dice_rolled", [role, b_offence, b_defence, b_morale])
 	
 	pools[prefix + "offence"] += b_offence
 	pools[prefix + "defence"] += b_defence
 	pools[prefix + "card_morale"] += b_morale
+
+static func _execute_rally(fx: Array, _pools: Dictionary, side_data: Dictionary, _role: String, card_id: int, on_event: Callable) -> void:
+	# Index 2 holds the value (e.g., how many figures we can rally, typically 1)
+	var val: int = fx[2]
+	
+	if on_event.is_valid():
+		on_event.call("ability_triggered", [card_id, "Resolved RALLY effect (Max Targets: %d)" % val])
+		
+	for rally_count in range(val):
+		var target_squad: Dictionary = {}
+		var target_idx: int = -1
+		var highest_health: int = -1
+		
+		# --- SCAN FOR THE HIGHEST HEALTH ROUTED UNIT ---
+		for squad in side_data["squads"]:
+			for i in range(squad["alive_figures"].size()):
+				var hp: int = squad["alive_figures"][i]
+				# Must be alive and currently routed
+				if hp > 0 and squad["figures_routed"][i]:
+					# Prioritize the highest current health
+					if hp > highest_health:
+						highest_health = hp
+						target_squad = squad
+						target_idx = i
+						
+		# --- EXECUTE THE RALLY ACTION IF A TARGET WAS FOUND ---
+		if not target_squad.is_empty():
+			target_squad["figures_routed"][target_idx] = false
+			
+			if on_event.is_valid():
+				on_event.call("ability_triggered", [card_id, "  -> Successfully RALLIED '%s' (Health: %d)" % [target_squad["name"], highest_health]])
+		else:
+			if on_event.is_valid() and rally_count == 0:
+				on_event.call("ability_triggered", [card_id, "  -> Rally skipped: No routed units found in the theater."])
+			break # Exit early if there are no more routed figures left to process

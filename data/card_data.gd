@@ -2,8 +2,10 @@ extends Resource
 class_name CardData
 
 enum EffectType { NONE, 
+CHOICE,
 GAIN_DICE, 
-GAIN_SPECIFIC_DICE 
+GAIN_SPECIFIC_DICE,
+RALLY
 }
 
 enum TargetType { SELF, OPPONENT }
