@@ -3,22 +3,33 @@ extends RefCounted
 
 static func get_database() -> Dictionary:
 	var db: Dictionary = {}
+	var card: CardData
+	var general_fx: CardEffect
+	var unit_fx: CardEffect
 	
-	# --- CARD 1 ---
-	var c1 = CardData.new()
-	c1.card_id = 1
-	c1.card_name = "Faith In the Emperor"
-	c1.offence_icons = 1
-	c1.defence_icons = 0
-	c1.morale_icons = 0
+	# --- CARD 1: Faith In the Emperor ---
+	card = CardData.new()
+	card.card_id = 1
+	card.card_name = "Faith In the Emperor"
+	card.offence_icons = 1
+	card.defence_icons = 0
+	card.morale_icons = 0
+	card.required_unit_types = [CardData.UnitType.SCOUTS, CardData.UnitType.SPACE_MARINES]
 	
-	var fx1 = CardEffect.new()
-	fx1.effect_type = CardData.EffectType.GAIN_DICE
-	fx1.target_type = CardData.TargetType.SELF
-	fx1.value = 1
+	general_fx = CardEffect.new()
+	general_fx.effect_type = CardData.EffectType.GAIN_DICE
+	general_fx.target_type = CardData.TargetType.SELF
+	general_fx.value = 1
 	
-	c1.general_ability = fx1
+	unit_fx = CardEffect.new()
+	unit_fx.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
+	unit_fx.target_type = CardData.TargetType.SELF
+	unit_fx.value = 1
+	unit_fx.pool_type = CardData.DicePoolType.RANDOM	
 	
-	db[c1.card_id] = c1
+	card.general_ability = general_fx
+	card.unit_ability = unit_fx
+	
+	db[card.card_id] = card
 	
 	return db

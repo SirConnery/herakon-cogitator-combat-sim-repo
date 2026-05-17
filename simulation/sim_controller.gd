@@ -14,12 +14,12 @@ enum GameStage { EARLY, MID, LATE }
 func _ready() -> void:
 	if is_combat_debugger_used:
 		print("--- COUPLING SINGLE MATCH OBSERVER SANDBOX ---")
-		run_single_verbose_battle()
+		run_single_logged_battle()
 	else:
 		print("--- DISPATCHING PRODUCTION MASS RUNS ---")
 		# Pure high-speed loop logic goes here when ready...
 
-func run_single_verbose_battle() -> void:
+func run_single_logged_battle() -> void:
 	var raw_cards: Dictionary = CardRegistry.get_database()
 	var raw_factions: Dictionary = FactionRegistry.get_database()
 	
@@ -62,16 +62,24 @@ func run_single_verbose_battle() -> void:
 			"cards_drawn_to_hand":
 				_print_cards_drawn(data[0], data[1])
 			"round_start":
+				print("")
 				print("\n--- COMBAT ROUND %d ---" % (data[0] + 1))
-				print("  Cards Drawn -> Attacker Card ID: %d | Defender Card ID: %d" % [data[1], data[2]])
+			"ability_block_started":
+				print("")
+				var role: String = data[0]
+				var block_label: String = data[1] # "General" or "Unit"
+				print(" [%s] Processing %s Abilities..." % [role, block_label])
 			"ability_triggered":
-				var card_id: int = data[1]
+				var card_id: int = data[0]
 				var card_name: String = card_db[card_id].card_name
-				print("  [*] CARD EFFECT: %s played %s. %s" % [data[0], card_name, data[2]])
+				print("  [*] %s. %s" % [card_name, data[1]])
 			"pools_updated":
+				print("")
 				print("  Current Action Frame -> %s Pool: %d ⚔️, %d 🛡️" % [data[0], data[1], data[2]])
 			"damage_calculated":
-				print("  [ASSESS DAMAGE STEP] Net Impact: Defender suffers %d 💥 | Attacker suffers %d 💥" % [data[0], data[1]])
+				print("")
+				print("  -----[ASSESS DAMAGE STEP]-----")
+				print("Net Impact: Defender suffers %d 💥 | Attacker suffers %d 💥" % [data[0], data[1]])
 			"unit_routed":
 				print("    -> ⚠️ %s '%s' took %d damage and was forced to ROUT!" % [data[0], data[1], data[2]])
 			"damage_absorbed":
@@ -88,7 +96,7 @@ func run_single_verbose_battle() -> void:
 			"tiebreaker_morale":
 				print("[STALEMATE] Figure parity detected. Evaluating final Morale Pools -> Attacker: %d, Defender: %d" % [data[0], data[1]])
 			"bonus_dice_rolled":
-				print("   ↳ 🎲 %s Bonus Roll Results: +%d 💥 Offence | +%d 🛡️ Defence | +%d 🦅 Morale" % [
+				print("   ↳ 🎲 %s Dice roll: +%d 💥 | +%d 🛡️ | +%d 🦅 " % [
 		data[0], data[1], data[2], data[3]])
 			
 	# Run the combat crucible sandbox using your custom logging strings
@@ -174,7 +182,6 @@ func _flatten_card_database(cards: Dictionary) -> Dictionary:
 	for id in cards:
 		var card: CardData = cards[id]
 		
-		# Index 3 will hold our list of packed ability block arrays
 		var flat_effects_list: Array = []
 		
 		# 1. Check and pack the General Ability if it exists
@@ -182,22 +189,26 @@ func _flatten_card_database(cards: Dictionary) -> Dictionary:
 			var gen_fx_array: Array = [
 				card.general_ability.effect_type,
 				card.general_ability.target_type,
-				card.general_ability.value
+				card.general_ability.value,
+				card.general_ability.pool_type,
+				0, # (0 = General Ability, 1 = Unit Ability)
+				[] # General abilities never require units (Empty Array)
 			]
 			flat_effects_list.append(gen_fx_array)
 			
 		# 2. Check and pack the Unit Ability if it exists 
-		# (This automatically unlocks support for your secondary card text!)
 		if card.unit_ability:
 			var unit_fx_array: Array = [
 				card.unit_ability.effect_type,
 				card.unit_ability.target_type,
-				card.unit_ability.value
+				card.unit_ability.value,
+				card.unit_ability.pool_type,
+				1, # (0 = General Ability, 1 = Unit Ability)
+				card.required_unit_types # Index 5: Array of all valid required unit type IDs
 			]
 			flat_effects_list.append(unit_fx_array)
 			
 		# 3. Assemble the complete optimized card structure
-		# Structure Layout: [ offence, defence, morale, [ [type, target, val], [type, target, val] ] ]
 		flat_db[id] = [
 			card.offence_icons, 
 			card.defence_icons, 
@@ -300,4 +311,4 @@ func _print_cards_drawn(atk_drawn_ids: Array, def_drawn_ids: Array) -> void:
 		var card_name: String = card.card_name if card != null else "Card #" + str(card_id)
 		print("  - " + card_name)
 		
-	print("=======================================\n")
+	print("=======================================")
