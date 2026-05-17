@@ -64,6 +64,11 @@ func run_single_logged_battle() -> void:
 			"round_start":
 				print("")
 				print("\n--- COMBAT ROUND %d ---" % (data[0] + 1))
+			"unit_status_logged":
+				print("    📊 %s units unrouted: %s" % [data[0], data[1]])
+				print("    📊 %s units routed: %s" % [data[0], data[2]])
+			"card_icons_calculated":
+				print("    🎴 %s Card Icons on play area -> Offence: %d, Defence: %d, Morale: %d" % [data[0], data[1], data[2], data[3]])
 			"ability_block_started":
 				print("")
 				var role: String = data[0]
