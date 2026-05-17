@@ -5,9 +5,7 @@ static func get_database() -> Dictionary:
 	var db: Dictionary = {}
 	var card: CardData
 	var general_fx: CardEffect
-	
-	# We leave unit_fx untyped (as a Variant) to bypass Godot's compile-time static type locks
-	var unit_fx 
+	var unit_fx: CardEffect # Fully typed!
 	
 	# --- CARD 1: Faith In the Emperor ---
 	card = CardData.new()
@@ -18,11 +16,13 @@ static func get_database() -> Dictionary:
 	card.morale_icons = 0
 	card.required_unit_types = CardData.UnitType.SCOUTS
 	
+	# --- General Ability ---
 	general_fx = CardEffect.new()
 	general_fx.effect_type = CardData.EffectType.GAIN_DICE
 	general_fx.target_type = CardData.TargetType.SELF
 	general_fx.value = 1
 	
+	# --- Unit Ability (Choice Container) ---
 	unit_fx = CardEffect.new()
 	unit_fx.effect_type = CardData.EffectType.CHOICE
 	unit_fx.target_type = CardData.TargetType.SELF
@@ -40,7 +40,8 @@ static func get_database() -> Dictionary:
 	option_b.value = 1
 	option_b.pool_type = CardData.DicePoolType.MORALE
 	
-	unit_fx.set("choices", [option_a, option_b])
+	# SYSTEM UPGRADE: Assign natively to our clean custom property!
+	unit_fx.choices = [option_a, option_b]
 	
 	card.general_ability = general_fx
 	card.unit_ability = unit_fx

@@ -5,3 +5,4 @@ class_name CardEffect
 @export var target_type: CardData.TargetType = CardData.TargetType.SELF
 @export var value := 0
 @export var pool_type: CardData.DicePoolType = CardData.DicePoolType.RANDOM
+@export var choices: Array[CardEffect] = []

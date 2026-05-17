@@ -403,12 +403,13 @@ static func _calculate_current_morale_from_units(player_state: Dictionary) -> in
 
 # High-speed static O(1) integer-key lookup map for atomic card text actions
 static var EFFECT_RESOLVERS = {
+	# Any multi-choice card routes through here first!
+	CardData.EffectType.CHOICE: _execute_choice_selection,
+	
+	# Generic effects
 	CardData.EffectType.GAIN_DICE: _execute_gain_dice,
 	CardData.EffectType.GAIN_SPECIFIC_DICE: _execute_gain_specific_dice,
-	CardData.EffectType.RALLY: _execute_rally,
-	
-	# Any multi-choice card routes through here first!
-	CardData.EffectType.CHOICE: _execute_choice_selection, 
+	CardData.EffectType.RALLY: _execute_rally, 
 }
 
 static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, running_pools: Dictionary, is_attacker: bool, state: Dictionary, on_event: Callable) -> void:
@@ -475,38 +476,48 @@ static func _has_reached_max_dice(pools: Dictionary, prefix: String) -> bool:
 # ==============================================================================
 
 static func _execute_choice_selection(fx: Array, pools: Dictionary, side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
-	var options: Array = fx[2]
-	if options.is_empty():
+	var options = fx[2]
+	if not options is Array or options.is_empty():
+		print("    -> ❌ CHOICE BUG: Index 2 is not an array! Current value: ", options)
 		return
 		
 	var prefix := "atk_" if role == "Attacker" else "def_"
 	var valid_options: Array = []
 	
 	for sub_fx in options:
+		if not sub_fx is Array:
+			continue
 		var effect_type: int = sub_fx[0]
 		
 		match effect_type:
 			CardData.EffectType.RALLY:
 				if _has_any_routed_units(side_data):
 					valid_options.append(sub_fx)
-			
 			CardData.EffectType.GAIN_DICE, CardData.EffectType.GAIN_SPECIFIC_DICE:
 				if not _has_reached_max_dice(pools, prefix):
 					valid_options.append(sub_fx)
-					
 			_:
 				valid_options.append(sub_fx)
 				
 	var final_pool: Array = valid_options if not valid_options.is_empty() else options
 	var rolled_index := randi() % final_pool.size()
-	var chosen_sub_fx: Array = final_pool[rolled_index]
 	
-	# Let the sub-resolver handle the logs cleanly so we don't trigger dual logs!
+	# DEEP COPY CLONE: Use true to force a deep recursive duplication of all nested elements
+	var chosen_sub_fx = final_pool[rolled_index].duplicate(true)
+	
+	if not chosen_sub_fx is Array or chosen_sub_fx.is_empty():
+		return
+		
 	var sub_effect_type: int = chosen_sub_fx[0]
 	if EFFECT_RESOLVERS.has(sub_effect_type):
 		EFFECT_RESOLVERS[sub_effect_type].call(chosen_sub_fx, pools, side_data, role, card_id, on_event)
 
 static func _execute_gain_dice(fx: Array, pools: Dictionary, _side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
+	# DEFENSIVE TYPE GUARD: Intercept master CHOICE array leaks cleanly
+	if fx[2] is Array:
+		push_error("Engine Leak Caught: GAIN_DICE received an Array instead of an int for Card #%d. Skipping execution to prevent crash." % card_id)
+		return
+		
 	var val: int = fx[2]
 	var prefix := "atk_" if role == "Attacker" else "def_"
 	
@@ -525,7 +536,13 @@ static func _execute_gain_dice(fx: Array, pools: Dictionary, _side_data: Diction
 	pools[prefix + "defence"] += b_defence
 	pools[prefix + "card_morale"] += b_morale
 
+
 static func _execute_gain_specific_dice(fx: Array, pools: Dictionary, _side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
+	# DEFENSIVE TYPE GUARD: Intercept master CHOICE array leaks cleanly
+	if fx[2] is Array:
+		push_error("Engine Leak Caught: GAIN_SPECIFIC_DICE received an Array instead of an int for Card #%d. Skipping execution to prevent crash." % card_id)
+		return
+		
 	var val: int = fx[2]
 	var pool_type: int = fx[3]
 	var prefix := "atk_" if role == "Attacker" else "def_"
@@ -553,6 +570,11 @@ static func _execute_gain_specific_dice(fx: Array, pools: Dictionary, _side_data
 	pools[prefix + "card_morale"] += b_morale
 
 static func _execute_rally(fx: Array, _pools: Dictionary, side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
+	# DEFENSIVE TYPE GUARD: If layout pollution passes the master Choice block here, bypass the crash
+	if fx[2] is Array:
+		push_error("Engine Leak Caught: _execute_rally received an Array instead of an int for Card #%d. Skipping to prevent crash." % card_id)
+		return
+		
 	var val: int = fx[2]
 	
 	if on_event.is_valid():
@@ -563,6 +585,7 @@ static func _execute_rally(fx: Array, _pools: Dictionary, side_data: Dictionary,
 		var target_idx: int = -1
 		var highest_health: int = -1
 		
+		# --- SCAN FOR THE HIGHEST HEALTH ROUTED UNIT ---
 		for squad in side_data["squads"]:
 			for i in range(squad["alive_figures"].size()):
 				var hp: int = squad["alive_figures"][i]
@@ -572,11 +595,11 @@ static func _execute_rally(fx: Array, _pools: Dictionary, side_data: Dictionary,
 						target_squad = squad
 						target_idx = i
 						
+		# --- EXECUTE THE RALLY ACTION IF A TARGET WAS FOUND ---
 		if not target_squad.is_empty():
 			target_squad["figures_routed"][target_idx] = false
 			
 			if on_event.is_valid():
-				# Matches your formatted debugger call
 				on_event.call("unit_rallied", [role, target_squad["name"], highest_health, card_id])
 		else:
 			if on_event.is_valid() and rally_count == 0:

@@ -99,7 +99,7 @@ func run_single_logged_battle() -> void:
 				var card_name: String = get_card_metadata(card_id, "card_name")
 				var req_unit: String = get_card_metadata(card_id, "required_unit_types")
 				
-				print("    -> 🚫 %s Unit Ability SKIPPED: '%s' requires an unrouted '%s' unit (Card #%d)." % [role, card_name, req_unit, card_id])
+				print("    -> 🚫 %s Unit Ability SKIPPED: '%s' requires an unrouted '%s' unit." % [role, card_name, req_unit])
 			"damage_absorbed":
 				print("    -> 🛡️ %s '%s' safely absorbed %d damage while routed." % [data[0], data[1], data[2]])
 			"unit_destroyed":
@@ -194,60 +194,57 @@ func _get_weighted_matchup_string(atk_weight: int, def_weight: int) -> String:
 
 # --- Data Flattening Infrastructure Utilities ---
 
-func _flatten_card_database(cards: Dictionary) -> Dictionary:
+func _flatten_card_database(raw_db: Dictionary) -> Dictionary:
 	var flat_db: Dictionary = {}
-	
-	for id in cards:
-		var card: CardData = cards[id]
-		var flat_effects_list: Array = []
+	for card_id in raw_db:
+		var card: CardData = raw_db[card_id]
+		var effects_list: Array = []
 		
-		# 1. Check and pack the General Ability if it exists
-		if card.general_ability and card.general_ability.effect_type != CardData.EffectType.NONE:
-			var gen_fx_array = _flatten_single_effect(card.general_ability, 0, 0)
-			flat_effects_list.append(gen_fx_array)
+		if card.general_ability:
+			effects_list.append(_flatten_single_effect(card.general_ability, 0, 0))
 			
-		# 2. Check and pack the Unit Ability if it exists 
-		if card.unit_ability and card.unit_ability.effect_type != CardData.EffectType.NONE:
-			var unit_fx_array = _flatten_single_effect(card.unit_ability, 1, card.required_unit_types)
-			flat_effects_list.append(unit_fx_array)
+		if card.unit_ability:
+			# Pass the card's required unit types down so index 5 holds it accurately
+			effects_list.append(_flatten_single_effect(card.unit_ability, 1, card.required_unit_types))
 			
-		# 3. Assemble the complete optimized card structure
-		flat_db[id] = [
-			card.offence_icons, 
-			card.defence_icons, 
-			card.morale_icons, 
-			flat_effects_list
+		flat_db[card_id] = [
+			card.offence_icons,  # Index 0
+			card.defence_icons,  # Index 1
+			card.morale_icons,   # Index 2
+			effects_list         # Index 3
 		]
-		
 	return flat_db
 
-# --- RECURSIVE FLATTENING HELPER ---
 func _flatten_single_effect(fx: CardEffect, is_unit_val: int, req_unit_val: int) -> Array:
-	# If this is a choice effect, index 2 doesn't hold an integer value.
-	# Instead, it recursively packs an array of other flattened effect arrays!
+	var raw_effect_type: int = int(fx.effect_type)
 	var value_slot: Variant = fx.value
 	
-	if fx.effect_type == CardData.EffectType.CHOICE:
+	# Cleaned constraint: Only intercept if it matches CHOICE (Enum Index 1)
+	if raw_effect_type == 1:
 		var flattened_choices: Array = []
+		var raw_choices = fx.choices
 		
-		# CRITICAL FIX: Use .get() to safely pull the dynamic property data at runtime
-		var raw_choices = fx.get("choices")
-		var choices_array: Array = raw_choices if raw_choices is Array else []
-		
-		for sub_fx in choices_array:
-			# Sub-choices inherit the unit ability status/requirements of their parent container
-			var flat_sub = _flatten_single_effect(sub_fx, is_unit_val, req_unit_val)
-			flattened_choices.append(flat_sub)
+		if not raw_choices.is_empty():
+			for sub_fx in raw_choices:
+				if sub_fx != null:
+					var flat_sub = _flatten_single_effect(sub_fx, 0, 0)
+					flattened_choices.append(flat_sub)
+					
+		value_slot = flattened_choices
+	else:
+		# Safeguard for atomic operations (Dice, Rally)
+		if value_slot is Array:
+			value_slot = 1
+		else:
+			value_slot = int(value_slot)
 			
-		value_slot = flattened_choices # Swap the integer value for our collection of arrays
-		
 	return [
 		fx.effect_type,    # Index 0
 		fx.target_type,    # Index 1
-		value_slot,        # Index 2 (Integer OR Array of sub-arrays)
+		value_slot,        # Index 2
 		fx.pool_type,      # Index 3
-		is_unit_val,       # Index 4 (0 = General Ability, 1 = Unit Ability)
-		req_unit_val       # Index 5 (Raw single integer unit requirement enum value)
+		is_unit_val,       # Index 4
+		req_unit_val       # Index 5
 	]
 
 func _prepare_faction_blueprint(faction_id: int, factions: Dictionary, randomized_tiers: PackedInt32Array) -> Dictionary:

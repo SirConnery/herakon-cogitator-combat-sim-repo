@@ -50,4 +50,3 @@ enum UnitType {
 @export var general_ability: CardEffect
 @export var unit_ability: CardEffect
 @export var required_unit_types: int
-@export var choices: Array[CardEffect] = []
