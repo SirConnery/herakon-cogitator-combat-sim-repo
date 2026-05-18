@@ -1,12 +1,11 @@
 extends Object
 class_name SimCombatEngine
 
-static func _roll_custom_die() -> Array[int]:
+static func _roll_custom_die_index() -> int:
 	var roll: int = randi() % 6
-	match roll:
-		0, 1, 2: return [1, 0, 0] # Offence
-		3, 4:    return [0, 1, 0] # Defence
-		_:       return [0, 0, 1] # Morale
+	if roll <= 2:   return 0 # Offence
+	elif roll <= 4: return 1 # Defence
+	return 2                 # Morale
 
 static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Callable = Callable()) -> bool:
 	var atk: Dictionary = state["attacker"]
@@ -38,25 +37,34 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 	
 	# Roll Attacker Dice
 	for i in range(atk_dice_to_roll):
-		var die: Array[int] = _roll_custom_die()
-		atk_dice_offence += die[0]
-		atk_dice_defence += die[1]
-		atk_dice_morale += die[2]
+		match _roll_custom_die_index():
+			0: atk_dice_offence += 1
+			1: atk_dice_defence += 1
+			2: atk_dice_morale += 1
 		
 	# Roll Defender Dice
 	for i in range(def_dice_to_roll):
-		var die: Array[int] = _roll_custom_die()
-		def_dice_offence += die[0]
-		def_dice_defence += die[1]
-		def_dice_morale += die[2]
+		match _roll_custom_die_index():
+			0: def_dice_offence += 1
+			1: def_dice_defence += 1
+			2: def_dice_morale += 1
 
 	# Track card-based morale icons accumulated across rounds from text abilities
 	var atk_card_morale: int = 0
 	var def_card_morale: int = 0
 
+	# --- INITIAL POOL CONTEXT ASSIGNMENT ---
+	var atk_offence_pool: int = atk_dice_offence
+	var atk_defence_pool: int = atk_dice_defence
+	
+	var def_offence_pool: int = def_dice_offence
+	var def_defence_pool: int = def_dice_defence
+
 	if on_event.is_valid(): 
-		on_event.call("dice_rolled", ["Attacker", atk_dice_offence, atk_dice_defence, atk_dice_morale,  _calculate_current_morale_from_units(atk) + atk_dice_morale])
-		on_event.call("dice_rolled", ["Defender", def_dice_offence, def_dice_defence, def_dice_morale, _calculate_current_morale_from_units(def) + def_dice_morale])
+		var atk_morale_from_units: int = _calculate_current_morale_from_units(atk)
+		var def_morale_from_units: int = _calculate_current_morale_from_units(def)
+		on_event.call("dice_rolled", ["Attacker", atk_offence_pool, atk_defence_pool, atk_dice_morale, atk_morale_from_units])
+		on_event.call("dice_rolled", ["Defender", def_offence_pool, def_defence_pool, def_dice_morale, def_morale_from_units])
 
 	# --- INITIAL CARD DRAW (5 CARDS EACH) ---
 	atk["cards_in_hand"] = []
@@ -75,13 +83,6 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 	if on_event.is_valid():
 		on_event.call("cards_drawn_to_hand", [atk["cards_in_hand"], def["cards_in_hand"]])
 	
-	# --- INITIALIZE PERSISTENT RUNNING POOLS OUTSIDE THE LOOP ---
-	var atk_offence_pool: int = atk_dice_offence
-	var atk_defence_pool: int = atk_dice_defence
-	
-	var def_offence_pool: int = def_dice_offence
-	var def_defence_pool: int = def_dice_defence
-	
 	# --- PHASE 2: THE 3-ROUND CARD PLAY LOOP ---
 	for round_index in range(3):
 		if _count_living_units(atk) == 0 or _count_living_units(def) == 0:
@@ -90,8 +91,6 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		
 		if on_event.is_valid(): 
 			on_event.call("round_start", [round_index])
-			on_event.call("dice_rolled", ["Attacker", atk_dice_offence, atk_dice_defence, atk_dice_morale,  _calculate_current_morale_from_units(atk) + atk_dice_morale])
-			on_event.call("dice_rolled", ["Defender", def_dice_offence, def_dice_defence, def_dice_morale, _calculate_current_morale_from_units(def) + def_dice_morale])
 			
 			# ==================================================
 			# DIAGNOSTIC PROFILE: ROUND START FRONT-LINE UNIT STATUS LOGS
@@ -114,6 +113,13 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 				var routed_str = ", ".join(routed_list) if not routed_list.is_empty() else "None"
 				
 				on_event.call("unit_status_logged", [side_name, unrouted_str, routed_str])
+			
+			var current_atk_overall: int = _calculate_current_morale_from_units(atk) + atk_dice_morale + atk_card_morale
+			var current_def_overall: int = _calculate_current_morale_from_units(def) + def_dice_morale + def_card_morale
+			
+			on_event.call("dice_rolled", ["Attacker", atk_offence_pool, atk_defence_pool, (atk_dice_morale + atk_card_morale), current_atk_overall])
+			on_event.call("dice_rolled", ["Defender", def_offence_pool, def_defence_pool, (def_dice_morale + def_card_morale), current_def_overall])
+			
 			
 		# --- SELECT & PLAY CARD FROM HAND ---
 		var atk_idx: int = randi() % atk["cards_in_hand"].size()
@@ -164,7 +170,7 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		}
 		
 		# ==================================================
-		# STAGE 2: STANDALONE CARD TEXT ABILITY RESOLUTION
+		# STAGE 2: STANDALONE CARD TEXT ABILITY RESOLUTION (INSTANT WINDOW)
 		# ==================================================
 		_resolve_instant_ability(atk_card_id, card_db, local_pools, true, state, on_event)
 		_resolve_instant_ability(def_card_id, card_db, local_pools, false, state, on_event)
@@ -179,26 +185,40 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		def_card_morale = local_pools["def_card_morale"]
 
 		# ==================================================
-		# STAGE 3: MERGE POOLS AND ASSESS NET PASS IMPACT
+		# STAGE 3: MUTABLE TIMELINE CONTEXT EVALUATION
 		# ==================================================
-		var final_atk_offence: int = atk_offence_pool + timeline_atk_offence
-		var final_atk_defence: int = atk_defence_pool + timeline_atk_defence
-		
-		var final_def_offence: int = def_offence_pool + timeline_def_offence
-		var final_def_defence: int = def_defence_pool + timeline_def_defence
+		var context = {
+			"atk_offence": atk_offence_pool + timeline_atk_offence,
+			"atk_defence": atk_defence_pool + timeline_atk_defence,
+			"def_offence": def_offence_pool + timeline_def_offence,
+			"def_defence": def_defence_pool + timeline_def_defence,
+			"net_damage_to_attacker": 0,
+			"net_damage_to_defender": 0
+		}
+
+		# --- HOOK FRAME A: BEFORE DAMAGE ASSESSMENT (POOL MODIFIERS) ---
+		_execute_timing_hook(CardData.TimingWindow.BEFORE_DAMAGE, state, context, round_index)
 
 		if on_event.is_valid():
-			on_event.call("pools_updated", ["Attacker", final_atk_offence, final_atk_defence])
-			on_event.call("pools_updated", ["Defender", final_def_offence, final_def_defence])
+			on_event.call("pools_updated", ["Attacker", context["atk_offence"], context["atk_defence"]])
+			on_event.call("pools_updated", ["Defender", context["def_offence"], context["def_defence"]])
 
-		# --- ASSESS DAMAGE STEP ---
-		var net_damage_to_defender: int = max(0, final_atk_offence - final_def_defence)
-		var net_damage_to_attacker: int = max(0, final_def_offence - final_atk_defence)
+		# --- RAW DELTA CALCULATION STEP ---
+		context["net_damage_to_defender"] = max(0, context["atk_offence"] - context["def_defence"])
+		context["net_damage_to_attacker"] = max(0, context["def_offence"] - context["atk_defence"])
 		
-		if on_event.is_valid(): on_event.call("damage_calculated", [net_damage_to_defender, net_damage_to_attacker])
+		# --- HOOK FRAME B: DURING DAMAGE ASSESSMENT (DAMAGE MUTATORS) ---
+		_execute_timing_hook(CardData.TimingWindow.DURING_DAMAGE, state, context, round_index)
 		
-		_apply_forbidden_stars_damage(def, net_damage_to_defender, round_index, on_event)
-		_apply_forbidden_stars_damage(atk, net_damage_to_attacker, round_index, on_event)
+		if on_event.is_valid(): 
+			on_event.call("damage_calculated", [context["net_damage_to_defender"], context["net_damage_to_attacker"]])
+		
+		# --- APPLY RESOLVED PAYLOAD TARGET DAMAGE TO UNITS ---
+		_apply_forbidden_stars_damage(def, context["net_damage_to_defender"], round_index, on_event)
+		_apply_forbidden_stars_damage(atk, context["net_damage_to_attacker"], round_index, on_event)
+
+		# --- HOOK FRAME C: AFTER DAMAGE ASSESSMENT (POST-COMBAT REACTIONS) ---
+		_execute_timing_hook(CardData.TimingWindow.AFTER_DAMAGE, state, context, round_index)
 
 	# --- PHASE 3: FINAL COMBAT RESOLUTION ---
 	var atk_survivors: int = _count_living_units(atk)
@@ -345,6 +365,9 @@ static func _apply_forbidden_stars_damage(player_state: Dictionary, total_damage
 		final_squad["alive_figures"][final_idx] = 0
 		final_squad["figures_routed"][final_idx] = true
 
+
+#region Helper Functions
+
 static func _find_highest_health_living_unit(squads: Array, restrict_to_unrouted: bool) -> Dictionary:
 	var target: Dictionary = {}
 	var max_hp: int = -1
@@ -396,6 +419,12 @@ static func _calculate_current_morale_from_units(player_state: Dictionary) -> in
 	return total
 
 
+
+static func _execute_timing_hook(window: CardData.TimingWindow, state: Dictionary, context: Dictionary, round_index: int) -> void:
+	# Right now, this remains an empty, lightning-fast pass.
+	# Future phase: Process cards in the play_area matching this window profile.
+	pass
+
 #region CardAbilities
 # ==============================================================================
 # CARD ABILITY RESOLUTION SYSTEM (FUNCTION-POINTER LOOKUP ARCHITECTURE)
@@ -409,6 +438,8 @@ static var EFFECT_RESOLVERS = {
 	# Generic effects
 	CardData.EffectType.GAIN_DICE: _execute_gain_dice,
 	CardData.EffectType.GAIN_SPECIFIC_DICE: _execute_gain_specific_dice,
+	CardData.EffectType.REROLL: _execute_reroll,
+	
 	CardData.EffectType.RALLY: _execute_rally, 
 }
 
@@ -513,7 +544,6 @@ static func _execute_choice_selection(fx: Array, pools: Dictionary, side_data: D
 		EFFECT_RESOLVERS[sub_effect_type].call(chosen_sub_fx, pools, side_data, role, card_id, on_event)
 
 static func _execute_gain_dice(fx: Array, pools: Dictionary, _side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
-	# DEFENSIVE TYPE GUARD: Intercept master CHOICE array leaks cleanly
 	if fx[2] is Array:
 		push_error("Engine Leak Caught: GAIN_DICE received an Array instead of an int for Card #%d. Skipping execution to prevent crash." % card_id)
 		return
@@ -526,8 +556,10 @@ static func _execute_gain_dice(fx: Array, pools: Dictionary, _side_data: Diction
 	
 	var b_offence := 0; var b_defence := 0; var b_morale := 0
 	for d in range(val):
-		var die := _roll_custom_die()
-		b_offence += die[0]; b_defence += die[1]; b_morale += die[2]
+		match _roll_custom_die_index():
+			0: b_offence += 1
+			1: b_defence += 1
+			2: b_morale += 1
 		
 	if on_event.is_valid(): 
 		on_event.call("bonus_dice_rolled", [role, b_offence, b_defence, b_morale])
@@ -538,7 +570,6 @@ static func _execute_gain_dice(fx: Array, pools: Dictionary, _side_data: Diction
 
 
 static func _execute_gain_specific_dice(fx: Array, pools: Dictionary, _side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
-	# DEFENSIVE TYPE GUARD: Intercept master CHOICE array leaks cleanly
 	if fx[2] is Array:
 		push_error("Engine Leak Caught: GAIN_SPECIFIC_DICE received an Array instead of an int for Card #%d. Skipping execution to prevent crash." % card_id)
 		return
@@ -552,15 +583,18 @@ static func _execute_gain_specific_dice(fx: Array, pools: Dictionary, _side_data
 		
 	var b_offence := 0; var b_defence := 0; var b_morale := 0
 	
-	if pool_type == 0:
+	if pool_type == 0: # 0 means roll standard random custom dice
 		for d in range(val):
-			var die := _roll_custom_die()
-			b_offence += die[0]; b_defence += die[1]; b_morale += die[2]
+			match _roll_custom_die_index():
+				0: b_offence += 1
+				1: b_defence += 1
+				2: b_morale += 1
 	else:
+		# Directly grant guaranteed icons based on the configuration layout
 		match pool_type:
-			1: b_offence = val
-			2: b_defence = val
-			3: b_morale = val
+			1: b_offence = val  # CardData.DicePoolType.OFFENSE
+			2: b_defence = val  # CardData.DicePoolType.DEFENSE
+			3: b_morale = val   # CardData.DicePoolType.MORALE
 			
 	if on_event.is_valid(): 
 		on_event.call("bonus_dice_rolled", [role, b_offence, b_defence, b_morale])
@@ -568,6 +602,21 @@ static func _execute_gain_specific_dice(fx: Array, pools: Dictionary, _side_data
 	pools[prefix + "offence"] += b_offence
 	pools[prefix + "defence"] += b_defence
 	pools[prefix + "card_morale"] += b_morale
+
+static func _execute_reroll(fx: Array, pools: Dictionary, side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
+	# DEFENSIVE TYPE GUARD: If layout pollution passes the master Choice block here, bypass the crash
+	if fx[2] is Array:
+		push_error("Engine Leak Caught: _execute_reroll received an Array instead of an int for Card #%d. Skipping to prevent crash." % card_id)
+		return
+		
+	var val: int = fx[2]
+	
+	if on_event.is_valid():
+		on_event.call("ability_triggered", [card_id, "Resolved REROLL effect (Count: %d)" % val])
+		
+	# Future implementation: Logic to find missed/blank dice rolls 
+	# in the current combat round and re-roll them.
+	pass
 
 static func _execute_rally(fx: Array, _pools: Dictionary, side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
 	# DEFENSIVE TYPE GUARD: If layout pollution passes the master Choice block here, bypass the crash

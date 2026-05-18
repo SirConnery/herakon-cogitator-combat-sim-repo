@@ -58,7 +58,7 @@ func run_single_logged_battle() -> void:
 				print("Calculated Combat Values -> Attacker: %d, Defender: %d" % [data[0], data[1]])
 				print("\n=== PHASE 1.0: ROLL DICE STEP ===")
 			"dice_rolled":
-				print("  -> %s Rolls: %d ⚔️, %d 🛡️, %d 🦅, %d Overall 🦅)" % [data[0], data[1], data[2], data[3], data[4]])
+				print("  -> %s Rolls: %d ⚔️, %d 🛡️, %d 🦅, %d 🦅 from units)" % [data[0], data[1], data[2], data[3], data[4]])
 			"cards_drawn_to_hand":
 				_print_cards_drawn(data[0], data[1])
 			"round_start":
@@ -91,8 +91,8 @@ func run_single_logged_battle() -> void:
 				var role: String = data[0]
 				var squad_name: String = data[1]
 				var health: int = data[2]
-				var card_id: int = data[3]
-				print("    -> 🤝 %s successfully RALLIED '%s' (Health: %d) using Card #%d!" % [role, squad_name, health, card_id])
+				var card_name: String = get_card_metadata(data[3], "card_name")
+				print("    -> 🤝 %s successfully RALLIED '%s' (Health: %d) using %s!" % [role, squad_name, health, card_name])
 			"unit_ability_not_resolved":
 				var role: String = data[0]
 				var card_id: int = data[1]
@@ -201,11 +201,11 @@ func _flatten_card_database(raw_db: Dictionary) -> Dictionary:
 		var effects_list: Array = []
 		
 		if card.general_ability:
-			effects_list.append(_flatten_single_effect(card.general_ability, 0, 0))
+			effects_list.append(_flatten_single_effect(card.general_ability, true, CardData.UnitType.NONE))
 			
 		if card.unit_ability:
-			# Pass the card's required unit types down so index 5 holds it accurately
-			effects_list.append(_flatten_single_effect(card.unit_ability, 1, card.required_unit_types))
+			# Pass the card's required unit types enum down explicitly
+			effects_list.append(_flatten_single_effect(card.unit_ability, false, card.required_unit_types))
 			
 		flat_db[card_id] = [
 			card.offence_icons,  # Index 0
@@ -215,36 +215,40 @@ func _flatten_card_database(raw_db: Dictionary) -> Dictionary:
 		]
 	return flat_db
 
-func _flatten_single_effect(fx: CardEffect, is_unit_val: int, req_unit_val: int) -> Array:
+func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_val: int) -> Array:
 	var raw_effect_type: int = int(fx.effect_type)
 	var value_slot: Variant = fx.value
 	
-	# Cleaned constraint: Only intercept if it matches CHOICE (Enum Index 1)
-	if raw_effect_type == 1:
+	# Future-proofed checking using the exact enum path instead of integer values
+	if raw_effect_type == CardData.EffectType.CHOICE:
 		var flattened_choices: Array = []
 		var raw_choices = fx.choices
 		
 		if not raw_choices.is_empty():
 			for sub_fx in raw_choices:
 				if sub_fx != null:
-					var flat_sub = _flatten_single_effect(sub_fx, 0, 0)
+					# Nested sub-choices within a choice container default to generic flags
+					var flat_sub = _flatten_single_effect(sub_fx, true, CardData.UnitType.NONE)
 					flattened_choices.append(flat_sub)
 					
 		value_slot = flattened_choices
 	else:
-		# Safeguard for atomic operations (Dice, Rally)
+		# Safeguard for atomic operations (Dice, Rally, Reroll)
 		if value_slot is Array:
 			value_slot = 1
 		else:
 			value_slot = int(value_slot)
 			
+	# Convert the boolean flag cleanly back into a 0 or 1 integer structure for your engine layout
+	var ability_block_type_id: int = 0 if is_general_ability else 1
+			
 	return [
-		fx.effect_type,    # Index 0
-		fx.target_type,    # Index 1
-		value_slot,        # Index 2
-		fx.pool_type,      # Index 3
-		is_unit_val,       # Index 4
-		req_unit_val       # Index 5
+		fx.effect_type,         # Index 0
+		fx.target_type,         # Index 1
+		value_slot,             # Index 2
+		fx.pool_type,           # Index 3
+		ability_block_type_id,  # Index 4
+		req_unit_val            # Index 5
 	]
 
 func _prepare_faction_blueprint(faction_id: int, factions: Dictionary, randomized_tiers: PackedInt32Array) -> Dictionary:

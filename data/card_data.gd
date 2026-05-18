@@ -5,11 +5,18 @@ enum EffectType { NONE,
 CHOICE,
 GAIN_DICE, 
 GAIN_SPECIFIC_DICE,
+REROLL,
 RALLY
 }
 
 enum TargetType { SELF, OPPONENT }
 enum DicePoolType { RANDOM, OFFENSE, DEFENSE, MORALE }
+enum TimingWindow {
+	INSTANT,         # Resolves immediately when card is revealed (Stage 2)
+	BEFORE_DAMAGE,   # Resolves right before offense/defense values match up
+	DURING_DAMAGE,   # Resolves after raw damage numbers are calculated, before unit allocation
+	AFTER_DAMAGE     # Resolves after figures are safely routed or destroyed
+}
 enum UnitType {
 	NONE,
 	
