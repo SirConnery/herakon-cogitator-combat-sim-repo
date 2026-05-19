@@ -40,7 +40,6 @@ static func get_database() -> Dictionary:
 	option_b.value = 1
 	option_b.pool_type = CardData.DicePoolType.MORALE
 	
-	# SYSTEM UPGRADE: Assign natively to our clean custom property!
 	unit_fx.choices = [option_a, option_b]
 	
 	card.general_ability = general_fx

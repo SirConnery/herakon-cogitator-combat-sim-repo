@@ -259,14 +259,23 @@ static func _apply_forbidden_stars_damage(player_state: Dictionary, total_damage
 	var side_name: String = player_state["name"]
 	
 	while total_damage > 0:
-		# --- ROUTING PROTECTION CHECK ---
+		# --- ROUTING & SURVIVOR PROTECTION CHECK ---
+		# Combined into a single fast pass to avoid executing heavy sub-lookups
+		# when the army is already completely eliminated.
 		var has_unrouted_units: bool = false
+		var has_any_living_units: bool = false
+		
 		for squad in squads:
 			for i in range(squad["alive_figures"].size()):
-				if squad["alive_figures"][i] > 0 and not squad["figures_routed"][i]:
-					has_unrouted_units = true
-					break
-			if has_unrouted_units: break
+				if squad["alive_figures"][i] > 0:
+					has_any_living_units = true
+					if not squad["figures_routed"][i]:
+						has_unrouted_units = true
+		
+		# High-speed escape hatch for production loop performance
+		if not has_any_living_units:
+			total_damage = 0
+			break
 
 		# --------------------------------------------------
 		# STEP 1: PERFECT ABSORPTION (0 DEATHS STRATEGY)
@@ -286,7 +295,6 @@ static func _apply_forbidden_stars_damage(player_state: Dictionary, total_damage
 						perfect_target = {"squad": squad, "index": i}
 						
 		if not perfect_target.is_empty():
-			# Reuse/declare targets safely inside this specific scope branch
 			var target_squad: Dictionary = perfect_target["squad"]
 			var target_idx: int = perfect_target["index"]
 			var target_was_routed: bool = target_squad["figures_routed"][target_idx]
@@ -350,9 +358,9 @@ static func _apply_forbidden_stars_damage(player_state: Dictionary, total_damage
 								sacrifice_target = {"squad": squad, "index": i}
 
 		if sacrifice_target.is_empty():
-			break # Completely wiped out
+			total_damage = 0
+			break
 			
-		# Distinct variable naming profiles down here avoids cross-block compilation warnings
 		var final_squad: Dictionary = sacrifice_target["squad"]
 		var final_idx: int = sacrifice_target["index"]
 		var final_was_routed: bool = final_squad["figures_routed"][final_idx]
