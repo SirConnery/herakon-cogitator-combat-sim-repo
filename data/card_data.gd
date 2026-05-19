@@ -5,6 +5,7 @@ enum EffectType { NONE,
 CHOICE,
 GAIN_DICE, 
 GAIN_SPECIFIC_DICE,
+GAIN_SPECIFIC_COMBAT_TOKEN,
 REROLL,
 RALLY
 }
@@ -25,12 +26,16 @@ enum UnitType {
 	SPACE_MARINES,
 	LAND_RAIDERS,
 	WARLORD_TITANS,
+	STRIKE_CRUISERS,
+	BATTLE_BARGES,
 	
 	# --- ORKS ---
 	ORK_BOYZ,
 	NOBZ,
 	BATTLEWAGONS,
 	GARGANTS,
+	ONSLAUGHTS,
+	KILL_KROOZERS,
 	
 	# --- CHAOS SPACE MARINES ---
 	CULTISTS,
@@ -54,6 +59,6 @@ enum UnitType {
 @export var morale_icons: int
 
 @export_category("Abilities")
-@export var general_ability: CardEffect
-@export var unit_ability: CardEffect
+@export var general_ability: Array[CardEffect] = []
+@export var unit_ability: Array[CardEffect] = []
 @export var required_unit_types: int

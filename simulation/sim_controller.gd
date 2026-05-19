@@ -9,7 +9,10 @@ enum GameStage { EARLY, MID, LATE }
 @export var attacker_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.SM
 @export var defender_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.ORKS
 
+var is_ground_combat := true
+
 @onready var card_db: Dictionary = CardRegistry.get_database()
+
 
 func _ready() -> void:
 	if is_combat_debugger_used:
@@ -200,13 +203,13 @@ func _flatten_card_database(raw_db: Dictionary) -> Dictionary:
 		var card: CardData = raw_db[card_id]
 		var effects_list: Array = []
 		
-		if card.general_ability:
-			effects_list.append(_flatten_single_effect(card.general_ability, true, CardData.UnitType.NONE))
+		# Always treat abilities as clean sequential loops
+		for fx in card.general_ability:
+			effects_list.append(_flatten_single_effect(fx, true, CardData.UnitType.NONE))
 			
-		if card.unit_ability:
-			# Pass the card's required unit types enum down explicitly
-			effects_list.append(_flatten_single_effect(card.unit_ability, false, card.required_unit_types))
-			
+		for fx in card.unit_ability:
+			effects_list.append(_flatten_single_effect(fx, false, card.required_unit_types))
+				
 		flat_db[card_id] = [
 			card.offence_icons,  # Index 0
 			card.defence_icons,  # Index 1
@@ -254,9 +257,15 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_v
 func _prepare_faction_blueprint(faction_id: int, factions: Dictionary, randomized_tiers: PackedInt32Array) -> Dictionary:
 	var faction_raw = factions[faction_id]
 	
-	# Index the registry configurations into an O(1) tier map dictionary
+	# Index ONLY theater-compliant registry configurations into our O(1) tier map
 	var registry_units_by_tier := {}
 	for unit_data in faction_raw["units"]:
+		# THEATER EXCLUSION LOGIC:
+		# If is_ground_combat is true, skip units where is_ship is true.
+		# If is_ground_combat is false, skip units where is_ship is false.
+		if is_ground_combat == unit_data["is_ship"]:
+			continue # Skip this unit; it doesn't match the active theater mode
+			
 		registry_units_by_tier[unit_data["tier"]] = unit_data
 
 	# Gather the database entries matching our randomized composition layout
@@ -265,7 +274,7 @@ func _prepare_faction_blueprint(faction_id: int, factions: Dictionary, randomize
 		if registry_units_by_tier.has(tier):
 			selected_units_blueprints.append(registry_units_by_tier[tier])
 		else:
-			push_error("Faction %d lacks a registry configuration profile for Tier %d!" % [faction_id, tier])
+			push_error("Faction %d lacks a theater-compliant configuration profile for Tier %d!" % [faction_id, tier])
 
 	return {
 		"combat_deck": faction_raw["combat_deck"].duplicate(), 
@@ -296,7 +305,7 @@ func _build_match_units(selected_units: Array) -> Array[Dictionary]:
 			"name": b["unit_name"], 
 			"tier": b["tier"], 
 			"unit_type": b["unit_type"],
-			"space_unit": b["space_unit"], 
+			"is_ship": b["is_ship"], 
 			"combat_value": b["combat_value"], 
 			"health_value": b["health_value"], 
 			"morale_value": b["morale_value"], 

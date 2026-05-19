@@ -163,10 +163,14 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 			"atk_offence": atk_offence_pool, 
 			"atk_defence": atk_defence_pool, 
 			"atk_card_morale": atk_card_morale,
+			"atk_token_offence": 0, # Tracks round-scoped tokens cleanly
+			"atk_token_defence": 0,
 			
 			"def_offence": def_offence_pool, 
 			"def_defence": def_defence_pool, 
-			"def_card_morale": def_card_morale
+			"def_card_morale": def_card_morale,
+			"def_token_offence": 0, # Tracks round-scoped tokens cleanly
+			"def_token_defence": 0
 		}
 		
 		# ==================================================
@@ -188,10 +192,10 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		# STAGE 3: MUTABLE TIMELINE CONTEXT EVALUATION
 		# ==================================================
 		var context = {
-			"atk_offence": atk_offence_pool + timeline_atk_offence,
-			"atk_defence": atk_defence_pool + timeline_atk_defence,
-			"def_offence": def_offence_pool + timeline_def_offence,
-			"def_defence": def_defence_pool + timeline_def_defence,
+			"atk_offence": atk_offence_pool + timeline_atk_offence + local_pools["atk_token_offence"],
+			"atk_defence": atk_defence_pool + timeline_atk_defence + local_pools["atk_token_defence"],
+			"def_offence": def_offence_pool + timeline_def_offence + local_pools["def_token_offence"],
+			"def_defence": def_defence_pool + timeline_def_defence + local_pools["def_token_defence"],
 			"net_damage_to_attacker": 0,
 			"net_damage_to_defender": 0
 		}
@@ -447,6 +451,7 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.GAIN_DICE: _execute_gain_dice,
 	CardData.EffectType.GAIN_SPECIFIC_DICE: _execute_gain_specific_dice,
 	CardData.EffectType.REROLL: _execute_reroll,
+	CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN: _execute_gain_specific_combat_token,
 	
 	CardData.EffectType.RALLY: _execute_rally, 
 }
@@ -625,6 +630,27 @@ static func _execute_reroll(fx: Array, pools: Dictionary, side_data: Dictionary,
 	# Future implementation: Logic to find missed/blank dice rolls 
 	# in the current combat round and re-roll them.
 	pass
+
+static func _execute_gain_specific_combat_token(fx: Array, pools: Dictionary, _side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
+	if fx[2] is Array:
+		push_error("Engine Leak Caught: GAIN_SPECIFIC_COMBAT_TOKEN received an Array value for Card #%d." % card_id)
+		return
+		
+	var val: int = fx[2]
+	var pool_type: int = fx[3] # Expects CardData.DicePoolType values
+	var prefix := "atk_token_" if role == "Attacker" else "def_token_"
+	
+	var label := "Offence" if pool_type == 1 else "Defence"
+	if on_event.is_valid():
+		on_event.call("ability_triggered", [card_id, "Resolved GAIN_SPECIFIC_COMBAT_TOKEN (+%d %s Token)" % [val, label]])
+		
+	match pool_type:
+		1: # CardData.DicePoolType.OFFENSE
+			pools[prefix + "offence"] += val
+		2: # CardData.DicePoolType.DEFENSE
+			pools[prefix + "defence"] += val
+		_:
+			print("  -> ⚠️ Engine skipped non-combat token pool specification mapping type: %d" % pool_type)
 
 static func _execute_rally(fx: Array, _pools: Dictionary, side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
 	# DEFENSIVE TYPE GUARD: If layout pollution passes the master Choice block here, bypass the crash
