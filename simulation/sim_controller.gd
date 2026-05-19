@@ -8,7 +8,7 @@ extends Node
 @export var attacker_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.SM
 @export var defender_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.ORKS
 
-var is_ground_combat := false
+var is_ground_combat := true
 
 @onready var card_db: Dictionary = CardRegistry.get_database()
 
