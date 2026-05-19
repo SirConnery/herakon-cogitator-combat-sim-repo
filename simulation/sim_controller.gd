@@ -3,8 +3,7 @@ extends Node
 @export var is_combat_debugger_used: bool = true
 @export var total_iterations: int = 1000000
 
-enum GameStage { EARLY, MID, LATE }
-@export var current_stage: GameStage = GameStage.EARLY
+@export var current_stage: GameStageGenerator.Stage = GameStageGenerator.Stage.EARLY
 
 @export var attacker_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.SM
 @export var defender_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.ORKS
@@ -32,9 +31,10 @@ func run_single_logged_battle() -> void:
 	var att_count := randi_range(1, 5)
 	var def_count := randi_range(1, 5)
 	
-	# 2. Compile type-hinted arrays of compliant tiers matching stage constraints
-	var attacker_tiers := _generate_stage_tiers(current_stage, att_count)
-	var defender_tiers := _generate_stage_tiers(current_stage, def_count)
+	# 2. Compile type-hinted arrays of compliant tiers matching stage and theater constraints
+	# Swapped to GameStageGenerator and passed the theater-awareness boolean flag!
+	var attacker_tiers := GameStageGenerator.generate_composition(current_stage, att_count, is_ground_combat)
+	var defender_tiers := GameStageGenerator.generate_composition(current_stage, def_count, is_ground_combat)
 	
 	# 3. Pull unit specifications out of registry records via generated profiles
 	var attacker_blueprint: Dictionary = _prepare_faction_blueprint(attacker_faction, raw_factions, attacker_tiers)
@@ -51,7 +51,7 @@ func run_single_logged_battle() -> void:
 			"combat_start":
 				var atk_side: Dictionary = data[0]
 				var def_side: Dictionary = data[1]
-				var stage_str: String = GameStage.keys()[current_stage].capitalize()
+				var stage_str: String = GameStageGenerator.Stage.keys()[current_stage].capitalize()
 				print("\n==================  STARTED COMBAT ==================")
 				print("Game stage: %s" % stage_str)
 				print("Matchup Scale Classification: %s" % _get_weighted_matchup_string(attacker_power, defender_power))
@@ -101,9 +101,8 @@ func run_single_logged_battle() -> void:
 				var card_id: int = data[1]
 				var card_name: String = get_card_metadata(card_id, "card_name")
 				var req_unit: String = get_card_metadata(card_id, "required_unit_types")
-				
 				print("    -> 🚫 %s Unit Ability SKIPPED: '%s' requires an unrouted '%s' unit." % [role, card_name, req_unit])
-			"dice_rerolled":
+			"dice_rerolled_log": # Matches your new random dice-rolling log key
 				var role_name: String = data[0]
 				var old_face: String = data[1]
 				var new_face: String = data[2]
@@ -118,51 +117,22 @@ func run_single_logged_battle() -> void:
 			"victory_by_wipeout":
 				print("\n  -----[RESOLUTION PHASE]----- ") 
 				print("Tactical deployment complete. Winner: %s by clean wipeout." % data[0])
+			"victory_mutual_annihilation":
+				print("\n  -----[RESOLUTION PHASE]----- ") 
+				print("💥 MUTUAL ANNIHILATION DETECTED! Both armies completely eradicated each other in the crossfire.")
 			"tiebreaker_morale":
 				print("\n  -----[RESOLUTION PHASE]----- ")
 				print("Evaluating final Morale Pools -> Attacker: %d, Defender: %d" % [data[0], data[1]])
 			"bonus_dice_rolled":
-				print("   ↳ 🎲 %s Dice roll: +%d ⚔️ | +%d 🛡️ | +%d 🦅 " % [
-		data[0], data[1], data[2], data[3]])
+				print("    ↳ 🎲 %s Dice roll: +%d ⚔️ | +%d 🛡️ | +%d 🦅 " % [data[0], data[1], data[2], data[3]])
 			
 	# Run the combat crucible sandbox using your custom logging strings
 	var attacker_won: bool = SimCombatEngine.run_full_match(match_state, flat_card_db, debugger_hook)
 	
 	print("\n[SANDBOX FINISHED] Combat evaluation engine sequence complete. Winner evaluated: %s" % ("ATTACKER" if attacker_won else "DEFENDER"))
 
+
 # --- Progression Rule Setup Utilities ---
-
-func _generate_stage_tiers(stage: GameStage, total_units: int) -> PackedInt32Array:
-	var tiers := PackedInt32Array()
-	var weights := PackedFloat32Array()
-	var counts := [0, 0, 0, 0] # Tracks [T0, T1, T2, T3] generated inside this call
-	
-	match stage:
-		GameStage.EARLY:
-			weights = PackedFloat32Array([0.65, 0.30, 0.05, 0.00])
-		GameStage.MID:
-			weights = PackedFloat32Array([0.35, 0.40, 0.25, 0.00])
-		GameStage.LATE:
-			weights = PackedFloat32Array([0.15, 0.25, 0.35, 0.25])
-
-	while tiers.size() < total_units:
-		var rolled_tier := _roll_weighted_index(weights)
-		var valid := true
-		
-		match stage:
-			GameStage.EARLY:
-				if rolled_tier == 2 and counts[2] >= 1: valid = false
-			GameStage.MID:
-				if rolled_tier == 2 and counts[2] >= 2: valid = false
-			GameStage.LATE:
-				if rolled_tier == 0 and counts[0] >= 2: valid = false
-				if rolled_tier == 3 and counts[3] >= 1: valid = false
-				
-		if valid:
-			tiers.append(rolled_tier)
-			counts[rolled_tier] += 1
-			
-	return tiers
 
 func _roll_weighted_index(weights: PackedFloat32Array) -> int:
 	var sum := 0.0

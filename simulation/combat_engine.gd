@@ -210,22 +210,23 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 	var atk_survivors: int = _count_living_units(atk)
 	var def_survivors: int = _count_living_units(def)
 	
-	if atk_survivors > 0 and def_survivors == 0:
-		if on_event.is_valid(): 
-			on_event.call("victory_by_wipeout", ["Attacker"])
-			log_current_army_statuses(state, on_event)
+	# Clean diagnostic baseline log footprint up front
+	log_current_army_statuses(state, on_event)
+	
+	# 1. Evaluate total mutual annihilation first
+	if atk_survivors == 0 and def_survivors == 0:
+		if on_event.is_valid(): on_event.call("victory_mutual_annihilation", [])
+		return false # Defender holds territory by default rules convention
+
+	# 2. Evaluate remaining absolute force wipeouts
+	if def_survivors == 0:
+		if on_event.is_valid(): on_event.call("victory_by_wipeout", ["Attacker"])
 		return true
-	if def_survivors > 0 and atk_survivors == 0:
-		if on_event.is_valid(): 
-			on_event.call("victory_by_wipeout", ["Defender"])
-			log_current_army_statuses(state, on_event)
+	if atk_survivors == 0:
+		if on_event.is_valid(): on_event.call("victory_by_wipeout", ["Defender"])
 		return false
 		
-	if atk_survivors != def_survivors:
-		if on_event.is_valid(): log_current_army_statuses(state, on_event)
-		return atk_survivors > def_survivors
-		
-	# --- TIEBREAKER MORALE EVALUATION ---
+	# 3. Both sides survived -> Resolve directly via Morale values
 	var final_printed_atk_morale: int = 0
 	var final_printed_def_morale: int = 0
 	
@@ -240,8 +241,8 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 	
 	if on_event.is_valid(): 
 		on_event.call("tiebreaker_morale", [final_atk_morale, final_def_morale])
-		log_current_army_statuses(state, on_event)
 		
+	# Defender wins all normal morale ties natively via >= comparison operator mapping
 	return final_atk_morale >= final_def_morale
 
 
@@ -403,31 +404,38 @@ static func _find_lowest_tier_living_unit(squads: Array, restrict_to_unrouted: b
 	return target
 
 static func _find_lowest_tier_unit_to_destroy(squads: Array) -> Dictionary:
-	var target: Dictionary = {}
 	var lowest_tier: int = 9999
 	
-	# --- PASS 1: SEARCH FOR ROUTED UNITS FIRST (VULNERABLE TARGETS) ---
-	for squad in squads:
-		for i in range(squad["alive_figures"].size()):
-			if squad["alive_figures"][i] > 0 and squad["figures_routed"][i]:
-				if squad["tier"] < lowest_tier:
-					lowest_tier = squad["tier"]
-					target = {"squad": squad, "index": i}
-	
-	# If we found a routed unit, return it immediately!
-	if not target.is_empty():
-		return target
-		
-	# --- PASS 2: FALLBACK TO ANY LIVING UNIT (NO ROUTED UNITS EXIST) ---
-	lowest_tier = 9999
+	# --- STEP 1: FIND WHAT THE LOWEST PRESENT TIER IS ---
 	for squad in squads:
 		for i in range(squad["alive_figures"].size()):
 			if squad["alive_figures"][i] > 0:
 				if squad["tier"] < lowest_tier:
 					lowest_tier = squad["tier"]
-					target = {"squad": squad, "index": i}
 					
-	return target
+	# If there are literally no living units left on the board, return empty
+	if lowest_tier == 9999:
+		return {}
+
+	# --- STEP 2: GATHER ALL CANDIDATES FROM THAT SPECIFIC LOWEST TIER ---
+	var candidates: Array[Dictionary] = []
+	for squad in squads:
+		if squad["tier"] == lowest_tier:
+			for i in range(squad["alive_figures"].size()):
+				if squad["alive_figures"][i] > 0:
+					candidates.append({"squad": squad, "index": i})
+
+	# --- STEP 3: PRIORITIZE ROUTED UNITS WITHIN THIS TIER ---
+	for c in candidates:
+		var squad: Dictionary = c["squad"]
+		var idx: int = c["index"]
+		if squad["figures_routed"][idx]:
+			return c # Found a routed unit at the lowest tier! Kill it immediately.
+
+	# --- STEP 4: FALLBACK TO UNROUTED UNITS OF THIS TIER ---
+	# If we got here, every single unit at the lowest tier is perfectly healthy.
+	# We grab the first candidate available.
+	return candidates[0]
 
 static func _count_living_units(player_state: Dictionary) -> int:
 	var count: int = 0
@@ -467,6 +475,10 @@ static func log_current_army_statuses(state: Dictionary, on_event: Callable) -> 
 		
 		on_event.call("unit_status_logged", [side_name, unrouted_str, routed_str])
 
+static func _is_mutual_annihilation(state: Dictionary) -> bool:
+	var atk_survivors: int = _count_living_units(state["attacker"])
+	var def_survivors: int = _count_living_units(state["defender"])
+	return atk_survivors == 0 and def_survivors == 0
 
 static func _execute_timing_hook(window: CardData.TimingWindow, state: Dictionary, context: Dictionary, round_index: int) -> void:
 	# Right now, this remains an empty, lightning-fast pass.
