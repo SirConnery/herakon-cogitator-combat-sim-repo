@@ -1,15 +1,29 @@
 class_name CardRegistry
 extends RefCounted
 
+# Named enum acting as primitive integers for the simulation engine.
+# Space Marines are based at 1000. Combat: 1001-1099, Orders: 1100+, Events: 1200+.
+enum CardID {
+	# --- SPACE MARINES (SM) ---
+	SM_COMBAT_FAITH_IN_EMPEROR = 1001,
+	# SM_ORDER_SAMPLE          = 1101,
+	# SM_EVENT_SAMPLE          = 1201,
+
+	# --- ORKS (ORKS) ---
+	# ORK_COMBAT_SAMPLE        = 2001,
+	# ORK_ORDER_SAMPLE         = 2101,
+	# ORK_EVENT_SAMPLE         = 2201,
+}
+
 static func get_database() -> Dictionary:
 	var db: Dictionary = {}
 	var card: CardData
 	var general_fx: CardEffect
-	var unit_fx: CardEffect # Fully typed!
+	var unit_fx: CardEffect
 	
 	# --- CARD 1: Faith In the Emperor ---
 	card = CardData.new()
-	card.card_id = 1
+	card.card_id = CardID.SM_COMBAT_FAITH_IN_EMPEROR
 	card.card_name = "Faith In the Emperor"
 	card.offence_icons = 1
 	card.defence_icons = 0
@@ -22,7 +36,7 @@ static func get_database() -> Dictionary:
 	general_fx.target_type = CardData.TargetType.SELF
 	general_fx.value = 1
 	
-	# --- Unit Ability (Choice Container) ---
+	# --- Unit Ability ---
 	unit_fx = CardEffect.new()
 	unit_fx.effect_type = CardData.EffectType.CHOICE
 	unit_fx.target_type = CardData.TargetType.SELF
@@ -45,6 +59,7 @@ static func get_database() -> Dictionary:
 	card.general_ability = general_fx
 	card.unit_ability = unit_fx
 	
+	# Lock it into the database using the enum integer identity
 	db[card.card_id] = card
 	
 	return db
