@@ -22,7 +22,8 @@ static func get_database() -> Dictionary:
 	card.offence_icons = 1
 	card.required_unit_types = CardData.UnitType.SCOUTS
 	
-	# General Effect 1
+	# General effect
+	# Gain dice
 	var sm_gen_1 := CardEffect.new()
 	sm_gen_1.effect_type = CardData.EffectType.GAIN_DICE
 	sm_gen_1.target_type = CardData.TargetType.SELF
@@ -34,11 +35,13 @@ static func get_database() -> Dictionary:
 	sm_unit_choice.effect_type = CardData.EffectType.CHOICE
 	sm_unit_choice.target_type = CardData.TargetType.SELF
 	
+	# Option 1: Rally
 	var option_a := CardEffect.new()
 	option_a.effect_type = CardData.EffectType.RALLY
 	option_a.target_type = CardData.TargetType.SELF
 	option_a.value = 1
 	
+	# Option 2: Gain Morale
 	var option_b := CardEffect.new()
 	option_b.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
 	option_b.target_type = CardData.TargetType.SELF
@@ -81,7 +84,13 @@ static func get_database() -> Dictionary:
 	ork_gen_3.value = 1
 	card.general_ability.append(ork_gen_3)
 	
-	# Unit Abilities sequence naturally stays empty!
+	# --- Unit Abilities ---
+	# Rule text: Destroy 1 Onslaught to force your opponent to choose and destroy 1 of his units
+	var ork_unit_1 := CardEffect.new()
+	ork_unit_1.effect_type = CardData.EffectType.DESTROY_FOR_DESTROY
+	ork_unit_1.target_type = CardData.TargetType.OPPONENT
+	ork_unit_1.value = 1
+	card.unit_ability.append(ork_unit_1)
 	
 	db[card.card_id] = card
 	

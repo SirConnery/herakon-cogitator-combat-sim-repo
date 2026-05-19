@@ -9,7 +9,7 @@ enum GameStage { EARLY, MID, LATE }
 @export var attacker_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.SM
 @export var defender_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.ORKS
 
-var is_ground_combat := true
+var is_ground_combat := false
 
 @onready var card_db: Dictionary = CardRegistry.get_database()
 
@@ -103,6 +103,11 @@ func run_single_logged_battle() -> void:
 				var req_unit: String = get_card_metadata(card_id, "required_unit_types")
 				
 				print("    -> 🚫 %s Unit Ability SKIPPED: '%s' requires an unrouted '%s' unit." % [role, card_name, req_unit])
+			"dice_rerolled":
+				var role_name: String = data[0]
+				var old_face: String = data[1]
+				var new_face: String = data[2]
+				print("   -> 🎲 %s rerolled a %s icon into a %s icon!" % [role_name, old_face, new_face])
 			"damage_absorbed":
 				print("    -> 🛡️ %s '%s' safely absorbed %d damage while routed." % [data[0], data[1], data[2]])
 			"unit_destroyed":
@@ -110,12 +115,12 @@ func run_single_logged_battle() -> void:
 				print("    -> 💀 %s '%s' (%s) took %d damage and was completely DESTROYED!" % [data[0], data[1], cond, data[2]])
 			"early_termination":
 				print("\n[ALERT] Sudden Death! An entire side has been eliminated from the theater.")
-			"victory_wipeout":
-				print("\n[RESULT] Victory achieved! Tactical deployment complete. Winner: %s by clean wipeout." % data[0])
-			"tiebreaker_figures":
-				print("\n[STALEMATE] End of Phase 3. Counting standing figures -> Attacker: %d, Defender: %d" % [data[0], data[1]])
+			"victory_by_wipeout":
+				print("\n  -----[RESOLUTION PHASE]----- ") 
+				print("Tactical deployment complete. Winner: %s by clean wipeout." % data[0])
 			"tiebreaker_morale":
-				print("[STALEMATE] Figure parity detected. Evaluating final Morale Pools -> Attacker: %d, Defender: %d" % [data[0], data[1]])
+				print("\n  -----[RESOLUTION PHASE]----- ")
+				print("Evaluating final Morale Pools -> Attacker: %d, Defender: %d" % [data[0], data[1]])
 			"bonus_dice_rolled":
 				print("   ↳ 🎲 %s Dice roll: +%d ⚔️ | +%d 🛡️ | +%d 🦅 " % [
 		data[0], data[1], data[2], data[3]])
@@ -273,8 +278,8 @@ func _prepare_faction_blueprint(faction_id: int, factions: Dictionary, randomize
 	for tier in randomized_tiers:
 		if registry_units_by_tier.has(tier):
 			selected_units_blueprints.append(registry_units_by_tier[tier])
-		else:
-			push_error("Faction %d lacks a theater-compliant configuration profile for Tier %d!" % [faction_id, tier])
+		elif is_ground_combat:
+			push_error("Faction %d lacks ground units for Tier %d!" % [faction_id, tier])
 
 	return {
 		"combat_deck": faction_raw["combat_deck"].duplicate(), 
