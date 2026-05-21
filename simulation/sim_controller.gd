@@ -1,4 +1,5 @@
 extends Node
+class_name SimController
 
 @export var is_combat_debugger_used: bool = true
 @export var total_iterations: int = 1000000
@@ -20,6 +21,9 @@ func _ready() -> void:
 	else:
 		print("--- DISPATCHING PRODUCTION MASS RUNS ---")
 		# Pure high-speed loop logic goes here when ready...
+
+func show_ui() -> void:
+	pass
 
 func run_single_logged_battle() -> void:
 	var raw_cards: Dictionary = CardRegistry.get_database()

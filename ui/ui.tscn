@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://yy3vdqul34p0"]
 
 [ext_resource type="Script" uid="uid://dc7rarbc4m0je" path="res://ui/ui.gd" id="1_nb4k0"]
+[ext_resource type="PackedScene" uid="uid://cxk130wfvphau" path="res://ui/round_panel.tscn" id="2_ks8t7"]
 
 [node name="Ui" type="Control" unique_id=868425142]
 layout_mode = 3
@@ -49,149 +50,16 @@ horizontal_alignment = 1
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="AttackerCombatView" type="VBoxContainer" parent="MainLayout/CentralCombatView" unique_id=490870224]
+[node name="RoundsContainer" type="GridContainer" parent="MainLayout/CentralCombatView" unique_id=1593296258]
 layout_mode = 2
 size_flags_horizontal = 3
+columns = 3
 
-[node name="RoundStartStats" type="PanelContainer" parent="MainLayout/CentralCombatView/AttackerCombatView" unique_id=749672481]
+[node name="RoundPanel" parent="MainLayout/CentralCombatView/RoundsContainer" unique_id=167201415 instance=ExtResource("2_ks8t7")]
 layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 0
-
-[node name="Layout" type="VBoxContainer" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats" unique_id=781098108]
-layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 0
-
-[node name="HeaderPanel" type="PanelContainer" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats/Layout" unique_id=1514018268]
-modulate = Color(0.9999998, 0.15485567, 0.40396515, 1)
-layout_mode = 2
-size_flags_vertical = 0
-
-[node name="HeaderLayout" type="VBoxContainer" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats/Layout/HeaderPanel" unique_id=58437515]
-layout_mode = 2
-
-[node name="RoundStartHeaderPanel" type="PanelContainer" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/HeaderLayout" unique_id=1528115927]
-layout_mode = 2
-size_flags_vertical = 0
-
-[node name="Units" type="Label" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/HeaderLayout/RoundStartHeaderPanel" unique_id=1450434156]
-layout_mode = 2
-text = "Combat Round:
-1"
-horizontal_alignment = 1
-
-[node name="FactionName" type="PanelContainer" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/HeaderLayout" unique_id=375877919]
-layout_mode = 2
-size_flags_vertical = 4
-
-[node name="FactionNameLabel" type="Label" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/HeaderLayout/FactionName" unique_id=917054981]
-layout_mode = 2
-size_flags_vertical = 0
-text = "Faction:
-Space Marines"
-horizontal_alignment = 1
-
-[node name="MarginContainer" type="MarginContainer" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats/Layout" unique_id=1158045305]
-layout_mode = 2
-theme_override_constants/margin_left = 5
-theme_override_constants/margin_top = 5
-theme_override_constants/margin_right = 5
-theme_override_constants/margin_bottom = 5
-
-[node name="RoundStartTextContainer" type="PanelContainer" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats/Layout" unique_id=259821244]
-modulate = Color(0.36078432, 1, 1, 1)
-layout_mode = 2
-size_flags_vertical = 0
-
-[node name="RoundStartText" type="Label" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats/Layout/RoundStartTextContainer" unique_id=541934220]
-layout_mode = 2
-text = "Round Start Stats"
-horizontal_alignment = 1
-
-[node name="UnitList" type="PanelContainer" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats/Layout" unique_id=1597833454]
-layout_mode = 2
-size_flags_vertical = 0
-
-[node name="Units" type="Label" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats/Layout/UnitList" unique_id=1537281584]
-layout_mode = 2
-text = "Units Unrouted:
- Scouts, Space Marines
-Units Routed:
- None"
-horizontal_alignment = 1
-
-[node name="DicePanel" type="PanelContainer" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats/Layout" unique_id=547269481]
-layout_mode = 2
-size_flags_vertical = 0
-
-[node name="BaseDiceRolls" type="Label" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats/Layout/DicePanel" unique_id=648676532]
-layout_mode = 2
-text = "Dice Rolled:
-2⚔️ 2🛡️2 🦅"
-horizontal_alignment = 1
-
-[node name="MoraleFromUnitsPanel" type="PanelContainer" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats/Layout" unique_id=733523943]
-layout_mode = 2
-
-[node name="MoraleFromUnits" type="Label" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel" unique_id=2014494122]
-layout_mode = 2
-size_flags_vertical = 0
-text = "Morale From Units:
-2 🦅"
-horizontal_alignment = 1
-
-[node name="CardsPlayed" type="PanelContainer" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats/Layout" unique_id=1599285264]
-layout_mode = 2
-
-[node name="CardsPlayedImages" type="HBoxContainer" parent="MainLayout/CentralCombatView/AttackerCombatView/RoundStartStats/Layout/CardsPlayed" unique_id=957646646]
-layout_mode = 2
-
-[node name="FinalStats" type="PanelContainer" parent="MainLayout/CentralCombatView/AttackerCombatView" unique_id=467170977]
-layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 0
-
-[node name="Layout" type="VBoxContainer" parent="MainLayout/CentralCombatView/AttackerCombatView/FinalStats" unique_id=1957896867]
-layout_mode = 2
-
-[node name="FinalPools" type="PanelContainer" parent="MainLayout/CentralCombatView/AttackerCombatView/FinalStats/Layout" unique_id=1661482677]
-layout_mode = 2
-
-[node name="FinalPoolsLabel" type="Label" parent="MainLayout/CentralCombatView/AttackerCombatView/FinalStats/Layout/FinalPools" unique_id=1582518711]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Assess Damage Step Totals:
-2⚔️ 2🛡️2 🦅"
-horizontal_alignment = 1
-
-[node name="UnitList" type="PanelContainer" parent="MainLayout/CentralCombatView/AttackerCombatView/FinalStats/Layout" unique_id=1550818675]
-layout_mode = 2
-size_flags_vertical = 0
-
-[node name="Units" type="Label" parent="MainLayout/CentralCombatView/AttackerCombatView/FinalStats/Layout/UnitList" unique_id=964786617]
-layout_mode = 2
-text = "Units Unrouted:
- Scouts, Space Marines
-Units Routed:
- None"
-horizontal_alignment = 1
-
-[node name="ConsoleWindow" type="PanelContainer" parent="MainLayout" unique_id=1392469681]
-layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 2
-
-[node name="ConsoleLog" type="Label" parent="MainLayout/ConsoleWindow" unique_id=1291212328]
-layout_mode = 2
-size_flags_vertical = 1
-text = "ConsoleLog:"
 
 [node name="UserControls" type="HBoxContainer" parent="MainLayout" unique_id=158005874]
 layout_mode = 2
 
-[node name="PreviousRound" type="Button" parent="MainLayout/UserControls" unique_id=1329526875]
-layout_mode = 2
-
-[node name="NextRound" type="Button" parent="MainLayout/UserControls" unique_id=937996389]
+[node name="StartNewCombat" type="Button" parent="MainLayout/UserControls" unique_id=1329526875]
 layout_mode = 2

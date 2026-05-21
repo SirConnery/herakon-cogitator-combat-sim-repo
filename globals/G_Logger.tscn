@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://d17x32ugl67yv"]
+
+[ext_resource type="Script" uid="uid://bf6wwtfu12ayb" path="res://globals/g_logger.gd" id="1_k65b0"]
+
+[node name="G_Logger" type="Node" unique_id=280147800]
+script = ExtResource("1_k65b0")

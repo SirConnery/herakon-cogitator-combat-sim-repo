@@ -11,9 +11,13 @@ config_version=5
 [application]
 
 config/name="FS_Battle_Simulator"
-run/main_scene="uid://blegqx44cm1q1"
+run/main_scene="uid://yy3vdqul34p0"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+G_Logger="*uid://d17x32ugl67yv"
 
 [display]
 
