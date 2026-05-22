@@ -101,7 +101,18 @@ func engine_callback(event_type: String, data: Array) -> void:
 			
 			if current_panel:
 				current_panel.append_console_log(msg)
-
+		
+		"dice_rerolled_log":
+			# data = [target_role_string ("Attacker"/"Defender"), face_removed_string, face_added_string]
+			var msg := "🔄 [%s] Reroll: Lost 1 %s die -> Gained 1 %s die" % [
+				data[0], 
+				data[1], 
+				data[2]
+			]
+			print(msg)
+			
+			if current_panel:
+				current_panel.append_console_log(msg)
 		# =========================================================
 		# CARDS
 		# =========================================================

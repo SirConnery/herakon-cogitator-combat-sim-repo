@@ -2,40 +2,40 @@ extends PanelContainer
 class_name CombatRoundPanel
 
 #region vars
-@onready var att_combat_round_value: Label = $CombatRoundMargin/RoundLayout/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/Layout/RoundStartHeaderPanel/CombatRoundTextLayout/CombatRoundValue
-@onready var att_faction_name_value: Label = $CombatRoundMargin/RoundLayout/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/Layout/FactionName/Layout/FactionNameValue
-@onready var att_units_unrouted_value: VBoxContainer = $CombatRoundMargin/RoundLayout/AttackerCombatView/RoundStartStats/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue
-@onready var att_units_routed_value: VBoxContainer = $CombatRoundMargin/RoundLayout/AttackerCombatView/RoundStartStats/Layout/UnitsRouted/Layout/UnitsRoutedValue
-@onready var att_base_dice_rolls_value: Label = $CombatRoundMargin/RoundLayout/AttackerCombatView/RoundStartStats/Layout/DicePanel/Layout/BaseDiceRollsValue
-@onready var att_tokens_value: Label = $CombatRoundMargin/RoundLayout/AttackerCombatView/RoundStartStats/Layout/Tokens/Layout/TokensValue
-@onready var att_morale_from_units_value: Label = $CombatRoundMargin/RoundLayout/AttackerCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel/Layout/MoraleFromUnitsValue
-@onready var att_cards_played_images: HBoxContainer = $CombatRoundMargin/RoundLayout/AttackerCombatView/RoundStartStats/Layout/CardsPlayed/CardsPlayedImages
-@onready var att_assess_damage_step_units_unrouted_value: VBoxContainer = $CombatRoundMargin/RoundLayout/AttackerCombatView/AssessDamageStep/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue
-@onready var att_assess_damage_step_units_routed_value: VBoxContainer = $CombatRoundMargin/RoundLayout/AttackerCombatView/AssessDamageStep/Layout/UnitsRouted/Layout/UnitsRoutedValue
-@onready var att_assess_damage_step_base_dice_rolls_value: Label = $CombatRoundMargin/RoundLayout/AttackerCombatView/AssessDamageStep/Layout/DicePanel/Layout/BaseDiceRollsValue
-@onready var att_assess_damage_step_tokens_value: Label = $CombatRoundMargin/RoundLayout/AttackerCombatView/AssessDamageStep/Layout/Tokens/Layout/TokensValue
-@onready var att_assess_damage_step_morale_from_units_value: Label = $CombatRoundMargin/RoundLayout/AttackerCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel/Layout/MoraleFromUnitsValue
-@onready var att_assess_damage_step_cards_played_images: HBoxContainer = $CombatRoundMargin/RoundLayout/AttackerCombatView/AssessDamageStep/Layout/CardsPlayed/CardsPlayedImages
-@onready var att_damage_suffered_value: Label = $CombatRoundMargin/RoundLayout/AttackerCombatView/AssessDamageStep/Layout/DamageDealt/Layout/DamageSufferedValue
-@onready var att_console_log_value: Label = $CombatRoundMargin/RoundLayout/AttackerCombatView/AssessDamageStep/Layout/ConsoleLog/Layout/ScrollContainer/ConsoleLogValue
 
+@onready var console_log_value: Label = $CombatRoundMargin/RoundContentContainer/ConsoleLog/Layout/ScrollContainer/ConsoleLogValue
 
-@onready var def_combat_round_value: Label = $CombatRoundMargin/RoundLayout/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout/RoundStartHeaderPanel/CombatRoundTextLayout/CombatRoundValue
-@onready var def_faction_name_value: Label = $CombatRoundMargin/RoundLayout/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout/FactionName/Layout/FactionNameValue
-@onready var def_units_unrouted_value: VBoxContainer = $CombatRoundMargin/RoundLayout/DefenderCombatView/RoundStartStats/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue
-@onready var def_units_routed_value: VBoxContainer = $CombatRoundMargin/RoundLayout/DefenderCombatView/RoundStartStats/Layout/UnitsRouted/Layout/UnitsRoutedValue
-@onready var def_base_dice_rolls_value: Label = $CombatRoundMargin/RoundLayout/DefenderCombatView/RoundStartStats/Layout/DicePanel/Layout/BaseDiceRollsValue
-@onready var def_tokens_value: Label = $CombatRoundMargin/RoundLayout/DefenderCombatView/RoundStartStats/Layout/Tokens/Layout/TokensValue
-@onready var def_morale_from_units_value: Label = $CombatRoundMargin/RoundLayout/DefenderCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel/Layout/MoraleFromUnitsValue
-@onready var def_cards_played_images: HBoxContainer = $CombatRoundMargin/RoundLayout/DefenderCombatView/RoundStartStats/Layout/CardsPlayed/CardsPlayedImages
-@onready var def_assess_damage_step_units_unrouted_value: VBoxContainer = $CombatRoundMargin/RoundLayout/DefenderCombatView/AssessDamageStep/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue
-@onready var def_assess_damage_step_units_routed_value: VBoxContainer = $CombatRoundMargin/RoundLayout/DefenderCombatView/AssessDamageStep/Layout/UnitsRouted/Layout/UnitsRoutedValue
-@onready var def_assess_damage_step_base_dice_rolls_value: Label = $CombatRoundMargin/RoundLayout/DefenderCombatView/AssessDamageStep/Layout/DicePanel/Layout/BaseDiceRollsValue
-@onready var def_assess_damage_step_tokens_value: Label = $CombatRoundMargin/RoundLayout/DefenderCombatView/AssessDamageStep/Layout/Tokens/Layout/TokensValue
-@onready var def_assess_damage_step_morale_from_units_value: Label = $CombatRoundMargin/RoundLayout/DefenderCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel/Layout/MoraleFromUnitsValue
-@onready var def_assess_damage_step_cards_played_images: HBoxContainer = $CombatRoundMargin/RoundLayout/DefenderCombatView/AssessDamageStep/Layout/CardsPlayed/CardsPlayedImages
-@onready var def_damage_suffered_value: Label = $CombatRoundMargin/RoundLayout/DefenderCombatView/AssessDamageStep/Layout/DamageDealt/Layout/DamageSufferedValue
-@onready var def_console_log_value: Label = $CombatRoundMargin/RoundLayout/DefenderCombatView/AssessDamageStep/Layout/ConsoleLog/Layout/ScrollContainer/ConsoleLogValue
+@onready var att_combat_round_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/Layout/RoundStartHeaderPanel/CombatRoundTextLayout/CombatRoundValue
+@onready var att_faction_name_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/Layout/FactionName/Layout/FactionNameValue
+@onready var att_units_unrouted_value: VBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue
+@onready var att_units_routed_value: VBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/UnitsRouted/Layout/UnitsRoutedValue
+@onready var att_base_dice_rolls_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/DicePanel/Layout/BaseDiceRollsValue
+@onready var att_tokens_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/Tokens/Layout/TokensValue
+@onready var att_morale_from_units_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel/Layout/MoraleFromUnitsValue
+@onready var att_cards_played_images: HBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/CardsPlayed/CardsPlayedImages
+@onready var att_assess_damage_step_units_unrouted_value: VBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue
+@onready var att_assess_damage_step_units_routed_value: VBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/UnitsRouted/Layout/UnitsRoutedValue
+@onready var att_assess_damage_step_base_dice_rolls_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DicePanel/Layout/BaseDiceRollsValue
+@onready var att_assess_damage_step_tokens_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/Tokens/Layout/TokensValue
+@onready var att_assess_damage_step_morale_from_units_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel/Layout/MoraleFromUnitsValue
+@onready var att_assess_damage_step_cards_played_images: HBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/CardsPlayed/CardsPlayedImages
+@onready var att_damage_suffered_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DamageDealt/Layout/DamageSufferedValue
+
+@onready var def_combat_round_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout/RoundStartHeaderPanel/CombatRoundTextLayout/CombatRoundValue
+@onready var def_faction_name_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout/FactionName/Layout/FactionNameValue
+@onready var def_units_unrouted_value: VBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue
+@onready var def_units_routed_value: VBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsRouted/Layout/UnitsRoutedValue
+@onready var def_base_dice_rolls_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/DicePanel/Layout/BaseDiceRollsValue
+@onready var def_tokens_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/Tokens/Layout/TokensValue
+@onready var def_morale_from_units_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel/Layout/MoraleFromUnitsValue
+@onready var def_cards_played_images: HBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/CardsPlayed/CardsPlayedImages
+@onready var def_assess_damage_step_units_unrouted_value: VBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue
+@onready var def_assess_damage_step_units_routed_value: VBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsRouted/Layout/UnitsRoutedValue
+@onready var def_assess_damage_step_base_dice_rolls_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DicePanel/Layout/BaseDiceRollsValue
+@onready var def_assess_damage_step_tokens_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/Tokens/Layout/TokensValue
+@onready var def_assess_damage_step_morale_from_units_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel/Layout/MoraleFromUnitsValue
+@onready var def_assess_damage_step_cards_played_images: HBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/CardsPlayed/CardsPlayedImages
+@onready var def_damage_suffered_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DamageDealt/Layout/DamageSufferedValue
 
 #endregion
 
@@ -88,8 +88,7 @@ func set_tokens(role: String, offence_tokens: int, defence_tokens: int) -> void:
 			def_assess_damage_step_tokens_value.text = token_string
 
 func append_console_log(message: String) -> void:
-	att_console_log_value.text += message + "\n"
-	def_console_log_value.text += message + "\n"
+	console_log_value.text += message + "\n"
 
 #endregion
 

@@ -7,6 +7,7 @@ static func _roll_custom_die_index() -> int:
 	elif roll <= 4: return 1 # Defence
 	return 2                 # Morale
 
+
 #region Main Loop
 
 static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Callable = Callable()) -> bool:
