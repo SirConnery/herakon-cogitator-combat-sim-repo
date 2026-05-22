@@ -35,12 +35,11 @@ func run_single_logged_battle() -> void:
 	var att_count := randi_range(1, 5)
 	var def_count := randi_range(1, 5)
 	
-	# 2. Compile type-hinted arrays of compliant tiers matching stage and theater constraints
-	# Swapped to GameStageGenerator and passed the theater-awareness boolean flag!
+	# 2. Compile type-hinted arrays matching stage and theater constraints
 	var attacker_tiers := GameStageGenerator.generate_composition(current_stage, att_count, is_ground_combat)
 	var defender_tiers := GameStageGenerator.generate_composition(current_stage, def_count, is_ground_combat)
 	
-	# 3. Pull unit specifications out of registry records via generated profiles
+	# 3. Pull unit specifications out of registry records
 	var attacker_blueprint: Dictionary = _prepare_faction_blueprint(attacker_faction, raw_factions, attacker_tiers)
 	var defender_blueprint: Dictionary = _prepare_faction_blueprint(defender_faction, raw_factions, defender_tiers)
 	
@@ -49,92 +48,22 @@ func run_single_logged_battle() -> void:
 	
 	var match_state: Dictionary = _instantiate_match_state(attacker_blueprint, defender_blueprint)
 	
-	# --- YOUR LOGGING OBSERVER CALLBACK ---
-	var debugger_hook: Callable = func(event_type: String, data: Array):
-		match event_type:
-			"combat_start":
-				var atk_side: Dictionary = data[0]
-				var def_side: Dictionary = data[1]
-				var stage_str: String = GameStageGenerator.Stage.keys()[current_stage].capitalize()
-				print("\n==================  STARTED COMBAT ==================")
-				print("Game stage: %s" % stage_str)
-				print("Matchup Scale Classification: %s" % _get_weighted_matchup_string(attacker_power, defender_power))
-				print("Attacker Forces: %s" % _format_squad_composition_string(atk_side["squads"]))
-				print("Defender Forces: %s" % _format_squad_composition_string(def_side["squads"]))
-			"dice_pool_calculated":
-				print("Calculated Combat Values -> Attacker: %d, Defender: %d" % [data[0], data[1]])
-				print("\n=== PHASE 1.0: ROLL DICE STEP ===")
-			"dice_rolled":
-				print("  -> %s Rolls: %d ⚔️, %d 🛡️, %d 🦅, %d 🦅 from units)" % [data[0], data[1], data[2], data[3], data[4]])
-			"cards_drawn_to_hand":
-				_print_cards_drawn(data[0], data[1])
-			"round_start":
-				print("")
-				print("\n🔄--- COMBAT ROUND %d ---" % (data[0] + 1))
-			"unit_status_logged":
-				print("    📊 %s units unrouted: %s" % [data[0], data[1]])
-				print("    📊 %s units routed: %s" % [data[0], data[2]])
-			"card_icons_calculated":
-				print("    🎴 %s Card Icons on play area -> Offence: %d, Defence: %d, Morale: %d" % [data[0], data[1], data[2], data[3]])
-			"ability_block_started":
-				print("")
-				var role: String = data[0]
-				var block_label: String = data[1] # "General" or "Unit"
-				print(" [%s] Processing %s Abilities..." % [role, block_label])
-			"ability_triggered":
-				var card_id: int = data[0]
-				var card_name: String = get_card_metadata(card_id, "card_name")
-				print("  [*] %s. %s" % [card_name, data[1]])
-			"pools_updated":
-				print("")
-				print("  Current Action Frame -> %s Pool: %d ⚔️, %d 🛡️" % [data[0], data[1], data[2]])
-			"damage_calculated":
-				print("")
-				print("  -----[ASSESS DAMAGE STEP]-----")
-				print("Net Impact: Defender suffers %d 💥 | Attacker suffers %d 💥" % [data[0], data[1]])
-			"unit_routed":
-				print("    -> 🏳️ %s '%s' took %d damage and was forced to ROUT!" % [data[0], data[1], data[2]])
-			"unit_rallied":
-				var role: String = data[0]
-				var squad_name: String = data[1]
-				var health: int = data[2]
-				var card_name: String = get_card_metadata(data[3], "card_name")
-				print("    -> 🤝 %s successfully RALLIED '%s' (Health: %d) using %s!" % [role, squad_name, health, card_name])
-			"unit_ability_not_resolved":
-				var role: String = data[0]
-				var card_id: int = data[1]
-				var card_name: String = get_card_metadata(card_id, "card_name")
-				var req_unit: String = get_card_metadata(card_id, "required_unit_types")
-				print("    -> 🚫 %s Unit Ability SKIPPED: '%s' requires an unrouted '%s' unit." % [role, card_name, req_unit])
-			"dice_rerolled_log": # Matches your new random dice-rolling log key
-				var role_name: String = data[0]
-				var old_face: String = data[1]
-				var new_face: String = data[2]
-				print("   -> 🎲 %s rerolled a %s icon into a %s icon!" % [role_name, old_face, new_face])
-			"damage_absorbed":
-				print("    -> 🛡️ %s '%s' safely absorbed %d damage while routed." % [data[0], data[1], data[2]])
-			"unit_destroyed":
-				var cond = "ROUTED" if data[3] else "HEALTHY"
-				print("    -> 💀 %s '%s' (%s) took %d damage and was completely DESTROYED!" % [data[0], data[1], cond, data[2]])
-			"early_termination":
-				print("\n[ALERT] Sudden Death! An entire side has been eliminated from the theater.")
-			"victory_by_wipeout":
-				print("\n  -----[RESOLUTION PHASE]----- ") 
-				print("Tactical deployment complete. Winner: %s by clean wipeout." % data[0])
-			"victory_mutual_annihilation":
-				print("\n  -----[RESOLUTION PHASE]----- ") 
-				print("💥 MUTUAL ANNIHILATION DETECTED! Both armies completely eradicated each other in the crossfire.")
-			"tiebreaker_morale":
-				print("\n  -----[RESOLUTION PHASE]----- ")
-				print("Evaluating final Morale Pools -> Attacker: %d, Defender: %d" % [data[0], data[1]])
-			"bonus_dice_rolled":
-				print("    ↳ 🎲 %s Dice roll: +%d ⚔️ | +%d 🛡️ | +%d 🦅 " % [data[0], data[1], data[2], data[3]])
-			
-	# Run the combat crucible sandbox using your custom logging strings
-	var attacker_won: bool = SimCombatEngine.run_full_match(match_state, flat_card_db, debugger_hook)
+	# Package dynamic helper metadata into a context block for G_Logger to consume asynchronously
+	var logging_context := {
+		"game_stage_string": GameStageGenerator.Stage.keys()[current_stage].capitalize(),
+		"matchup_scale": _get_weighted_matchup_string(attacker_power, defender_power),
+		"attacker_composition": _format_squad_composition_string(match_state["attacker"]["squads"]),
+		"defender_composition": _format_squad_composition_string(match_state["defender"]["squads"]),
+		"controller_ref": self
+	}
 	
-	print("\n[SANDBOX FINISHED] Combat evaluation engine sequence complete. Winner evaluated: %s" % ("ATTACKER" if attacker_won else "DEFENDER"))
-
+	# Initialize our logging channel with references to the active engine calculations
+	G_Logger.initialize_battle_logger(logging_context)
+	
+	# Run the high-speed crucible engine loop using the centralized direct singleton router
+	var attacker_won: bool = SimCombatEngine.run_full_match(match_state, flat_card_db, G_Logger.engine_callback)
+	
+	G_Logger.finalize_battle_logger(attacker_won)
 
 # --- Progression Rule Setup Utilities ---
 

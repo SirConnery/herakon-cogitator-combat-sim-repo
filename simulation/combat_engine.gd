@@ -789,6 +789,7 @@ static func _execute_destroy_for_destroy(fx: Array, _pools: Dictionary, side_dat
 	if on_event.is_valid():
 		on_event.call("ability_triggered", [card_id, "Executing DESTROY_FOR_DESTROY sacrifice trade!"])
 
+	# 1. Self Sacrifice Phase
 	var self_sacrificed := 0
 	for squad in side_data["squads"]:
 		if int(squad.get("unit_type", -1)) == required_unit_type:
@@ -804,13 +805,18 @@ static func _execute_destroy_for_destroy(fx: Array, _pools: Dictionary, side_dat
 			if self_sacrificed >= count_to_destroy:
 				break
 
+	# If the player could not pay their own sacrifice requirement, the trade aborts
 	if self_sacrificed == 0:
 		return
 
+	# 2. Hardened Enemy Destruction Phase
 	var opponent_sacrificed := 0
 	while opponent_sacrificed < count_to_destroy:
+		# Safety check: if opponent has absolutely no living units left, break out immediately
+		if _count_living_units(opponent_data) == 0:
+			break
+			
 		var victim_target := _find_lowest_tier_unit_to_destroy(opponent_data["squads"])
-		
 		if victim_target.is_empty():
 			break
 			
@@ -826,6 +832,7 @@ static func _execute_destroy_for_destroy(fx: Array, _pools: Dictionary, side_dat
 				vic_was_routed
 			])
 			
+		# Zero health out first so _find_lowest_tier_unit_to_destroy filters it on the next iteration pass
 		vic_squad["alive_figures"][vic_idx] = 0
 		vic_squad["figures_routed"][vic_idx] = true
 		opponent_sacrificed += 1

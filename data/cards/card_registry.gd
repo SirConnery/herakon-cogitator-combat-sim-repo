@@ -3,16 +3,42 @@ extends RefCounted
 
 enum CardID {
 	# --- SPACE MARINES (SM) ---
-	SM_COMBAT_FAITH_IN_EMPEROR        = 1005,
-	SM_AMBUSH                         = 1006, # NEW CARD ID
+	SM_AMBUSH							= 1001,
+	SM_COMBAT_FAITH_IN_EMPEROR			= 1005,
 
 	# --- ORKS (ORKS) ---
-	ORKS_GRETCHIN                     = 2001,
+	ORKS_GRETCHIN						= 2001,
 }
 
 static func get_database() -> Dictionary:
 	var db: Dictionary = {}
 	var card: CardData
+	
+	# ==========================================================================
+	# --- CARD 1001: Ambush ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.SM_AMBUSH
+	card.card_name = "Ambush"
+	card.offence_icons = 1
+	card.required_unit_types = CardData.UnitType.SCOUTS # Assumes Scouts for Space Marine ambush actions
+	
+	# General ability: Gain 2 offence tokens
+	var sm_ambush_gen := CardEffect.new()
+	sm_ambush_gen.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
+	sm_ambush_gen.target_type = CardData.TargetType.SELF
+	sm_ambush_gen.value = 2
+	sm_ambush_gen.pool_type = CardData.DicePoolType.OFFENSE
+	card.general_ability.append(sm_ambush_gen)
+	
+	# Unit ability: When an enemy unit is routed it is destroyed unless opponent spends 1 Morale dice
+	var sm_ambush_unit := CardEffect.new()
+	sm_ambush_unit.effect_type = CardData.EffectType.DESTROY_ON_ROUT_OR_SPEND
+	sm_ambush_unit.target_type = CardData.TargetType.OPPONENT
+	sm_ambush_unit.value = 1 # Number of Morale dice penalty cost to tax the enemy
+	card.unit_ability.append(sm_ambush_unit)
+	
+	db[card.card_id] = card
 	
 	# ==========================================================================
 	# --- CARD 1005: Faith In the Emperor ---
@@ -51,32 +77,7 @@ static func get_database() -> Dictionary:
 	
 	db[card.card_id] = card
 	
-	# ==========================================================================
-	# --- CARD 1006: Ambush ---
-	# ==========================================================================
-	card = CardData.new()
-	card.card_id = CardID.SM_AMBUSH
-	card.card_name = "Ambush"
-	card.offence_icons = 1
-	card.required_unit_types = CardData.UnitType.SCOUTS # Assumes Scouts for Space Marine ambush actions
-	
-	# General ability: Gain 2 offence tokens
-	var sm_ambush_gen := CardEffect.new()
-	sm_ambush_gen.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
-	sm_ambush_gen.target_type = CardData.TargetType.SELF
-	sm_ambush_gen.value = 2
-	sm_ambush_gen.pool_type = CardData.DicePoolType.OFFENSE
-	card.general_ability.append(sm_ambush_gen)
-	
-	# Unit ability: When an enemy unit is routed it is destroyed unless opponent spends 1 Morale dice
-	var sm_ambush_unit := CardEffect.new()
-	sm_ambush_unit.effect_type = CardData.EffectType.DESTROY_ON_ROUT_OR_SPEND
-	sm_ambush_unit.target_type = CardData.TargetType.OPPONENT
-	sm_ambush_unit.value = 1 # Number of Morale dice penalty cost to tax the enemy
-	card.unit_ability.append(sm_ambush_unit)
-	
-	db[card.card_id] = card
-	
+
 	# ==========================================================================
 	# --- CARD 2001: Gretchin ---
 	# ==========================================================================
