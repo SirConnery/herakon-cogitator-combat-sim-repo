@@ -74,18 +74,33 @@ func engine_callback(event_type: String, data: Array) -> void:
 		# =========================================================
 		# DICE
 		# =========================================================
-		"dice_pool_calculated":
-			print("Calculated Dice Pools -> ATK: %d | DEF: %d" % [data[0], data[1]])
-			print("\n=== PHASE 1: DICE ROLL ===")
-
-
-		"dice_rolled":
-			print("🎲 -> %s rolls: %d ⚔️ | %d 🛡️ | %d 🎖️"
-				% [data[0], data[1], data[2], data[3]])
-
+		"roll_dice_phase":
+			print("\n=== PHASE 1: ROLL DICE PHASE ===")
+			
+		
+		"dice_pool_status_logged":
+			# data = [role_string, offence, defence, morale, phase_context]
+			print("🎲 %s dice updated (%s) -> %d ⚔️ | %d 🛡️ | %d 🎖️" % [data[0], data[4], data[1], data[2], data[3]])
+			
 			if current_panel:
-				current_panel.set_dice_pools(data[0], data[1], data[2], data[3])
-
+				var is_attacker: bool = (data[0] == "Attacker")
+				var phase_context: String = data[4]
+				current_panel.update_dice_displays(is_attacker, data[1], data[2], data[3], phase_context)
+		
+		"assess_dmg_step_dice_amounts":
+			print("🎲 Modified assessment pools -> %s: %d ⚔️ | %d 🛡️ | %d 🎖️" % [data[0], data[1], data[2], data[3]])
+			
+			if current_panel:
+				var is_attacker: bool = (data[0] == "Attacker")
+				# Updates ONLY the damage assessment columns with the final modified pools
+				current_panel.update_dice_displays(is_attacker, data[1], data[2], data[3], "damage_step")
+		
+		"bonus_dice_rolled":
+			var msg := "🎲 -> %s bonus roll results: +%d ⚔️ | +%d 🛡️ | +%d 🎖️" % [data[0], data[1], data[2], data[3]]
+			print(msg)
+			
+			if current_panel:
+				current_panel.append_console_log(msg)
 
 		# =========================================================
 		# CARDS
@@ -127,13 +142,17 @@ func engine_callback(event_type: String, data: Array) -> void:
 				# Execute universal unified visual router pass
 				current_panel.update_unit_displays(is_attacker, data[1], data[2], phase_context)
 		
+		
 		"unit_morale_calculated":
 			# data = [role_string ("Attacker"/"Defender"), morale_value (int)]
 			print("🧠     %s Unit 🎖️ %d" % [data[0], data[1]])
 			
 			if current_panel != null:
 				current_panel.set_unit_morale(data[0], data[1])
-
+		
+		"assess_damage_step_start":
+			print("-- Assess Damage Step started. -- ")
+		
 		# =========================================================
 		# CARD EFFECTS
 		# =========================================================
@@ -220,11 +239,6 @@ func engine_callback(event_type: String, data: Array) -> void:
 		# =========================================================
 		# ROUND END STATUS
 		# =========================================================
-		"round_end_unit_status_logged":
-			print("📊 END %s: unrouted=%s routed=%s" % [data[0], data[1], data[2]])
-
-			if current_panel:
-				current_panel.set_assess_damage_unit_statuses(data[0], data[1], data[2])
 
 
 		# =========================================================

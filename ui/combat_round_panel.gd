@@ -49,21 +49,19 @@ func set_faction_titles(attacker_name: String, defender_name: String) -> void:
 	att_faction_name_value.text = "ATTACKER: \n %s" % attacker_name
 	def_faction_name_value.text = "DEFENDER: \n %s" % defender_name
 
-func set_dice_pools(role: String, offence: int, defence: int, morale_dice: int) -> void:
-	if role == "Attacker":
-		att_base_dice_rolls_value.text = "%d ⚔️ \n %d 🛡️ \n %d 🎖️" % [offence, defence, morale_dice]
-	else:
-		def_base_dice_rolls_value.text = "%d ⚔️ \n %d 🛡️ \n %d 🎖️" % [offence, defence, morale_dice]
-
-func set_assess_damage_dice_pools(role: String, offence: int, defence: int, morale_dice: int) -> void:
+func update_dice_displays(is_attacker: bool, offence: int, defence: int, morale_dice: int, target_phase: String = "all") -> void:
 	var dice_string := "%d ⚔️ \n %d 🛡️ \n %d 🎖️" % [offence, defence, morale_dice]
 	
-	if role == "Attacker":
-		if "att_assess_damage_step_base_dice_rolls_value" in self and att_assess_damage_step_base_dice_rolls_value != null:
-			att_assess_damage_step_base_dice_rolls_value.text = dice_string
-	else:
-		if "def_assess_damage_step_base_dice_rolls_value" in self and def_assess_damage_step_base_dice_rolls_value != null:
-			def_assess_damage_step_base_dice_rolls_value.text = dice_string
+	# 1. Update Starting Layout
+	if target_phase == "all" or target_phase == "round_start":
+		var target_label: Label = att_base_dice_rolls_value if is_attacker else def_base_dice_rolls_value
+		target_label.text = dice_string
+
+	# 2. Update Damage Assessment Snapshot Layout
+	if target_phase == "all" or target_phase == "damage_step":
+		var target_assess_label: Label = att_assess_damage_step_base_dice_rolls_value if is_attacker else def_assess_damage_step_base_dice_rolls_value
+		if target_assess_label != null:
+			target_assess_label.text = dice_string
 
 func set_unit_morale(role: String, morale_value: int) -> void:
 	if role == "Attacker":
@@ -116,32 +114,6 @@ func update_unit_displays(is_attacker: bool, unrouted_csv: String, routed_csv: S
 #endregion
 
 
-#region Assess Damage Snapshot
-
-func set_assess_damage_unit_statuses(
-	role: String,
-	unrouted_str: String,
-	routed_str: String
-) -> void:
-
-	var is_attacker := (role == "Attacker")
-
-	var unrouted_vbox: VBoxContainer = (
-		att_assess_damage_step_units_unrouted_value
-		if is_attacker
-		else def_assess_damage_step_units_unrouted_value
-	)
-
-	var routed_vbox: VBoxContainer = (
-		att_assess_damage_step_units_routed_value
-		if is_attacker
-		else def_assess_damage_step_units_routed_value
-	)
-
-	_rebuild_vbox_labels(unrouted_vbox, unrouted_str)
-	_rebuild_vbox_labels(routed_vbox, routed_str)
-
-#endregion
 
 
 #region Internal Helpers

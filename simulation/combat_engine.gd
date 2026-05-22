@@ -10,24 +10,61 @@ static func _roll_custom_die_index() -> int:
 #region Main Loop
 
 static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Callable = Callable()) -> bool:
+	# --- 1. CORE ROLES & DATA STATES ---
 	var atk: Dictionary = state["attacker"]
 	var def: Dictionary = state["defender"]
 
+	# --- 2. DICE INITIALIZATION & COUNTERS ---
+	var atk_dice_offence := 0
+	var atk_dice_defence := 0
+	var atk_dice_morale := 0
+
+	var def_dice_offence := 0
+	var def_dice_defence := 0
+	var def_dice_morale := 0
+
+	var atk_dice_to_roll := 0
+	var def_dice_to_roll := 0
+
+	var atk_draw_count := 0
+	var def_draw_count := 0
+
+	# --- 3. RECURRING ROUND-LOOP SCRATCHPAD VARIABLES ---
+	var atk_idx := 0
+	var def_idx := 0
+	var atk_card_id := 0
+	var def_card_id := 0
+
+	var card_icons_atk_offence := 0
+	var card_icons_atk_defence := 0
+	var card_icons_atk_morale := 0
+
+	var card_icons_def_offence := 0
+	var card_icons_def_defence := 0
+	var card_icons_def_morale := 0
+
+	var local_pools := {}
+	var context := {}
+
+	var def_routing_lethal := false
+	var atk_routing_lethal := false
+
+	# --- 4. TIEBREAKER & RESOLUTION VARIABLES ---
+	var atk_survivors := 0
+	var def_survivors := 0
+	var final_atk_morale := 0
+	var final_def_morale := 0
+	var atk_morale_from_units := 0
+	var def_morale_from_units := 0
+
+
+	# ==============================================================================
+	# ENGINE SIMULATION START
+	# ==============================================================================
 	if on_event.is_valid():
 		on_event.call("combat_start", [atk, def])
 
-	# --- PHASE 1: INITIAL COMBAT ROLL ---
-	var atk_dice_offence: int = 0
-	var atk_dice_defence: int = 0
-	var atk_dice_morale: int = 0
-
-	var def_dice_offence: int = 0
-	var def_dice_defence: int = 0
-	var def_dice_morale: int = 0
-
-	var atk_dice_to_roll: int = 0
-	var def_dice_to_roll: int = 0
-
+	# --- PHASE 1: ROLL DICE PHASE ---
 	for squad in atk["squads"]:
 		atk_dice_to_roll += squad["alive_figures"].size() * squad["combat_value"]
 
@@ -36,9 +73,6 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 
 	atk_dice_to_roll = min(8, atk_dice_to_roll)
 	def_dice_to_roll = min(8, def_dice_to_roll)
-
-	if on_event.is_valid():
-		on_event.call("dice_pool_calculated", [atk_dice_to_roll, def_dice_to_roll])
 	
 	# Roll Attacker Dice
 	for i in range(atk_dice_to_roll):
@@ -53,38 +87,36 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 			0: def_dice_offence += 1
 			1: def_dice_defence += 1
 			2: def_dice_morale += 1
+			
 
-	var atk_card_morale: int = 0
-	var def_card_morale: int = 0
-
-	var atk_offence_pool: int = atk_dice_offence
-	var atk_defence_pool: int = atk_dice_defence
-
-	var def_offence_pool: int = def_dice_offence
-	var def_defence_pool: int = def_dice_defence
-
+	# Store initial raw dice results into persistent state dictionaries
+	atk["dice_offence"] = atk_dice_offence
+	atk["dice_defence"] = atk_dice_defence
 	atk["dice_morale"] = atk_dice_morale
+
+	def["dice_offence"] = def_dice_offence
+	def["dice_defence"] = def_dice_defence
 	def["dice_morale"] = def_dice_morale
 
 	if on_event.is_valid():
-		var atk_morale_from_units: int = _calculate_current_morale_from_units(atk)
-		var def_morale_from_units: int = _calculate_current_morale_from_units(def)
-
-		on_event.call("dice_rolled", ["Attacker", atk_offence_pool, atk_defence_pool, atk_dice_morale])
-		on_event.call("dice_rolled", ["Defender", def_offence_pool, def_defence_pool, def_dice_morale])
+		on_event.call("roll_dice_phase", [])
+		log_current_dice_pools(on_event, atk["dice_offence"], atk["dice_defence"], atk["dice_morale"], def["dice_offence"], def["dice_defence"], def["dice_morale"], "round_start")
+		
+		atk_morale_from_units = _calculate_current_morale_from_units(atk)
+		def_morale_from_units = _calculate_current_morale_from_units(def)
 		on_event.call("unit_morale_calculated", ["Attacker", atk_morale_from_units])
 		on_event.call("unit_morale_calculated", ["Defender", def_morale_from_units])
 
-	# --- CARD DRAW ---
+	# --- DRAW COMBAT CARDS STEP ---
 	atk["cards_in_hand"] = []
 	def["cards_in_hand"] = []
 
-	var atk_draw_count: int = min(5, atk["combat_deck"].size())
+	atk_draw_count = min(5, atk["combat_deck"].size())
 	for i in range(atk_draw_count):
 		var draw_idx: int = randi() % atk["combat_deck"].size()
 		atk["cards_in_hand"].append(atk["combat_deck"].pop_at(draw_idx))
 
-	var def_draw_count: int = min(5, def["combat_deck"].size())
+	def_draw_count = min(5, def["combat_deck"].size())
 	for i in range(def_draw_count):
 		var draw_idx: int = randi() % def["combat_deck"].size()
 		def["cards_in_hand"].append(def["combat_deck"].pop_at(draw_idx))
@@ -92,7 +124,7 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 	if on_event.is_valid():
 		on_event.call("cards_drawn_to_hand", [atk["cards_in_hand"], def["cards_in_hand"]])
 
-	# --- PHASE 2 LOOP ---
+	# --- PHASE 2: THREE-ROUND COMBAT ENGINE CRUCIBLE LOOP ---
 	for round_index in range(3):
 
 		if _count_living_units(atk) == 0 or _count_living_units(def) == 0:
@@ -102,71 +134,50 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 
 		if on_event.is_valid():
 			on_event.call("round_start", [round_index])
-			var atk_morale_from_units: int = _calculate_current_morale_from_units(atk)
-			var def_morale_from_units: int = _calculate_current_morale_from_units(def)
+			atk_morale_from_units = _calculate_current_morale_from_units(atk)
+			def_morale_from_units = _calculate_current_morale_from_units(def)
 			
 			log_current_army_statuses(state, on_event)
-			on_event.call("dice_rolled", ["Attacker", atk_offence_pool, atk_defence_pool, atk_dice_morale])
-			on_event.call("dice_rolled", ["Defender", def_offence_pool, def_defence_pool, def_dice_morale])
+			log_current_dice_pools(on_event, atk["dice_offence"], atk["dice_defence"], atk["dice_morale"], def["dice_offence"], def["dice_defence"], def["dice_morale"], "round_start")
 			on_event.call("unit_morale_calculated", ["Attacker", atk_morale_from_units])
 			on_event.call("unit_morale_calculated", ["Defender", def_morale_from_units])
 
-		# ----------------------------
-		# PLAY CARDS
-		# ----------------------------
-		var atk_idx: int = randi() % atk["cards_in_hand"].size()
-		var def_idx: int = randi() % def["cards_in_hand"].size()
+		# --- PLAY COMBAT CARDS ---
+		atk_idx = randi() % atk["cards_in_hand"].size()
+		def_idx = randi() % def["cards_in_hand"].size()
 
-		var atk_card_id: int = atk["cards_in_hand"].pop_at(atk_idx)
-		var def_card_id: int = def["cards_in_hand"].pop_at(def_idx)
+		atk_card_id = atk["cards_in_hand"].pop_at(atk_idx)
+		def_card_id = def["cards_in_hand"].pop_at(def_idx)
 
 		atk["play_area"][round_index] = atk_card_id
 		def["play_area"][round_index] = def_card_id
 
-		# ----------------------------
-		# TIMELINE ICONS
-		# ----------------------------
-		var timeline_atk_offence: int = 0
-		var timeline_atk_defence: int = 0
-		var timeline_atk_morale: int = 0
-
-		var timeline_def_offence: int = 0
-		var timeline_def_defence: int = 0
-		var timeline_def_morale: int = 0
+		# --- CLEAR AND AGGREGATE CARD ICONS ---
+		card_icons_atk_offence = 0
+		card_icons_atk_defence = 0
+		card_icons_atk_morale = 0
+		card_icons_def_offence = 0
+		card_icons_def_defence = 0
+		card_icons_def_morale = 0
 
 		for i in range(round_index + 1):
 			var a = card_db[atk["play_area"][i]]
 			var d = card_db[def["play_area"][i]]
 
-			timeline_atk_offence += a[0]
-			timeline_atk_defence += a[1]
-			timeline_atk_morale += a[2]
+			card_icons_atk_offence += a[0]
+			card_icons_atk_defence += a[1]
+			card_icons_atk_morale += a[2]
 
-			timeline_def_offence += d[0]
-			timeline_def_defence += d[1]
-			timeline_def_morale += d[2]
+			card_icons_def_offence += d[0]
+			card_icons_def_defence += d[1]
+			card_icons_def_morale += d[2]
 
 		if on_event.is_valid():
-			on_event.call("card_icons_calculated", ["Attacker", timeline_atk_offence, timeline_atk_defence, timeline_atk_morale])
-			on_event.call("card_icons_calculated", ["Defender", timeline_def_offence, timeline_def_defence, timeline_def_morale])
-		
-		# --- PHASE 4: DAMAGE ASSESSMENT STEP ENTRY ---
-		
-		if on_event.is_valid():
-			log_current_army_statuses(state, on_event, "damage_step")
+			on_event.call("card_icons_calculated", ["Attacker", card_icons_atk_offence, card_icons_atk_defence, card_icons_atk_morale])
+			on_event.call("card_icons_calculated", ["Defender", card_icons_def_offence, card_icons_def_defence, card_icons_def_morale])
 			
-		# ----------------------------
-		# LOCAL MODIFIABLE POOLS
-		# ----------------------------
-		var local_pools := {
-			"atk_offence": atk_offence_pool,
-			"atk_defence": atk_defence_pool,
-			"atk_card_morale": atk_card_morale,
-
-			"def_offence": def_offence_pool,
-			"def_defence": def_defence_pool,
-			"def_card_morale": def_card_morale,
-
+		# --- INSTANTIATE LOCAL OPERATION SCRATCHPADS ---
+		local_pools = {
 			"atk_token_offence": 0,
 			"atk_token_defence": 0,
 			"def_token_offence": 0,
@@ -178,26 +189,21 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 
 		_resolve_instant_ability(atk_card_id, card_db, local_pools, true, state, on_event)
 		_resolve_instant_ability(def_card_id, card_db, local_pools, false, state, on_event)
-
+		
+		if on_event.is_valid():
+			on_event.call("assess_damage_step_start", [])
+			log_current_army_statuses(state, on_event, "damage_step")
+			log_current_dice_pools(on_event, atk["dice_offence"], atk["dice_defence"], atk["dice_morale"], def["dice_offence"], def["dice_defence"], def["dice_morale"], "damage_step")
+		
 		atk.erase("parent_state")
 		def.erase("parent_state")
 
-		atk_offence_pool = local_pools["atk_offence"]
-		atk_defence_pool = local_pools["atk_defence"]
-		atk_card_morale = local_pools["atk_card_morale"]
-
-		def_offence_pool = local_pools["def_offence"]
-		def_defence_pool = local_pools["def_defence"]
-		def_card_morale = local_pools["def_card_morale"]
-
-		# =========================================================
-		# PHASE A: BEFORE DAMAGE (UI SNAPSHOT)
-		# =========================================================
-		var context := {
-			"atk_offence": atk_offence_pool + timeline_atk_offence + local_pools["atk_token_offence"],
-			"atk_defence": atk_defence_pool + timeline_atk_defence + local_pools["atk_token_defence"],
-			"def_offence": def_offence_pool + timeline_def_offence + local_pools["def_token_offence"],
-			"def_defence": def_defence_pool + timeline_def_defence + local_pools["def_token_defence"]
+		# --- BUILD GLOBAL STRUCTURAL TOTAL CONTEXT ---
+		context = {
+			"atk_offence": atk["dice_offence"] + card_icons_atk_offence + local_pools["atk_token_offence"],
+			"atk_defence": atk["dice_defence"] + card_icons_atk_defence + local_pools["atk_token_defence"],
+			"def_offence": def["dice_offence"] + card_icons_def_offence + local_pools["def_token_offence"],
+			"def_defence": def["dice_defence"] + card_icons_def_defence + local_pools["def_token_defence"]
 		}
 	
 		_execute_timing_hook(CardData.TimingWindow.BEFORE_DAMAGE, state, context, round_index, card_db, on_event)
@@ -206,32 +212,28 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 			on_event.call("damage_pre_calculated", ["Attacker", context["atk_offence"], context["atk_defence"]])
 			on_event.call("damage_pre_calculated", ["Defender", context["def_offence"], context["def_defence"]])
 		
-		# =========================================================
-		# PHASE B: DAMAGE RESOLVE
-		# =========================================================
+		# --- NET CONFLICT MITIGATION ---
 		context["net_damage_to_defender"] = max(0, context["atk_offence"] - context["def_defence"])
 		context["net_damage_to_attacker"] = max(0, context["def_offence"] - context["atk_defence"])
 
 		_execute_timing_hook(CardData.TimingWindow.DURING_DAMAGE, state, context, round_index, card_db, on_event)
+		
+		if on_event.is_valid():
+			on_event.call("damage_resolved", ["Attacker", context["net_damage_to_attacker"]])
+			on_event.call("damage_resolved", ["Defender", context["net_damage_to_defender"]])
 
-		on_event.call("damage_resolved", ["Attacker", context["net_damage_to_attacker"]])
-
-		on_event.call("damage_resolved", ["Defender", context["net_damage_to_defender"]])
-
-		# =========================================================
-		# PHASE C: APPLY DAMAGE
-		# =========================================================
-		var def_routing_lethal := _is_routing_lethal(atk_card_id, card_db, def)
-		var atk_routing_lethal := _is_routing_lethal(def_card_id, card_db, atk)
+		# --- RESOLVE DAMAGE LIFECYCLES ---
+		def_routing_lethal = _is_routing_lethal(atk_card_id, card_db, def)
+		atk_routing_lethal = _is_routing_lethal(def_card_id, card_db, atk)
 
 		apply_damage(def, context["net_damage_to_defender"], round_index, def_routing_lethal, on_event)
 		apply_damage(atk, context["net_damage_to_attacker"], round_index, atk_routing_lethal, on_event)
 
 		_execute_timing_hook(CardData.TimingWindow.AFTER_DAMAGE, state, context, round_index, card_db, on_event)
 
-	# --- FINAL RESOLUTION ---
-	var atk_survivors: int = _count_living_units(atk)
-	var def_survivors: int = _count_living_units(def)
+	# --- FINAL WIN CONDITION RESOLUTION EVALUATION ---
+	atk_survivors = _count_living_units(atk)
+	def_survivors = _count_living_units(def)
 
 	if atk_survivors == 0 and def_survivors == 0:
 		if on_event.is_valid(): on_event.call("victory_mutual_annihilation", [])
@@ -245,8 +247,8 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		if on_event.is_valid(): on_event.call("victory_by_wipeout", ["Defender"])
 		return false
 
-	var final_atk_morale: int = _calculate_current_morale_from_units(atk)
-	var final_def_morale: int = _calculate_current_morale_from_units(def)
+	final_atk_morale = _calculate_current_morale_from_units(atk)
+	final_def_morale = _calculate_current_morale_from_units(def)
 
 	if on_event.is_valid():
 		on_event.call("tiebreaker_morale", [final_atk_morale, final_def_morale])
@@ -354,6 +356,38 @@ static func _find_perfect_absorption_target(squads: Array, total_damage: int, re
 
 #endregion
 
+#region Logging functions
+
+static func log_current_army_statuses(state: Dictionary, on_event: Callable, phase_context: String = "all") -> void:
+	if not on_event.is_valid():
+		return
+		
+	var sides = [state["attacker"], state["defender"]]
+	for side in sides:
+		var side_name: String = side["name"]
+		var unrouted_list: Array[String] = []
+		var routed_list: Array[String] = []
+		
+		for squad in side["squads"]:
+			for i in range(squad["alive_figures"].size()):
+				if squad["alive_figures"][i] > 0:
+					if squad["figures_routed"][i]:
+						routed_list.append(squad["name"])
+					else:
+						unrouted_list.append(squad["name"])
+						
+		var unrouted_str = ", ".join(unrouted_list) if not unrouted_list.is_empty() else "None"
+		var routed_str = ", ".join(routed_list) if not routed_list.is_empty() else "None"
+		
+		# Packed phase_context safely out to the logger stream channels
+		on_event.call("unit_status_logged", [side_name, unrouted_str, routed_str, phase_context])
+
+static func log_current_dice_pools(on_event: Callable, atk_offence: int, atk_defence: int, atk_morale: int, def_offence: int, def_defence: int, def_morale: int, phase_context: String = "all") -> void:
+	on_event.call("dice_pool_status_logged", ["Attacker", atk_offence, atk_defence, atk_morale, phase_context])
+	on_event.call("dice_pool_status_logged", ["Defender", def_offence, def_defence, def_morale, phase_context])
+
+#endregion
+
 #region Helper Functions
 
 static func _find_highest_health_living_unit(squads: Array, restrict_to_unrouted: bool) -> Dictionary:
@@ -429,34 +463,33 @@ static func _calculate_current_morale_from_units(player_state: Dictionary) -> in
 				total += squad["morale_value"]
 	return total
 
-static func log_current_army_statuses(state: Dictionary, on_event: Callable, phase_context: String = "all") -> void:
-	if not on_event.is_valid():
-		return
-		
-	var sides = [state["attacker"], state["defender"]]
-	for side in sides:
-		var side_name: String = side["name"]
-		var unrouted_list: Array[String] = []
-		var routed_list: Array[String] = []
-		
-		for squad in side["squads"]:
-			for i in range(squad["alive_figures"].size()):
-				if squad["alive_figures"][i] > 0:
-					if squad["figures_routed"][i]:
-						routed_list.append(squad["name"])
-					else:
-						unrouted_list.append(squad["name"])
-						
-		var unrouted_str = ", ".join(unrouted_list) if not unrouted_list.is_empty() else "None"
-		var routed_str = ", ".join(routed_list) if not routed_list.is_empty() else "None"
-		
-		# Packed phase_context safely out to the logger stream channels
-		on_event.call("unit_status_logged", [side_name, unrouted_str, routed_str, phase_context])
-
 static func _is_mutual_annihilation(state: Dictionary) -> bool:
 	var atk_survivors: int = _count_living_units(state["attacker"])
 	var def_survivors: int = _count_living_units(state["defender"])
 	return atk_survivors == 0 and def_survivors == 0
+
+static func _has_active_unit_type(side_data: Dictionary, required_type: int) -> bool:
+	for squad in side_data["squads"]:
+		if int(squad.get("unit_type", -1)) == required_type:
+			for i in range(squad["alive_figures"].size()):
+				if squad["alive_figures"][i] > 0 and not squad["figures_routed"][i]:
+					return true
+	return false
+
+static func _has_any_routed_units(side_data: Dictionary) -> bool:
+	for squad in side_data["squads"]:
+		for i in range(squad["alive_figures"].size()):
+			if squad["alive_figures"][i] > 0 and squad["figures_routed"][i]:
+				return true
+	return false
+
+static func _has_reached_max_dice(pools: Dictionary, prefix: String) -> bool:
+	var side_dice: int = pools[prefix + "offence"] + pools[prefix + "defence"] + pools[prefix + "card_morale"]
+	return side_dice >= 8
+
+#endregion
+
+#region Timing Hook
 
 static func _execute_timing_hook(window: int, state: Dictionary, context: Dictionary, round_index: int, card_db: Dictionary, on_event: Callable) -> void:
 	match window:
@@ -529,7 +562,7 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.DESTROY_FOR_DESTROY: _execute_destroy_for_destroy,
 }
 
-static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, running_pools: Dictionary, is_attacker: bool, state: Dictionary, on_event: Callable) -> void:
+static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, token_pools: Dictionary, is_attacker: bool, state: Dictionary, on_event: Callable) -> void:
 	var card_data: Array = card_db[active_card_id]
 	var effects_list: Array = card_data[3]
 	if effects_list.is_empty():
@@ -560,39 +593,20 @@ static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, r
 		
 		var effect_type: int = fx[0]
 		if EFFECT_RESOLVERS.has(effect_type):
-			EFFECT_RESOLVERS[effect_type].call(fx, running_pools, side_data, role_label, active_card_id, on_event)
+			# Pass token_pools for token-based tracking, side_data for physical dice modifications
+			EFFECT_RESOLVERS[effect_type].call(fx, token_pools, side_data, role_label, active_card_id, on_event)
 		else:
 			print("    -> ⚠️ Engine skipped non-instant or unresolved effect archetype: %d" % effect_type)
-
-static func _has_active_unit_type(side_data: Dictionary, required_type: int) -> bool:
-	for squad in side_data["squads"]:
-		if int(squad.get("unit_type", -1)) == required_type:
-			for i in range(squad["alive_figures"].size()):
-				if squad["alive_figures"][i] > 0 and not squad["figures_routed"][i]:
-					return true
-	return false
-
-static func _has_any_routed_units(side_data: Dictionary) -> bool:
-	for squad in side_data["squads"]:
-		for i in range(squad["alive_figures"].size()):
-			if squad["alive_figures"][i] > 0 and squad["figures_routed"][i]:
-				return true
-	return false
-
-static func _has_reached_max_dice(pools: Dictionary, prefix: String) -> bool:
-	var side_dice: int = pools[prefix + "offence"] + pools[prefix + "defence"] + pools[prefix + "card_morale"]
-	return side_dice >= 8
 
 # ==============================================================================
 # ATOMIC MECHANIC RESOLVERS
 # ==============================================================================
 
-static func _execute_choice_selection(fx: Array, pools: Dictionary, side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
+static func _execute_choice_selection(fx: Array, token_pools: Dictionary, side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
 	var options = fx[2]
 	if not options is Array or options.is_empty():
 		return
 		
-	var prefix := "atk_" if role == "Attacker" else "def_"
 	var valid_options: Array = []
 	
 	for sub_fx in options:
@@ -605,7 +619,9 @@ static func _execute_choice_selection(fx: Array, pools: Dictionary, side_data: D
 				if _has_any_routed_units(side_data):
 					valid_options.append(sub_fx)
 			CardData.EffectType.GAIN_DICE, CardData.EffectType.GAIN_SPECIFIC_DICE:
-				if not _has_reached_max_dice(pools, prefix):
+				# Check the hard dictionary cap instead of a redundant pool array
+				var current_total: int = side_data["dice_offence"] + side_data["dice_defence"] + side_data["dice_morale"]
+				if current_total < 8:
 					valid_options.append(sub_fx)
 			_:
 				valid_options.append(sub_fx)
@@ -619,20 +635,27 @@ static func _execute_choice_selection(fx: Array, pools: Dictionary, side_data: D
 		
 	var sub_effect_type: int = chosen_sub_fx[0]
 	if EFFECT_RESOLVERS.has(sub_effect_type):
-		EFFECT_RESOLVERS[sub_effect_type].call(chosen_sub_fx, pools, side_data, role, card_id, on_event)
+		EFFECT_RESOLVERS[sub_effect_type].call(chosen_sub_fx, token_pools, side_data, role, card_id, on_event)
 
-static func _execute_gain_dice(fx: Array, pools: Dictionary, _side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
+static func _execute_gain_dice(fx: Array, _token_pools: Dictionary, side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
 	if fx[2] is Array:
 		return
 		
-	var val: int = fx[2]
-	var prefix := "atk_" if role == "Attacker" else "def_"
+	var requested_val: int = fx[2]
 	
+	var current_total_dice: int = side_data["dice_offence"] + side_data["dice_defence"] + side_data["dice_morale"]
+	var allowed_val: int = min(requested_val, 8 - current_total_dice)
+	
+	if allowed_val <= 0:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "Resolved GAIN_DICE skipped - Already at maximum 8 dice cap."])
+		return
+		
 	if on_event.is_valid(): 
-		on_event.call("ability_triggered", [card_id, "Resolved GAIN_DICE (Count: %d)" % val])
+		on_event.call("ability_triggered", [card_id, "Resolved GAIN_DICE (Count: %d)" % allowed_val])
 	
 	var b_offence := 0; var b_defence := 0; var b_morale := 0
-	for d in range(val):
+	for d in range(allowed_val):
 		match _roll_custom_die_index():
 			0: b_offence += 1
 			1: b_defence += 1
@@ -641,44 +664,50 @@ static func _execute_gain_dice(fx: Array, pools: Dictionary, _side_data: Diction
 	if on_event.is_valid(): 
 		on_event.call("bonus_dice_rolled", [role, b_offence, b_defence, b_morale])
 	
-	pools[prefix + "offence"] += b_offence
-	pools[prefix + "defence"] += b_defence
-	pools[prefix + "card_morale"] += b_morale
+	side_data["dice_offence"] += b_offence
+	side_data["dice_defence"] += b_defence
+	side_data["dice_morale"] += b_morale
 
-
-static func _execute_gain_specific_dice(fx: Array, pools: Dictionary, _side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
+static func _execute_gain_specific_dice(fx: Array, _token_pools: Dictionary, side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
 	if fx[2] is Array:
 		return
 		
-	var val: int = fx[2]
+	var requested_val: int = fx[2]
 	var pool_type: int = fx[3]
-	var prefix := "atk_" if role == "Attacker" else "def_"
 	
+	var current_total_dice: int = side_data["dice_offence"] + side_data["dice_defence"] + side_data["dice_morale"]
+	var allowed_val: int = min(requested_val, 8 - current_total_dice)
+	
+	if allowed_val <= 0:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "Resolved GAIN_SPECIFIC_DICE skipped - Already at maximum 8 dice cap."])
+		return
+		
 	if on_event.is_valid(): 
-		on_event.call("ability_triggered", [card_id, "Resolved GAIN_SPECIFIC_DICE (Count: %d)" % val])
+		on_event.call("ability_triggered", [card_id, "Resolved GAIN_SPECIFIC_DICE (Allowed: %d out of %d)" % [allowed_val, requested_val]])
 		
 	var b_offence := 0; var b_defence := 0; var b_morale := 0
 	
 	if pool_type == 0:
-		for d in range(val):
+		for d in range(allowed_val):
 			match _roll_custom_die_index():
 				0: b_offence += 1
 				1: b_defence += 1
 				2: b_morale += 1
 	else:
 		match pool_type:
-			1: b_offence = val
-			2: b_defence = val
-			3: b_morale = val
+			1: b_offence = allowed_val
+			2: b_defence = allowed_val
+			3: b_morale = allowed_val
 			
 	if on_event.is_valid(): 
 		on_event.call("bonus_dice_rolled", [role, b_offence, b_defence, b_morale])
 	
-	pools[prefix + "offence"] += b_offence
-	pools[prefix + "defence"] += b_defence
-	pools[prefix + "card_morale"] += b_morale
+	side_data["dice_offence"] += b_offence
+	side_data["dice_defence"] += b_defence
+	side_data["dice_morale"] += b_morale
 
-static func _execute_reroll(fx: Array, pools: Dictionary, _side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
+static func _execute_reroll(fx: Array, _token_pools: Dictionary, side_data: Dictionary, role: String, _card_id: int, on_event: Callable) -> void:
 	if fx[2] is Array:
 		return
 		
@@ -687,15 +716,24 @@ static func _execute_reroll(fx: Array, pools: Dictionary, _side_data: Dictionary
 	
 	var is_attacker := (role == "Attacker")
 	var targets_self := (target_type == 0)
-	var target_role := role if targets_self else ("Defender" if is_attacker else "Attacker")
-	var prefix := "atk_" if target_role == "Attacker" else "def_"
+	
+	# Determine whose physical state data we are targeted to modify permanently
+	var target_side_data: Dictionary = side_data
+	var target_role := role
+	if not targets_self:
+		target_role = "Defender" if is_attacker else "Attacker"
+		target_side_data = side_data.get("parent_state", {}).get("defender" if is_attacker else "attacker", {})
+		
+	if target_side_data.is_empty():
+		return
 
 	var icon_names := {0: "Offence", 1: "Defence", 2: "Morale"}
 
 	for iteration in range(val):
-		var o_count: int = pools[prefix + "offence"]
-		var d_count: int = pools[prefix + "defence"]
-		var m_count: int = pools[prefix + "card_morale"]
+		# FIXED: Read straight from permanent dictionary properties
+		var o_count: int = target_side_data["dice_offence"]
+		var d_count: int = target_side_data["dice_defence"]
+		var m_count: int = target_side_data["dice_morale"]
 		var total_dice: int = o_count + d_count + m_count
 		
 		if total_dice == 0:
@@ -706,20 +744,20 @@ static func _execute_reroll(fx: Array, pools: Dictionary, _side_data: Dictionary
 		
 		if picked_index < o_count:
 			face_removed = 0
-			pools[prefix + "offence"] -= 1
+			target_side_data["dice_offence"] -= 1
 		elif picked_index < (o_count + d_count):
 			face_removed = 1
-			pools[prefix + "defence"] -= 1
+			target_side_data["dice_defence"] -= 1
 		else:
 			face_removed = 2
-			pools[prefix + "card_morale"] -= 1
+			target_side_data["dice_morale"] -= 1
 			
 		var face_added := _roll_custom_die_index()
 		
 		match face_added:
-			0: pools[prefix + "offence"] += 1
-			1: pools[prefix + "defence"] += 1
-			2: pools[prefix + "card_morale"] += 1
+			0: target_side_data["dice_offence"] += 1
+			1: target_side_data["dice_defence"] += 1
+			2: target_side_data["dice_morale"] += 1
 			
 		if on_event.is_valid():
 			on_event.call("dice_rerolled_log", [
@@ -728,7 +766,7 @@ static func _execute_reroll(fx: Array, pools: Dictionary, _side_data: Dictionary
 				icon_names[face_added]
 			])
 
-static func _execute_gain_specific_combat_token(fx: Array, pools: Dictionary, _side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
+static func _execute_gain_specific_combat_token(fx: Array, token_pools: Dictionary, _side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
 	if fx[2] is Array:
 		return
 		
@@ -741,15 +779,15 @@ static func _execute_gain_specific_combat_token(fx: Array, pools: Dictionary, _s
 		on_event.call("ability_triggered", [card_id, "Resolved GAIN_SPECIFIC_COMBAT_TOKEN (+%d %s Token)" % [val, label]])
 		
 	match pool_type:
-		1: pools[prefix + "offence"] += val
-		2: pools[prefix + "defence"] += val
+		1: token_pools[prefix + "offence"] += val
+		2: token_pools[prefix + "defence"] += val
 
 	if on_event.is_valid():
-		var current_offence = pools[prefix + "offence"]
-		var current_defence = pools[prefix + "defence"]
+		var current_offence = token_pools[prefix + "offence"]
+		var current_defence = token_pools[prefix + "defence"]
 		on_event.call("tokens_updated", [role, current_offence, current_defence])
 
-static func _execute_rally(fx: Array, _pools: Dictionary, side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
+static func _execute_rally(fx: Array, _token_pools: Dictionary, side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
 	if fx[2] is Array:
 		return
 		
@@ -779,7 +817,7 @@ static func _execute_rally(fx: Array, _pools: Dictionary, side_data: Dictionary,
 		else:
 			break
 
-static func _execute_destroy_for_destroy(fx: Array, _pools: Dictionary, side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
+static func _execute_destroy_for_destroy(fx: Array, _token_pools: Dictionary, side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
 	var required_unit_type: int = fx[5]
 	var count_to_destroy: int = fx[2]
 	
@@ -816,7 +854,6 @@ static func _execute_destroy_for_destroy(fx: Array, _pools: Dictionary, side_dat
 	# 2. Hardened Enemy Destruction Phase
 	var opponent_sacrificed := 0
 	while opponent_sacrificed < count_to_destroy:
-		# Safety check: if opponent has absolutely no living units left, break out immediately
 		if _count_living_units(opponent_data) == 0:
 			break
 			
@@ -836,7 +873,6 @@ static func _execute_destroy_for_destroy(fx: Array, _pools: Dictionary, side_dat
 				vic_was_routed
 			])
 			
-		# Zero health out first so _find_lowest_tier_unit_to_destroy filters it on the next iteration pass
 		vic_squad["alive_figures"][vic_idx] = 0
 		vic_squad["figures_routed"][vic_idx] = true
 		opponent_sacrificed += 1

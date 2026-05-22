@@ -16,11 +16,11 @@ static func get_database() -> Dictionary:
 		"name": "Space Marines",
 		"upgrade_deck": [1,1,1,1,1],
 		"combat_deck": [
-			CardRegistry.CardID.SM_AMBUSH,
-			CardRegistry.CardID.SM_AMBUSH,
-			CardRegistry.CardID.SM_AMBUSH,
-			CardRegistry.CardID.SM_AMBUSH,
-			CardRegistry.CardID.SM_AMBUSH
+			CardRegistry.CardID.SM_COMBAT_FAITH_IN_EMPEROR,
+			CardRegistry.CardID.SM_COMBAT_FAITH_IN_EMPEROR,
+			CardRegistry.CardID.SM_COMBAT_FAITH_IN_EMPEROR,
+			CardRegistry.CardID.SM_COMBAT_FAITH_IN_EMPEROR,
+			CardRegistry.CardID.SM_COMBAT_FAITH_IN_EMPEROR
 		],
 		"units": [
 			{"unit_type": CardData.UnitType.SCOUTS, "unit_name": "Scouts", "tier": 0, "is_ship": false, "unit_count": 6, "combat_value": 1, "health_value": 2, "morale_value": 2},
