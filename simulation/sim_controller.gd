@@ -48,6 +48,20 @@ func run_single_logged_battle() -> void:
 	
 	var match_state: Dictionary = _instantiate_match_state(attacker_blueprint, defender_blueprint)
 	
+	# ==============================================================================
+	# FIXED: Look up registered faction profile strings using the "name" key
+	# ==============================================================================
+	var atk_profile = raw_factions.get(attacker_faction)
+	var def_profile = raw_factions.get(defender_faction)
+	
+	# Extracting via your active "name" property key, fallback to stringified enum on missing entry
+	var atk_name_string: String = atk_profile.get("name", FactionRegistry.FactionID.keys()[attacker_faction])
+	var def_name_string: String = def_profile.get("name", FactionRegistry.FactionID.keys()[defender_faction])
+	
+	match_state["attacker"]["name"] = atk_name_string
+	match_state["defender"]["name"] = def_name_string
+	# ==============================================================================
+	
 	# Package dynamic helper metadata into a context block for G_Logger to consume asynchronously
 	var logging_context := {
 		"game_stage_string": GameStageGenerator.Stage.keys()[current_stage].capitalize(),
@@ -64,21 +78,6 @@ func run_single_logged_battle() -> void:
 	var attacker_won: bool = SimCombatEngine.run_full_match(match_state, flat_card_db, G_Logger.engine_callback)
 	
 	G_Logger.finalize_battle_logger(attacker_won)
-
-# --- Progression Rule Setup Utilities ---
-
-func _roll_weighted_index(weights: PackedFloat32Array) -> int:
-	var sum := 0.0
-	for w in weights: 
-		sum += w
-		
-	var roll := randf() * sum
-	var run_sum := 0.0
-	for i in range(weights.size()):
-		run_sum += weights[i]
-		if roll <= run_sum: 
-			return i
-	return 0
 
 ## Calculates the total structural combat weight of a generated squad list
 func _calculate_squads_weight(selected_units: Array) -> int:

@@ -1,7 +1,6 @@
 [gd_scene format=3 uid="uid://yy3vdqul34p0"]
 
 [ext_resource type="Script" uid="uid://dc7rarbc4m0je" path="res://ui/ui.gd" id="1_nb4k0"]
-[ext_resource type="PackedScene" uid="uid://cxk130wfvphau" path="res://ui/round_panel.tscn" id="2_ks8t7"]
 
 [node name="Ui" type="Control" unique_id=868425142]
 layout_mode = 3
@@ -40,23 +39,25 @@ size_flags_vertical = 1
 text = "Combat Area: World"
 horizontal_alignment = 1
 
-[node name="RoundTracker" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer" unique_id=1622771334]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Combat Round: 1"
-horizontal_alignment = 1
-
 [node name="CentralCombatView" type="HBoxContainer" parent="MainLayout" unique_id=136736628]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="RoundsContainer" type="GridContainer" parent="MainLayout/CentralCombatView" unique_id=1593296258]
+[node name="RoundsContainer" type="VBoxContainer" parent="MainLayout/CentralCombatView" unique_id=96328724]
 layout_mode = 2
 size_flags_horizontal = 3
-columns = 3
 
-[node name="RoundPanel" parent="MainLayout/CentralCombatView/RoundsContainer" unique_id=167201415 instance=ExtResource("2_ks8t7")]
+[node name="Round1" type="VBoxContainer" parent="MainLayout/CentralCombatView/RoundsContainer" unique_id=1769493508]
 layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Round2" type="VBoxContainer" parent="MainLayout/CentralCombatView/RoundsContainer" unique_id=775068910]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Round3" type="VBoxContainer" parent="MainLayout/CentralCombatView/RoundsContainer" unique_id=1399120096]
+layout_mode = 2
+size_flags_vertical = 3
 
 [node name="UserControls" type="HBoxContainer" parent="MainLayout" unique_id=158005874]
 layout_mode = 2
