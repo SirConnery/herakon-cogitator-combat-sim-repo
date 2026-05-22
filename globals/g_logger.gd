@@ -62,14 +62,11 @@ func engine_callback(event_type: String, data: Array) -> void:
 			var atk_name: String = atk_side.get("name", "Unknown Faction")
 			var def_name: String = def_side.get("name", "Unknown Faction")
 			
-			var atk_roster: String = context.get("attacker_composition", "None")
-			var def_roster: String = context.get("defender_composition", "None")
-			
 			for panel in active_round_panels:
 				if panel != null:
 					panel.set_faction_titles(atk_name, def_name)
-					
-					# Universal show units call for initialization (all panels start clear/ready)
+					panel.set_tokens("Attacker", 0, 0)
+					panel.set_tokens("Defender", 0, 0)
 					panel.update_unit_displays(true, "Deploying...", "")
 					panel.update_unit_displays(false, "Deploying...", "")
 
@@ -157,7 +154,12 @@ func engine_callback(event_type: String, data: Array) -> void:
 
 			if current_panel:
 				current_panel.append_console_log(msg)
+		
+		"tokens_updated":
+			print("🪙 %s tokens updated -> %d ⚔️ | %d 🛡️" % [data[0], data[1], data[2]])
 
+			if current_panel:
+				current_panel.set_tokens(data[0], data[1], data[2])
 
 		# =========================================================
 		# DAMAGE PIPELINE

@@ -55,6 +55,16 @@ func set_dice_pools(role: String, offence: int, defence: int, morale_dice: int) 
 	else:
 		def_base_dice_rolls_value.text = "%d ⚔️ \n %d 🛡️ \n %d 🎖️" % [offence, defence, morale_dice]
 
+func set_assess_damage_dice_pools(role: String, offence: int, defence: int, morale_dice: int) -> void:
+	var dice_string := "%d ⚔️ \n %d 🛡️ \n %d 🎖️" % [offence, defence, morale_dice]
+	
+	if role == "Attacker":
+		if "att_assess_damage_step_base_dice_rolls_value" in self and att_assess_damage_step_base_dice_rolls_value != null:
+			att_assess_damage_step_base_dice_rolls_value.text = dice_string
+	else:
+		if "def_assess_damage_step_base_dice_rolls_value" in self and def_assess_damage_step_base_dice_rolls_value != null:
+			def_assess_damage_step_base_dice_rolls_value.text = dice_string
+
 func set_unit_morale(role: String, morale_value: int) -> void:
 	if role == "Attacker":
 		att_morale_from_units_value.text = str(morale_value) + " 🎖️"
@@ -66,6 +76,18 @@ func set_damage_assessment_pools(role: String,damage: int) -> void:
 		att_damage_suffered_value.text = "%d 💥" % damage
 	else:
 		def_damage_suffered_value.text = "%d 💥" % damage
+
+func set_tokens(role: String, offence_tokens: int, defence_tokens: int) -> void:
+	var token_string := "+%d ⚔️ | +%d 🛡️" % [offence_tokens, defence_tokens]
+	
+	if role == "Attacker":
+		att_tokens_value.text = token_string
+		if "att_assess_damage_step_tokens_value" in self and att_assess_damage_step_tokens_value != null:
+			att_assess_damage_step_tokens_value.text = token_string
+	else:
+		def_tokens_value.text = token_string
+		if "def_assess_damage_step_tokens_value" in self and def_assess_damage_step_tokens_value != null:
+			def_assess_damage_step_tokens_value.text = token_string
 
 func append_console_log(message: String) -> void:
 	att_console_log_value.text += message + "\n"

@@ -153,7 +153,6 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		# --- PHASE 4: DAMAGE ASSESSMENT STEP ENTRY ---
 		
 		if on_event.is_valid():
-			# Send the true, living state mirrors down to the logger channel just like combat_start
 			log_current_army_statuses(state, on_event, "damage_step")
 			
 		# ----------------------------
@@ -744,6 +743,11 @@ static func _execute_gain_specific_combat_token(fx: Array, pools: Dictionary, _s
 	match pool_type:
 		1: pools[prefix + "offence"] += val
 		2: pools[prefix + "defence"] += val
+
+	if on_event.is_valid():
+		var current_offence = pools[prefix + "offence"]
+		var current_defence = pools[prefix + "defence"]
+		on_event.call("tokens_updated", [role, current_offence, current_defence])
 
 static func _execute_rally(fx: Array, _pools: Dictionary, side_data: Dictionary, role: String, card_id: int, on_event: Callable) -> void:
 	if fx[2] is Array:
