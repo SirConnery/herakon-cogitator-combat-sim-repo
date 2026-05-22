@@ -39,7 +39,7 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 
 	if on_event.is_valid():
 		on_event.call("dice_pool_calculated", [atk_dice_to_roll, def_dice_to_roll])
-
+	
 	# Roll Attacker Dice
 	for i in range(atk_dice_to_roll):
 		match _roll_custom_die_index():
@@ -70,8 +70,10 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		var atk_morale_from_units: int = _calculate_current_morale_from_units(atk)
 		var def_morale_from_units: int = _calculate_current_morale_from_units(def)
 
-		on_event.call("dice_rolled", ["Attacker", atk_offence_pool, atk_defence_pool, atk_dice_morale, atk_morale_from_units])
-		on_event.call("dice_rolled", ["Defender", def_offence_pool, def_defence_pool, def_dice_morale, def_morale_from_units])
+		on_event.call("dice_rolled", ["Attacker", atk_offence_pool, atk_defence_pool, atk_dice_morale])
+		on_event.call("dice_rolled", ["Defender", def_offence_pool, def_defence_pool, def_dice_morale])
+		on_event.call("unit_morale_calculated", ["Attacker", atk_morale_from_units])
+		on_event.call("unit_morale_calculated", ["Defender", def_morale_from_units])
 
 	# --- CARD DRAW ---
 	atk["cards_in_hand"] = []
@@ -100,7 +102,14 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 
 		if on_event.is_valid():
 			on_event.call("round_start", [round_index])
+			var atk_morale_from_units: int = _calculate_current_morale_from_units(atk)
+			var def_morale_from_units: int = _calculate_current_morale_from_units(def)
+			
 			log_current_army_statuses(state, on_event)
+			on_event.call("dice_rolled", ["Attacker", atk_offence_pool, atk_defence_pool, atk_dice_morale])
+			on_event.call("dice_rolled", ["Defender", def_offence_pool, def_defence_pool, def_dice_morale])
+			on_event.call("unit_morale_calculated", ["Attacker", atk_morale_from_units])
+			on_event.call("unit_morale_calculated", ["Defender", def_morale_from_units])
 
 		# ----------------------------
 		# PLAY CARDS
@@ -140,7 +149,13 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		if on_event.is_valid():
 			on_event.call("card_icons_calculated", ["Attacker", timeline_atk_offence, timeline_atk_defence, timeline_atk_morale])
 			on_event.call("card_icons_calculated", ["Defender", timeline_def_offence, timeline_def_defence, timeline_def_morale])
-
+		
+		# --- PHASE 4: DAMAGE ASSESSMENT STEP ENTRY ---
+		
+		if on_event.is_valid():
+			# Send the true, living state mirrors down to the logger channel just like combat_start
+			log_current_army_statuses(state, on_event, "damage_step")
+			
 		# ----------------------------
 		# LOCAL MODIFIABLE POOLS
 		# ----------------------------
@@ -185,13 +200,13 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 			"def_offence": def_offence_pool + timeline_def_offence + local_pools["def_token_offence"],
 			"def_defence": def_defence_pool + timeline_def_defence + local_pools["def_token_defence"]
 		}
-
+	
 		_execute_timing_hook(CardData.TimingWindow.BEFORE_DAMAGE, state, context, round_index, card_db, on_event)
 
 		if on_event.is_valid():
 			on_event.call("damage_pre_calculated", ["Attacker", context["atk_offence"], context["atk_defence"]])
 			on_event.call("damage_pre_calculated", ["Defender", context["def_offence"], context["def_defence"]])
-
+		
 		# =========================================================
 		# PHASE B: DAMAGE RESOLVE
 		# =========================================================
@@ -415,7 +430,7 @@ static func _calculate_current_morale_from_units(player_state: Dictionary) -> in
 				total += squad["morale_value"]
 	return total
 
-static func log_current_army_statuses(state: Dictionary, on_event: Callable) -> void:
+static func log_current_army_statuses(state: Dictionary, on_event: Callable, phase_context: String = "all") -> void:
 	if not on_event.is_valid():
 		return
 		
@@ -436,7 +451,8 @@ static func log_current_army_statuses(state: Dictionary, on_event: Callable) -> 
 		var unrouted_str = ", ".join(unrouted_list) if not unrouted_list.is_empty() else "None"
 		var routed_str = ", ".join(routed_list) if not routed_list.is_empty() else "None"
 		
-		on_event.call("unit_status_logged", [side_name, unrouted_str, routed_str])
+		# Packed phase_context safely out to the logger stream channels
+		on_event.call("unit_status_logged", [side_name, unrouted_str, routed_str, phase_context])
 
 static func _is_mutual_annihilation(state: Dictionary) -> bool:
 	var atk_survivors: int = _count_living_units(state["attacker"])

@@ -45,24 +45,27 @@ func set_round_header_labels(round_num: int) -> void:
 	att_combat_round_value.text = " %d" % round_num
 	def_combat_round_value.text = " %d" % round_num
 
-
 func set_faction_titles(attacker_name: String, defender_name: String) -> void:
 	att_faction_name_value.text = "ATTACKER: \n %s" % attacker_name
 	def_faction_name_value.text = "DEFENDER: \n %s" % defender_name
 
 func set_dice_pools(role: String, offence: int, defence: int, morale_dice: int) -> void:
 	if role == "Attacker":
-		att_base_dice_rolls_value.text = "%d ⚔️ \n %d 🛡️ \n %d 🦅" % [offence, defence, morale_dice]
+		att_base_dice_rolls_value.text = "%d ⚔️ \n %d 🛡️ \n %d 🎖️" % [offence, defence, morale_dice]
 	else:
-		def_base_dice_rolls_value.text = "%d ⚔️ \n %d 🛡️ \n %d 🦅" % [offence, defence, morale_dice]
+		def_base_dice_rolls_value.text = "%d ⚔️ \n %d 🛡️ \n %d 🎖️" % [offence, defence, morale_dice]
 
+func set_unit_morale(role: String, morale_value: int) -> void:
+	if role == "Attacker":
+		att_morale_from_units_value.text = str(morale_value) + " 🎖️"
+	else:
+		def_morale_from_units_value.text = str(morale_value) + " 🎖️"
 
 func set_damage_assessment_pools(role: String,damage: int) -> void:
 	if role == "Attacker":
 		att_damage_suffered_value.text = "%d 💥" % damage
 	else:
 		def_damage_suffered_value.text = "%d 💥" % damage
-
 
 func append_console_log(message: String) -> void:
 	att_console_log_value.text += message + "\n"
@@ -73,28 +76,20 @@ func append_console_log(message: String) -> void:
 
 #region Round Start Unit Snapshot
 
-func set_round_start_unit_statuses(
-	role: String,
-	unrouted_str: String,
-	routed_str: String
-) -> void:
+func update_unit_displays(is_attacker: bool, unrouted_csv: String, routed_csv: String, target_phase: String = "all") -> void:
+	# 1. Update Starting Layout (Fires on general ticks or explicit round entry calls)
+	if target_phase == "all" or target_phase == "round_start":
+		var unrouted_vbox: VBoxContainer = att_units_unrouted_value if is_attacker else def_units_unrouted_value
+		var routed_vbox: VBoxContainer = att_units_routed_value if is_attacker else def_units_routed_value
+		_rebuild_vbox_labels(unrouted_vbox, unrouted_csv)
+		_rebuild_vbox_labels(routed_vbox, routed_csv)
 
-	var is_attacker := (role == "Attacker")
-
-	var unrouted_vbox: VBoxContainer = (
-		att_units_unrouted_value
-		if is_attacker
-		else def_units_unrouted_value
-	)
-
-	var routed_vbox: VBoxContainer = (
-		att_units_routed_value
-		if is_attacker
-		else def_units_routed_value
-	)
-
-	_rebuild_vbox_labels(unrouted_vbox, unrouted_str)
-	_rebuild_vbox_labels(routed_vbox, routed_str)
+	# 2. Update Damage Assessment Snapshot Layout (Fires on general ticks or explicit phase entry calls)
+	if target_phase == "all" or target_phase == "damage_step":
+		var unrouted_assess_vbox: VBoxContainer = att_assess_damage_step_units_unrouted_value if is_attacker else def_assess_damage_step_units_unrouted_value
+		var routed_assess_vbox: VBoxContainer = att_assess_damage_step_units_routed_value if is_attacker else def_assess_damage_step_units_routed_value
+		_rebuild_vbox_labels(unrouted_assess_vbox, unrouted_csv)
+		_rebuild_vbox_labels(routed_assess_vbox, routed_csv)
 
 #endregion
 

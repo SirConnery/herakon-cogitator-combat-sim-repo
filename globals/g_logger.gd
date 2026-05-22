@@ -41,12 +41,13 @@ func _role_color(role: String) -> String:
 #region Engine Callback
 
 func engine_callback(event_type: String, data: Array) -> void:
-
-	var current_panel := _get_panel()
-
-	# Sync round index
+	# ==============================================================================
+	# FIXED: Sync index FIRST so _get_panel() always references the correct round panel
+	# ==============================================================================
 	if event_type == "round_start":
 		active_round_index = data[0]
+
+	var current_panel := _get_panel()
 
 	match event_type:
 
@@ -55,25 +56,22 @@ func engine_callback(event_type: String, data: Array) -> void:
 		# =========================================================
 		"combat_start":
 			print("\n==================  STARTED COMBAT ==================")
-			print("Game stage: %s" % context.get("game_stage_string", "Unknown"))
-			print("Matchup Scale Classification: %s" % context.get("matchup_scale", "Unknown"))
-			print("Attacker Forces: %s" % context.get("attacker_composition", "None"))
-			print("Defender Forces: %s" % context.get("defender_composition", "None"))
-			
-			# Extract the underlying player configuration state dictionaries
 			var atk_side: Dictionary = data[0]
 			var def_side: Dictionary = data[1]
 			
-			# Safely fetch the structural name properties (e.g., "Attacker" / "Defender")
-			# If you have specific faction designations stored there (like "Space Marines" vs "Orks"), 
-			# this string extraction loop will capture them automatically!
 			var atk_name: String = atk_side.get("name", "Unknown Faction")
 			var def_name: String = def_side.get("name", "Unknown Faction")
 			
-			# Direct call update to assign the header layouts across all 3 panel views synchronously
+			var atk_roster: String = context.get("attacker_composition", "None")
+			var def_roster: String = context.get("defender_composition", "None")
+			
 			for panel in active_round_panels:
 				if panel != null:
 					panel.set_faction_titles(atk_name, def_name)
+					
+					# Universal show units call for initialization (all panels start clear/ready)
+					panel.update_unit_displays(true, "Deploying...", "")
+					panel.update_unit_displays(false, "Deploying...", "")
 
 
 		# =========================================================
@@ -85,8 +83,8 @@ func engine_callback(event_type: String, data: Array) -> void:
 
 
 		"dice_rolled":
-			print("  -> %s rolls: %d ⚔️ | %d 🛡️ | %d 🦅 | units morale %d"
-				% [data[0], data[1], data[2], data[3], data[4]])
+			print("🎲 -> %s rolls: %d ⚔️ | %d 🛡️ | %d 🎖️"
+				% [data[0], data[1], data[2], data[3]])
 
 			if current_panel:
 				current_panel.set_dice_pools(data[0], data[1], data[2], data[3])
@@ -107,21 +105,43 @@ func engine_callback(event_type: String, data: Array) -> void:
 		# ROUND FLOW
 		# =========================================================
 		"round_start":
-			print("\n🔄 --- ROUND %d ---" % (data[0] + 1))
+			var round_num: int = data[0]
+			print("")
+			print("\n🔄--- COMBAT ROUND %d ---" % (round_num + 1))
 
 
 		"unit_status_logged":
-			print("📊 START %s: unrouted=%s routed=%s" % [data[0], data[1], data[2]])
-
-			if current_panel:
-				current_panel.set_round_start_unit_statuses(data[0], data[1], data[2])
-
+			# data = [side_name, unrouted_str, routed_str, optional_phase_context]
+			print("💂    Units unrouted and routed -> %s: %s | %s" % [data[0], data[1], data[2]])
+			
+			if current_panel != null:
+				var active_attacker_name: String = ""
+				var controller = context.get("controller_ref")
+				if controller != null:
+					var raw_factions = FactionRegistry.get_database()
+					var atk_profile = raw_factions.get(controller.attacker_faction)
+					active_attacker_name = atk_profile.get("name", FactionRegistry.FactionID.keys()[controller.attacker_faction])
+				
+				var is_attacker :bool = (data[0] == active_attacker_name)
+				
+				# Extract target phase context if the engine provided it, otherwise default to "all"
+				var phase_context: String = data[3] if data.size() > 3 else "all"
+				
+				# Execute universal unified visual router pass
+				current_panel.update_unit_displays(is_attacker, data[1], data[2], phase_context)
+		
+		"unit_morale_calculated":
+			# data = [role_string ("Attacker"/"Defender"), morale_value (int)]
+			print("🧠     %s Unit 🎖️ %d" % [data[0], data[1]])
+			
+			if current_panel != null:
+				current_panel.set_unit_morale(data[0], data[1])
 
 		# =========================================================
 		# CARD EFFECTS
 		# =========================================================
 		"card_icons_calculated":
-			print("🎴 %s icons -> ⚔️ %d | 🛡️ %d | 🦅 %d"
+			print("🎴 %s card icons -> ⚔️ %d | 🛡️ %d | 🎖️ %d"
 				% [data[0], data[1], data[2], data[3]])
 
 
@@ -140,7 +160,7 @@ func engine_callback(event_type: String, data: Array) -> void:
 
 
 		# =========================================================
-		# DAMAGE PIPELINE (NEW MODEL)
+		# DAMAGE PIPELINE
 		# =========================================================
 
 		# PHASE A: PRE DAMAGE
@@ -148,8 +168,6 @@ func engine_callback(event_type: String, data: Array) -> void:
 			print("\n--- [PRE-DAMAGE SNAPSHOT] ---")
 			print("%s %s -> ⚔️ %d | 🛡️ %d"
 				% [_role_color(data[0]), data[0], data[1], data[2]])
-
-			# UI can show comparison BEFORE resolution
 
 
 		# PHASE B: RESOLVED DAMAGE
@@ -198,7 +216,7 @@ func engine_callback(event_type: String, data: Array) -> void:
 
 
 		# =========================================================
-		# ROUND END STATUS (CLEAR SEMANTIC)
+		# ROUND END STATUS
 		# =========================================================
 		"round_end_unit_status_logged":
 			print("📊 END %s: unrouted=%s routed=%s" % [data[0], data[1], data[2]])
@@ -212,6 +230,11 @@ func engine_callback(event_type: String, data: Array) -> void:
 		# =========================================================
 		"early_termination":
 			print("\n⚠️ SUDDEN DEATH: one side eliminated")
+			# Clear unreached round rows cleanly to indicate match resolution
+			for i in range(active_round_index + 1, active_round_panels.size()):
+				if active_round_panels[i] != null:
+					active_round_panels[i].update_unit_displays(true, "Match Terminated", "")
+					active_round_panels[i].update_unit_displays(false, "Match Terminated", "")
 
 
 		"victory_by_wipeout":
