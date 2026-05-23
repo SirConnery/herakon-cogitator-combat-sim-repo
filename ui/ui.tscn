@@ -51,6 +51,29 @@ size_flags_vertical = 1
 text = "Game Stage: "
 horizontal_alignment = 1
 
+[node name="CardsDrawnToHandAtStart" type="HBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer" unique_id=1562848058]
+layout_mode = 2
+
+[node name="AttackerDrawnCardsTitle" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=303084573]
+layout_mode = 2
+size_flags_vertical = 0
+text = "Attacker Cards drawn at start: "
+
+[node name="AttackerDrawnCardsValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=100102169]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="DefenderDrawnCardsTitle" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=1126116701]
+layout_mode = 2
+size_flags_vertical = 0
+text = "Defender Cards drawn at start;"
+
+[node name="DefenderDrawnCardsValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=1164117888]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
 [node name="CentralCombatView" type="HBoxContainer" parent="MainLayout" unique_id=136736628]
 layout_mode = 2
 size_flags_vertical = 3

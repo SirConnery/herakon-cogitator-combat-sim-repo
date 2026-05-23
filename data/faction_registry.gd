@@ -14,16 +14,9 @@ static func get_database() -> Dictionary:
 	# --- SPACE MARINES (SM) ---
 	db[FactionID.SM] = {
 		"name": "Space Marines",
-		"upgrade_deck": [1,1,1,1,1],
-		"combat_deck": [
-			CardRegistry.CardID.SM_AMBUSH,
-			CardRegistry.CardID.SM_AMBUSH,
-			CardRegistry.CardID.SM_AMBUSH,
-			CardRegistry.CardID.SM_AMBUSH,
-			CardRegistry.CardID.SM_AMBUSH,
-			CardRegistry.CardID.SM_AMBUSH,
-
-		],
+		"debug_deck": [1001,1001,1001,1001,1001], # used instead of combat_deck when game_stage_generator.use_debug_deck_for_testing == true
+		"upgrade_deck": [1001,1002,1003,1004,1005],
+		"combat_deck": [],
 		"units": [
 			{"unit_type": CardData.UnitType.SCOUTS, "unit_name": "Scouts", "tier": 0, "is_ship": false, "unit_count": 6, "combat_value": 1, "health_value": 2, "morale_value": 2},
 			{"unit_type": CardData.UnitType.SPACE_MARINES, "unit_name": "Space Marines", "tier": 1, "is_ship": false, "unit_count": 6, "combat_value": 2, "health_value": 3, "morale_value": 3},
@@ -38,14 +31,9 @@ static func get_database() -> Dictionary:
 	# --- ORKS ---
 	db[FactionID.ORKS] = {
 		"name": "Orks",
-		"upgrade_deck": [1,1,1,1,1],
-		"combat_deck": [
-			CardRegistry.CardID.ORKS_ARD_BOYZ,
-			CardRegistry.CardID.ORKS_ARD_BOYZ,
-			CardRegistry.CardID.ORKS_ARD_BOYZ,
-			CardRegistry.CardID.ORKS_ARD_BOYZ,
-			CardRegistry.CardID.ORKS_ARD_BOYZ
-		],
+		"debug_deck": [2003,2003,2003,2003,2003,],
+		"upgrade_deck": [2001,2002,2003,],
+		"combat_deck": [],
 		"units": [
 			{"unit_type": CardData.UnitType.ORK_BOYZ, "unit_name": "Ork Boyz", "tier": 0, "is_ship": false, "unit_count": 9, "combat_value": 2, "health_value": 2, "morale_value": 1},
 			{"unit_type": CardData.UnitType.NOBZ, "unit_name": "Nobz", "tier": 1, "is_ship": false, "unit_count": 6, "combat_value": 2, "health_value": 4, "morale_value": 2},

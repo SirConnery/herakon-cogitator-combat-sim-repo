@@ -15,6 +15,15 @@ var is_ground_combat := true
 @onready var card_db: Dictionary = CardRegistry.get_database()
 
 
+#region Variables for UI
+
+var attacker_starting_hand := []
+var defender_starting_hand := []
+var attacker_faction_name := ""
+var defender_faction_name := ""
+
+#endregion
+
 func _ready() -> void:
 	if is_combat_debugger_used:
 		print("--- COUPLING SINGLE MATCH OBSERVER SANDBOX ---")
@@ -34,17 +43,17 @@ func run_single_logged_battle() -> void:
 	
 	var flat_card_db: Dictionary = _flatten_card_database(raw_cards)
 	
-	# 1. Randomize battle scale (1-2 Small, 3 Med, 4-5 Large)
+	# 1. Randomize battle scale boundaries (1-2 Small, 3 Med, 4-5 Large)
 	var att_count := randi_range(1, 5)
 	var def_count := randi_range(1, 5)
 	
-	# 2. Compile type-hinted arrays matching stage and theater constraints
-	var attacker_tiers := GameStageGenerator.generate_composition(current_stage, att_count, is_ground_combat)
-	var defender_tiers := GameStageGenerator.generate_composition(current_stage, def_count, is_ground_combat)
+	# 2. Directly compile faction packages via centralized Scenario Director Generator
+	var attacker_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(attacker_faction, current_stage, att_count, is_ground_combat, raw_factions)
+	var defender_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(defender_faction, current_stage, def_count, is_ground_combat, raw_factions)
 	
-	# 3. Pull unit specifications out of registry records
-	var attacker_blueprint: Dictionary = _prepare_faction_blueprint(attacker_faction, raw_factions, attacker_tiers)
-	var defender_blueprint: Dictionary = _prepare_faction_blueprint(defender_faction, raw_factions, defender_tiers)
+	# Capture and store frozen copies of starting hands for decoupled UI pulling passes
+	attacker_starting_hand = attacker_blueprint["cards_in_hand"].duplicate()
+	defender_starting_hand = defender_blueprint["cards_in_hand"].duplicate()
 	
 	var attacker_power: int = _calculate_squads_weight(attacker_blueprint["selected_units"])
 	var defender_power: int = _calculate_squads_weight(defender_blueprint["selected_units"])
@@ -61,6 +70,10 @@ func run_single_logged_battle() -> void:
 	var atk_name_string: String = atk_profile.get("name", FactionRegistry.FactionID.keys()[attacker_faction])
 	var def_name_string: String = def_profile.get("name", FactionRegistry.FactionID.keys()[defender_faction])
 
+	# UPDATED: Cache resolved faction name strings for dynamic UI pulling passes
+	attacker_faction_name = atk_name_string
+	defender_faction_name = def_name_string
+
 	match_state[SimCombatEngine.Side.ATTACKER]["name"] = atk_name_string
 	match_state[SimCombatEngine.Side.DEFENDER]["name"] = def_name_string
 	
@@ -75,6 +88,12 @@ func run_single_logged_battle() -> void:
 	
 	# Initialize our logging channel with references to the active engine calculations
 	G_Logger.initialize_battle_logger(logging_context)
+	
+	# Broadcast open-hand draw configuration metrics to UI hook arrays manually 
+	G_Logger.engine_callback("cards_drawn_to_hand", [
+		match_state[SimCombatEngine.Side.ATTACKER]["cards_in_hand"],
+		match_state[SimCombatEngine.Side.DEFENDER]["cards_in_hand"]
+	])
 	
 	# Run the high-speed crucible engine loop using the centralized direct singleton router
 	var attacker_won: bool = SimCombatEngine.run_full_match(match_state, flat_card_db, G_Logger.engine_callback)
@@ -163,36 +182,6 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_t
 	]
 
 
-func _prepare_faction_blueprint(faction_id: int, factions: Dictionary, randomized_tiers: PackedInt32Array) -> Dictionary:
-	var faction_raw = factions[faction_id]
-	
-	# Index ONLY theater-compliant registry configurations into our O(1) tier map
-	var registry_units_by_tier := {}
-	for unit_data in faction_raw["units"]:
-		# THEATER EXCLUSION LOGIC:
-		# If is_ground_combat is true, skip units where is_ship is true.
-		# If is_ground_combat is false, skip units where is_ship is false.
-		if is_ground_combat == unit_data["is_ship"]:
-			continue # Skip this unit; it doesn't match the active theater mode
-			
-		registry_units_by_tier[unit_data["tier"]] = unit_data
-
-	# Gather the database entries matching our randomized composition layout
-	var selected_units_blueprints: Array = []
-	for tier in randomized_tiers:
-		if registry_units_by_tier.has(tier):
-			selected_units_blueprints.append(registry_units_by_tier[tier])
-		elif is_ground_combat:
-			push_error("Faction %d lacks ground units for Tier %d!" % [faction_id, tier])
-
-	return {
-		"upgrade_deck": faction_raw.get("upgrade_deck", []).duplicate(),
-		"combat_deck": faction_raw.get("combat_deck", []).duplicate(),
-		"cards_in_hand": [], # Initialized empty, ready for draw step loops
-		"selected_units": selected_units_blueprints
-	}
-
-
 func _instantiate_match_state(atk_blueprint: Dictionary, def_blueprint: Dictionary) -> Dictionary:
 	var atk_squads = _build_match_units(atk_blueprint["selected_units"])
 	var def_squads = _build_match_units(def_blueprint["selected_units"])
@@ -225,7 +214,6 @@ func _build_match_units(selected_units: Array) -> Array[Dictionary]:
 		var figures_routed: Array[bool] = []
 		
 		# Each instance block rolled by the generator translates into 1 tracked combat squad item.
-		# Instantiating the structure using its native health boundary properties.
 		alive_figures.append(b["health_value"])
 		figures_routed.append(false)
 		

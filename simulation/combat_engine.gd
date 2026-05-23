@@ -36,9 +36,6 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 	var atk_dice_to_roll := 0
 	var def_dice_to_roll := 0
 
-	var atk_draw_count := 0
-	var def_draw_count := 0
-
 	# --- 3. RECURRING ROUND-LOOP SCRATCHPAD VARIABLES ---
 	var atk_idx := 0
 	var def_idx := 0
@@ -110,23 +107,6 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		log_current_dice_pools(on_event, atk, def, "round_start")
 		log_current_unit_morale(on_event, atk, def, "round_start")
 
-	# --- DRAW COMBAT CARDS STEP ---
-	atk["cards_in_hand"] = []
-	def["cards_in_hand"] = []
-
-	atk_draw_count = min(5, atk["combat_deck"].size())
-	for i in range(atk_draw_count):
-		var draw_idx: int = randi() % atk["combat_deck"].size()
-		atk["cards_in_hand"].append(atk["combat_deck"].pop_at(draw_idx))
-
-	def_draw_count = min(5, def["combat_deck"].size())
-	for i in range(def_draw_count):
-		var draw_idx: int = randi() % def["combat_deck"].size()
-		def["cards_in_hand"].append(def["combat_deck"].pop_at(draw_idx))
-
-	if on_event.is_valid():
-		on_event.call("cards_drawn_to_hand", [atk["cards_in_hand"], def["cards_in_hand"]])
-
 	# --- PHASE 2: THREE-ROUND COMBAT ENGINE CRUCIBLE LOOP ---
 	for round_index in range(3):
 
@@ -146,7 +126,6 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 			log_current_extra_icons(on_event, atk["extra_icons"], def["extra_icons"], "round_start")
 			log_current_unit_morale(on_event, atk, def, "round_start")
 			log_current_card_icons(on_event, [card_icons_atk_offence, card_icons_atk_defence, card_icons_atk_morale], [card_icons_def_offence, card_icons_def_defence, card_icons_def_morale], "round_start")
-
 
 		# --- PLAY COMBAT CARDS ---
 		atk_idx = randi() % atk["cards_in_hand"].size()
@@ -178,7 +157,6 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 			card_icons_def_defence += d[1]
 			card_icons_def_morale += d[2]
 
-
 		# --- INSTANTIATE LOCAL OPERATION SCRATCHPADS ---
 		token_pools[0] = 0 # Attacker Offence Token
 		token_pools[1] = 0 # Attacker Defence Token
@@ -199,7 +177,6 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 			log_current_extra_icons(on_event, atk["extra_icons"], def["extra_icons"], "damage_step")
 			log_current_card_icons(on_event, [card_icons_atk_offence, card_icons_atk_defence, card_icons_atk_morale], [card_icons_def_offence, card_icons_def_defence, card_icons_def_morale], "damage_step")
 
-			
 		atk.erase("parent_state")
 		def.erase("parent_state")
 

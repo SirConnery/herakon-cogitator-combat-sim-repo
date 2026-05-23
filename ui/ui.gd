@@ -6,6 +6,10 @@ class_name UI
 
 # --- UI ELEMENT NODES ---
 @onready var game_stage_label: Label = $MainLayout/HeaderPanel/HeaderContainer/HLayout/GameStage
+@onready var combat_participants_value: Label = $MainLayout/HeaderPanel/HeaderContainer/HLayout/CombatParticipantsValue
+
+@onready var attacker_drawn_cards_value: Label = $MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart/AttackerDrawnCardsValue
+@onready var defender_drawn_cards_value: Label = $MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart/DefenderDrawnCardsValue
 
 @onready var round_1_container: VBoxContainer = $MainLayout/CentralCombatView/RoundsContainer/Round1
 @onready var round_2_container: VBoxContainer = $MainLayout/CentralCombatView/RoundsContainer/Round2
@@ -50,6 +54,31 @@ func _start_simulation_subsystem() -> void:
 	add_child(sim)
 	
 	update_game_stage_header(sim.current_stage)
+	update_starting_cards_header(sim)
+	update_combat_participants_header(sim)
+
+## Queries the sim instance to parse and display the match participants
+func update_combat_participants_header(sim: SimController) -> void:
+	if combat_participants_value == null:
+		return
+		
+	combat_participants_value.text = "%s vs %s" % [sim.attacker_faction_name, sim.defender_faction_name]
+
+## Queries the sim instance to parse and display the starting hands
+func update_starting_cards_header(sim: SimController) -> void:
+	if attacker_drawn_cards_value == null or defender_drawn_cards_value == null: 
+		return
+		
+	var atk_names: Array[String] = []
+	for card_id in sim.attacker_starting_hand:
+		atk_names.append(sim.get_card_metadata(card_id, "card_name"))
+		
+	var def_names: Array[String] = []
+	for card_id in sim.defender_starting_hand:
+		def_names.append(sim.get_card_metadata(card_id, "card_name"))
+		
+	attacker_drawn_cards_value.text = ", ".join(atk_names)
+	defender_drawn_cards_value.text = ", ".join(def_names)
 
 
 ## Maps the backend GameStageGenerator.Stage enum value to a thematic string text presentation
