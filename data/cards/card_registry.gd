@@ -11,6 +11,8 @@ enum CardID {
 	SM_HOLD_THE_LINE						= 1006,
 	SM_GLORY_AND_DEATH						= 1007,
 	SM_DROP_POD_ASSAULT						= 1008,
+	SM_VETERAN_SCOUTS						= 1009,
+	SM_SHOW_NO_FEAR							= 1010,
 
 	# --- ORKS (ORKS) ---
 	ORKS_GRETCHIN						= 3001,
@@ -327,7 +329,54 @@ static func get_database() -> Dictionary:
 	db[card.card_id] = card
 	
 	# ==========================================================================
-	# --- CARD 2001: Gretchin ---
+	# --- CARD 1009: Veteran Scouts ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.SM_VETERAN_SCOUTS
+	card.card_name = "Veteran Scouts"
+	card.card_tier = CardData.CardTier.TIER_0
+	card.offence_icons = 1
+	card.defence_icons = 1
+	card.morale_icons = 1
+	card.required_unit_types = [CardData.UnitType.SCOUTS, CardData.UnitType.STRIKE_CRUISERS]
+	
+	# --- GENERAL ABILITY ---
+	var sm_vet_gen := CardEffect.new()
+	sm_vet_gen.effect_type = CardData.EffectType.GAIN_TOKEN_PER_MORALE_DICE
+	sm_vet_gen.target_type = CardData.TargetType.SELF
+	sm_vet_gen.value = 1								# Multiplier: 1 token per die
+	sm_vet_gen.pool_type = CardData.DicePoolType.RANDOM	# Funnels all allocations into one random token category
+	card.general_ability.append(sm_vet_gen)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 1010: Show No Fear ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.SM_SHOW_NO_FEAR
+	card.card_name = "Show No Fear"
+	card.card_tier = CardData.CardTier.TIER_2
+	card.defence_icons = 2
+	card.morale_icons = 1
+	card.required_unit_types = [CardData.UnitType.SPACE_MARINES, CardData.UnitType.STRIKE_CRUISERS]
+	
+	# --- GENERAL ABILITY ---
+	#var sm_fear_gen := CardEffect.new()
+	#sm_fear_gen.effect_type = CardData.EffectType.PREVENT_ROUTING_THIS_ROUND
+	#sm_fear_gen.target_type = CardData.TargetType.SELF
+	#card.general_ability.append(sm_fear_gen)
+	
+	# --- UNIT ABILITY ---
+	var sm_fear_unit := CardEffect.new()
+	sm_fear_unit.effect_type = CardData.EffectType.RALLY_ALL_FRIENDLY_UNITS
+	sm_fear_unit.target_type = CardData.TargetType.SELF
+	card.unit_ability.append(sm_fear_unit)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 3001: Gretchin ---
 	# ==========================================================================
 	card = CardData.new()
 	card.card_id = CardID.ORKS_GRETCHIN
@@ -364,7 +413,7 @@ static func get_database() -> Dictionary:
 	db[card.card_id] = card
 	
 	# ==========================================================================
-	# --- CARD 2002: Mek Boyz ---
+	# --- CARD 3002: Mek Boyz ---
 	# ==========================================================================
 	card = CardData.new()
 	card.card_id = CardID.ORKS_MEK_BOYZ
@@ -389,7 +438,7 @@ static func get_database() -> Dictionary:
 	db[card.card_id] = card
 	
 	# ==========================================================================
-	# --- CARD 2003: Ard Boyz ---
+	# --- CARD 3003: Ard Boyz ---
 	# ==========================================================================
 	card = CardData.new()
 	card.card_id = CardID.ORKS_ARD_BOYZ
@@ -416,7 +465,7 @@ static func get_database() -> Dictionary:
 	db[card.card_id] = card
 	
 	# ==========================================================================
-	# --- CARD 2004: Shoota Boyz ---
+	# --- CARD 3004: Shoota Boyz ---
 	# ==========================================================================
 	card = CardData.new()
 	card.card_id = CardID.ORKS_SHOOTA_BOYZ
@@ -445,7 +494,7 @@ static func get_database() -> Dictionary:
 	db[card.card_id] = card
 	
 	# ==========================================================================
-	# --- CARD 2005: Slugga Boyz ---
+	# --- CARD 3005: Slugga Boyz ---
 	# ==========================================================================
 	card = CardData.new()
 	card.card_id = CardID.ORKS_SLUGGA_BOYZ

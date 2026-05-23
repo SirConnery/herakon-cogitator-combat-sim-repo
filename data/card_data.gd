@@ -15,6 +15,7 @@ REROLL_ALL_SPECIFIC_DICE,
 REROLL_SPECIFIC_DICE_FOR_EACH_UNIT,
 
 GAIN_SPECIFIC_COMBAT_TOKEN,
+GAIN_TOKEN_PER_MORALE_DICE,
 
 RALLY,
 
@@ -24,6 +25,8 @@ SHIELD_DEBUFF_CONDITIONAL, # Fury of the Ultramar
 RALLY_IF_DEFENDING, # Hold the Line
 RALLY_IF_ATTACKING, # Glory and Death
 SPEND_MORALE_TO_SPAWN_UNIT, # Drop Pod Assault
+PREVENT_ROUTING_THIS_ROUND, # Show No Fear
+RALLY_ALL_FRIENDLY_UNITS, # Show No Fear
 
 #ORKS
 DESTROY_FOR_DESTROY,
@@ -31,7 +34,7 @@ DISCARD_STEAL_ICONS,
 }
 
 
-enum TargetType { SELF, OPPONENT }
+enum TargetType { SELF, OPPONENT, BOTH }
 enum DicePoolType { RANDOM, OFFENSE, DEFENSE, MORALE }
 enum TimingWindow {
 	INSTANT,         # Resolves immediately when card is revealed (Stage 2)
