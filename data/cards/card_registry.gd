@@ -13,6 +13,7 @@ enum CardID {
 	SM_DROP_POD_ASSAULT						= 1008,
 	SM_VETERAN_SCOUTS						= 1009,
 	SM_SHOW_NO_FEAR							= 1010,
+	SM_BREAK_THE_LINE						= 1011, 
 
 	# --- ORKS (ORKS) ---
 	ORKS_GRETCHIN						= 3001,
@@ -23,8 +24,21 @@ enum CardID {
 }
 
 static func get_database() -> Dictionary:
-	var db: Dictionary = {}
+	var db := {}
 	var card: CardData
+	
+	
+	# ==========================================================================
+	# --- CARD 0000: Dummy Card ---
+	# ==========================================================================
+	# Instantiate a dummy object context to safely catch discarded (0) slots
+	var empty_card := CardData.new()
+	empty_card.card_id = 0
+	empty_card.card_name = "Discarded Slot"
+	empty_card.offence_icons = 0
+	empty_card.defence_icons = 0
+	empty_card.morale_icons = 0
+	db[0] = empty_card
 	
 	# ==========================================================================
 	# --- CARD 1001: Ambush ---
@@ -362,16 +376,38 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.SPACE_MARINES, CardData.UnitType.STRIKE_CRUISERS]
 	
 	# --- GENERAL ABILITY ---
-	#var sm_fear_gen := CardEffect.new()
-	#sm_fear_gen.effect_type = CardData.EffectType.PREVENT_ROUTING_THIS_ROUND
-	#sm_fear_gen.target_type = CardData.TargetType.SELF
-	#card.general_ability.append(sm_fear_gen)
+	var sm_fear_gen := CardEffect.new()
+	sm_fear_gen.effect_type = CardData.EffectType.PREVENT_ROUTING_THIS_ROUND
+	sm_fear_gen.target_type = CardData.TargetType.SELF
+	card.general_ability.append(sm_fear_gen)
 	
 	# --- UNIT ABILITY ---
 	var sm_fear_unit := CardEffect.new()
 	sm_fear_unit.effect_type = CardData.EffectType.RALLY_ALL_FRIENDLY_UNITS
 	sm_fear_unit.target_type = CardData.TargetType.SELF
 	card.unit_ability.append(sm_fear_unit)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 1011: Break the Line ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.SM_BREAK_THE_LINE
+	card.card_name = "Break the Line"
+	card.card_tier = CardData.CardTier.TIER_2
+	card.offence_icons = 1
+	card.defence_icons = 2
+	card.required_unit_types = [CardData.UnitType.LAND_RAIDERS, CardData.UnitType.BATTLE_BARGES]
+	
+	# --- GENERAL ABILITY ---
+	# Spend 3 Morale to gain that many B or S
+	var sm_break_gen := CardEffect.new()
+	sm_break_gen.effect_type = CardData.EffectType.SPEND_MORALE_TO_GAIN_SPECIFIC_DICE
+	sm_break_gen.target_type = CardData.TargetType.SELF
+	sm_break_gen.value = 3
+	sm_break_gen.pool_type = CardData.DicePoolType.RANDOM
+	card.general_ability.append(sm_break_gen)
 	
 	db[card.card_id] = card
 	

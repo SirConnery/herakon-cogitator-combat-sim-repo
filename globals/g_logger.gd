@@ -297,24 +297,46 @@ func engine_callback(event_type: String, data: Array) -> void:
 		# TERMINATION / VICTORY
 		# =========================================================
 		"early_termination":
-			print("\n⚠️ SUDDEN DEATH: one side eliminated")
+			var target_idx: int = min(active_round_index, active_round_panels.size() - 1)
+			var target_panel = active_round_panels[target_idx] if target_idx >= 0 else null
+			
+			var message := "⚠️ SUDDEN DEATH: one side eliminated"
+			print(message)
+			if target_panel:
+				target_panel.append_console_log(message)
+			
 			# Clear unreached round rows cleanly to indicate match resolution
 			for i in range(active_round_index + 1, active_round_panels.size()):
 				if active_round_panels[i] != null:
 					active_round_panels[i].update_unit_displays(true, "Match Terminated", "")
 					active_round_panels[i].update_unit_displays(false, "Match Terminated", "")
 
-
 		"victory_by_wipeout":
-			print("\n🏁 WIN BY WIPEOUT: %s" % data[0])
-
+			var target_idx: int = min(active_round_index, active_round_panels.size() - 1)
+			var target_panel = active_round_panels[target_idx] if target_idx >= 0 else null
+			
+			var message := "🏁 VICTORY BY WIPEOUT: %s" % data[0]
+			print(message)
+			if target_panel:
+				target_panel.append_console_log(message)
 
 		"victory_mutual_annihilation":
-			print("\n💥 MUTUAL ANNIHILATION")
-
+			var target_idx: int = min(active_round_index, active_round_panels.size() - 1)
+			var target_panel = active_round_panels[target_idx] if target_idx >= 0 else null
+			
+			var message := "💥 MUTUAL ANNIHILATION"
+			print(message)
+			if target_panel:
+				target_panel.append_console_log(message)
 
 		"tiebreaker_morale":
-			print("\n--- TIEBREAKER ---")
-			print("ATK %d | DEF %d" % [data[0], data[1]])
+			var target_idx: int = min(active_round_index, active_round_panels.size() - 1)
+			var target_panel = active_round_panels[target_idx] if target_idx >= 0 else null
+			
+			var message := "--- TIEBREAKER ---\nATK %d | DEF %d" % [data[0], data[1]]
+			print(message)
+			if target_panel:
+				target_panel.append_console_log(message)
+
 
 #endregion

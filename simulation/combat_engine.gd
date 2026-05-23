@@ -446,8 +446,6 @@ static func _spend_die_to_continue(side_data: Dictionary, stat_key: int, amount:
 		
 	return true
 
-
-
 static func _rout_unit(squad: Dictionary, figure_idx: int, role: String, damage: int, newly_routed_units: Array, on_event: Callable) -> void:
 	squad["figures_routed"][figure_idx] = true
 	newly_routed_units.append({"squad": squad, "index": figure_idx})
@@ -632,6 +630,66 @@ static func _get_token_index(role: String, pool_type: int, target_opponent: bool
 	
 	return base_idx + offset
 
+## Opponent Logic: Finds the faceup card index with the LEAST total icons. Ties broken randomly.
+static func _find_faceup_card_with_least_icons(side_data: Dictionary, card_db: Dictionary) -> int:
+	var play_area: Array = side_data.get("play_area", [])
+	var valid_indices: Array[int] = []
+	
+	# Only gather slots that actually contain an active card ID
+	for i in range(play_area.size()):
+		if play_area[i] != null and int(play_area[i]) > 0:
+			valid_indices.append(i)
+			
+	if valid_indices.is_empty():
+		return -1
+		
+	var best_indices: Array[int] = []
+	var min_icons := 999999
+	
+	for idx in valid_indices:
+		var card_id = play_area[idx]
+		var card_entry = card_db.get(card_id, [0, 0, 0])
+		var total_icons: int = card_entry[0] + card_entry[1] + card_entry[2]
+		
+		if total_icons < min_icons:
+			min_icons = total_icons
+			best_indices = [idx]
+		elif total_icons == min_icons:
+			best_indices.append(idx)
+			
+	# Tiebreaker: Randomly select from the lowest-value candidates
+	return best_indices[randi() % best_indices.size()]
+
+
+## Player Logic: Finds the faceup card index with the MOST total icons. Ties broken randomly.
+static func _find_faceup_card_with_most_icons(side_data: Dictionary, card_db: Dictionary) -> int:
+	var play_area: Array = side_data.get("play_area", [])
+	var valid_indices: Array[int] = []
+	
+	for i in range(play_area.size()):
+		if play_area[i] != null and int(play_area[i]) > 0:
+			valid_indices.append(i)
+			
+	if valid_indices.is_empty():
+		return -1
+		
+	var best_indices: Array[int] = []
+	var max_icons := -1
+	
+	for idx in valid_indices:
+		var card_id = play_area[idx]
+		var card_entry = card_db.get(card_id, [0, 0, 0])
+		var total_icons: int = card_entry[0] + card_entry[1] + card_entry[2]
+		
+		if total_icons > max_icons:
+			max_icons = total_icons
+			best_indices = [idx]
+		elif total_icons == max_icons:
+			best_indices.append(idx)
+			
+	# Tiebreaker: Randomly select from the highest-value targets
+	return best_indices[randi() % best_indices.size()]
+
 #endregion
 
 
@@ -712,12 +770,14 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.REROLL: _execute_reroll,
 	CardData.EffectType.REROLL_ALL_SPECIFIC_DICE: _execute_reroll_all_specific_dice,
 	CardData.EffectType.REROLL_SPECIFIC_DICE_FOR_EACH_UNIT: _execute_reroll_specific_dice_for_each_unit,
+	CardData.EffectType.SPEND_MORALE_TO_GAIN_SPECIFIC_DICE: _execute_spend_morale_to_gain_specific_dice,
 	
 	CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN: _execute_gain_specific_combat_token,
 	CardData.EffectType.GAIN_TOKEN_PER_MORALE_DICE: _execute_gain_token_per_morale_dice,
 	
 	CardData.EffectType.RALLY: _execute_rally, 
 	
+	CardData.EffectType.OPPONENT_DISCARDS_FACEUP_CARD: _execute_opponent_discards_faceup_card,
 	
 	# SM
 	CardData.EffectType.SHIELD_DEBUFF_CONDITIONAL: _execute_shield_debuff_conditional, # Faith In the Emperor
@@ -1268,6 +1328,48 @@ static func _execute_reroll_specific_dice_for_each_unit(fx: Array, _token_pools:
 		]
 		on_event.call("ability_triggered", [card_id, summary_msg])
 		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
+
+static func _execute_spend_morale_to_gain_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
+	if not units_valid:
+		return
+
+	# 1. Calculate dynamic spend cap based on current wallet contents vs card max value
+	var available_morale: int = side_data[Stat.MORALE]
+	var max_spend_allowed: int = int(fx[2])
+	var spend_amount: int = min(max_spend_allowed, available_morale)
+
+	if spend_amount <= 0:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ ⚡ Conversion skipped: 0 Morale dice available."])
+		return
+
+	# 2. Consume the resource in-place using the standard helper bottleneck
+	if not _spend_die_to_continue(side_data, Stat.MORALE, spend_amount, role, on_event):
+		return
+
+	# 3. Read configuration style from the flat data array payload
+	var pool_type: int = int(fx[3])
+	var final_selection: int = pool_type
+
+	# If configured as RANDOM (0), pick ONE type globally for the entire batch up front
+	if pool_type == 0: # CardData.DicePoolType.RANDOM
+		final_selection = 1 if randi() % 2 == 0 else 2
+
+	var dice_type_label := ""
+
+	# 4. Modify the side's core dice pools directly based on the determined selection
+	if final_selection == 1: # CardData.DicePoolType.OFFENSE
+		side_data[Stat.OFFENCE] += spend_amount
+		dice_type_label = "Offence ⚔️"
+	else: # CardData.DicePoolType.DEFENSE
+		side_data[Stat.DEFENCE] += spend_amount
+		dice_type_label = "Defence 🛡️"
+
+	# 5. Telemetry logging
+	if on_event.is_valid():
+		on_event.call("ability_triggered", [card_id, "↳ ⚡ Spent %d Morale dice! Added +%d %s dice to the core pool." % [spend_amount, spend_amount, dice_type_label]])
+
+
 #endregion
 
 
@@ -1431,6 +1533,38 @@ static func _execute_discard_steal_icons(_fx: Array, _token_pools: Array, side_d
 			var def_ex: Array = def_side.get("extra_icons", [0, 0, 0])
 			
 			log_current_extra_icons(on_event, atk_ex, def_ex, "damage_step")
+
+static func _execute_opponent_discards_faceup_card(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
+	if not units_valid:
+		return
+
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	if parent_state.is_empty():
+		return
+
+	# 1. Locate the opponent's state data container
+	var opponent_key = Side.DEFENDER if role == "Attacker" else Side.ATTACKER
+	var opponent_side: Dictionary = parent_state.get(opponent_key, {})
+	var card_db: Dictionary = parent_state.get("card_db", {})
+
+	# 2. Use our least-icons helper to let the opponent choose their sacrifice
+	var target_idx: int = _find_faceup_card_with_least_icons(opponent_side, card_db)
+	
+	if target_idx == -1:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 📇 Discard failed: Opponent has no faceup combat cards in play area."])
+		return
+
+	# 3. Cache the target card details for logging before erasing it
+	var discarded_card_id: int = opponent_side["play_area"][target_idx]
+	
+	# 4. Perform the discard by clearing out the card slot
+	opponent_side["play_area"][target_idx] = 0
+	
+	# 5. Fire telemetry updates
+	if on_event.is_valid():
+		var opp_role_label := "Defender" if role == "Attacker" else "Attacker"
+		on_event.call("ability_triggered", [card_id, "↳ 📇 Discard forced! %s chose and discarded card ID %d from slot index %d." % [opp_role_label, discarded_card_id, target_idx]])
 
 #endregion
 

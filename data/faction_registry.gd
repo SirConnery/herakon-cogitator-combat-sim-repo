@@ -14,7 +14,7 @@ static func get_database() -> Dictionary:
 	# --- SPACE MARINES (SM) ---
 	db[FactionID.SPACE_MARINES] = {
 		"name": "Space Marines",
-		"debug_deck": [1010], # used instead of combat_deck when game_stage_generator.use_debug_deck_for_testing == true
+		"debug_deck": [1011], # used instead of combat_deck when game_stage_generator.use_debug_deck_for_testing == true
 		"upgrade_deck": [1001,1002,1003,1004,1005],
 		"combat_deck": [],
 		"units": [
