@@ -3,16 +3,18 @@ extends RefCounted
 
 enum CardID {
 	# --- SPACE MARINES (SM) ---
-	SM_AMBUSH                            = 1001,
-	SM_RECONNAISSANCE                    = 1002,
-	SM_FURY_OF_THE_ULTRAMAR                = 1003,
+	SM_AMBUSH								= 1001,
+	SM_RECONNAISSANCE						= 1002,
+	SM_FURY_OF_THE_ULTRAMAR					= 1003,
 	SM_BLESSED_POWER_ARMOUR					= 1004,
-	SM_COMBAT_FAITH_IN_EMPEROR            = 1005,
+	SM_COMBAT_FAITH_IN_EMPEROR				= 1005,
 
 	# --- ORKS (ORKS) ---
-	ORKS_GRETCHIN                        = 2001,
+	ORKS_GRETCHIN						= 2001,
 	ORKS_MEK_BOYZ						= 2002,
 	ORKS_ARD_BOYZ						= 2003,
+	ORKS_SHOOTA_BOYZ					= 2004,
+	ORKS_SLUGGA_BOYZ					= 2005,
 }
 
 static func get_database() -> Dictionary:
@@ -277,6 +279,67 @@ static func get_database() -> Dictionary:
 	
 	db[card.card_id] = card
 	
+	# ==========================================================================
+	# --- CARD 2004: Shoota Boyz ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ORKS_SHOOTA_BOYZ
+	card.card_name = "Shoota Boyz"
+	card.offence_icons = 2
+	card.required_unit_types = [CardData.UnitType.ORK_BOYZ]
+	
+	# --- GENERAL ABILITY ---
+	# Forced detriment/trade-off: Must reroll all own defense (Shield) dice
+	var ork_shoota_gen := CardEffect.new()
+	ork_shoota_gen.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
+	ork_shoota_gen.target_type = CardData.TargetType.SELF
+	ork_shoota_gen.pool_type = CardData.DicePoolType.DEFENSE
+	card.general_ability.append(ork_shoota_gen)
+	
+	# --- UNIT ABILITY ---
+	# Disruptive pressure: Forces opponent to reroll shields based on living Boyz count
+	var ork_shoota_unit := CardEffect.new()
+	ork_shoota_unit.effect_type = CardData.EffectType.REROLL_SPECIFIC_DICE_FOR_EACH_UNIT
+	ork_shoota_unit.target_type = CardData.TargetType.OPPONENT
+	ork_shoota_unit.value = CardData.UnitType.ORK_BOYZ
+	ork_shoota_unit.pool_type = CardData.DicePoolType.DEFENSE
+	card.unit_ability.append(ork_shoota_unit)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 2005: Slugga Boyz ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ORKS_SLUGGA_BOYZ
+	card.card_name = "Slugga Boyz"
+	card.offence_icons = 1
+	card.defence_icons = 1
+	card.required_unit_types = [CardData.UnitType.ORK_BOYZ, CardData.UnitType.ONSLAUGHTS]
+	
+	# --- GENERAL ABILITY ---
+	# Complete psychological reset: Forces BOTH players to flush and reroll their Morale pools
+	var ork_slugga_gen_self := CardEffect.new()
+	ork_slugga_gen_self.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
+	ork_slugga_gen_self.target_type = CardData.TargetType.SELF
+	ork_slugga_gen_self.pool_type = CardData.DicePoolType.MORALE
+	card.general_ability.append(ork_slugga_gen_self)
+	
+	var ork_slugga_gen_opp := CardEffect.new()
+	ork_slugga_gen_opp.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
+	ork_slugga_gen_opp.target_type = CardData.TargetType.OPPONENT
+	ork_slugga_gen_opp.pool_type = CardData.DicePoolType.MORALE
+	card.general_ability.append(ork_slugga_gen_opp)
+	
+	# --- UNIT ABILITY ---
+	# Rallies 1 of your units
+	var ork_slugga_unit := CardEffect.new()
+	ork_slugga_unit.effect_type = CardData.EffectType.RALLY
+	ork_slugga_unit.target_type = CardData.TargetType.SELF
+	ork_slugga_unit.value = 1
+	card.unit_ability.append(ork_slugga_unit)
+	
+	db[card.card_id] = card
 	
 	
 	return db

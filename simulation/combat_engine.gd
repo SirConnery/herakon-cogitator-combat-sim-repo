@@ -119,6 +119,15 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		atk["extra_icons"] = [0, 0, 0]
 		def["extra_icons"] = [0, 0, 0]
 
+		# --- SYSTEMIC HEALING PASS: Restore all surviving figures to max HP ---
+		for squad in atk["squads"]:
+			for i in range(squad["alive_figures"].size()):
+				squad["alive_figures"][i] = squad["health_value"]
+
+		for squad in def["squads"]:
+			for i in range(squad["alive_figures"].size()):
+				squad["alive_figures"][i] = squad["health_value"]
+
 		if on_event.is_valid():
 			on_event.call("round_start", [round_index])
 			log_current_army_statuses(state, on_event)
@@ -1102,8 +1111,8 @@ static func _execute_reroll_all_specific_dice(fx: Array, _token_pools: Array, si
 
 	# 4. Print a single consolidated batch summary to eliminate log confusion
 	if on_event.is_valid():
-		var summary_msg := "↳ 🎲 Batch Roll Resolved: Picked up all %d %s dice. Simultaneous results -> +%d ⚔️ | +%d 🛡️ | +%d 🎖️" % [
-			total_to_reroll, labels[pool_type], results[0], results[1], results[2]
+		var summary_msg := "↳ 🎲 Batch Roll Resolved %s: Picked up all %d %s dice. Simultaneous results -> +%d ⚔️ | +%d 🛡️ | +%d 🎖️" % [
+			target_role, total_to_reroll, labels[pool_type], results[0], results[1], results[2]
 		]
 		on_event.call("ability_triggered", [card_id, summary_msg])
 		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
