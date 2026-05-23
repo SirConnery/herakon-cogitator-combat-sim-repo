@@ -83,45 +83,42 @@ static func get_database() -> Dictionary:
 	card = CardData.new()
 	card.card_id = CardID.SM_FURY_OF_THE_ULTRAMAR
 	card.card_name = "Fury of the Ultramar"
-	# CHANGED: Converted from bitmask flag to standard Array layout
 	card.required_unit_types = [CardData.UnitType.SPACE_MARINES, CardData.UnitType.STRIKE_CRUISERS]
 	
 	# --- GENERAL ABILITY ---
-	# 1. Opponent rerolls 1 die
-	var sm_fury_gen_1 := CardEffect.new()
-	sm_fury_gen_1.effect_type = CardData.EffectType.REROLL
-	sm_fury_gen_1.target_type = CardData.TargetType.OPPONENT
-	sm_fury_gen_1.value = 1
-	card.general_ability.append(sm_fury_gen_1)
+	# Rule 1: Opponent rerolls 1 die (Mandatory execution path)
+	var sm_fury_gen_opp := CardEffect.new()
+	sm_fury_gen_opp.effect_type = CardData.EffectType.REROLL
+	sm_fury_gen_opp.target_type = CardData.TargetType.OPPONENT
+	sm_fury_gen_opp.value = 1
+	card.general_ability.append(sm_fury_gen_opp)
 	
-	# 2. You reroll 1 die (Random balance modification)
-	var sm_fury_gen_2 := CardEffect.new()
-	sm_fury_gen_2.effect_type = CardData.EffectType.REROLL
-	sm_fury_gen_2.target_type = CardData.TargetType.SELF
-	sm_fury_gen_2.value = 1
-	card.general_ability.append(sm_fury_gen_2)
+	# Rule 2: Synchronized Choice Node (50/50 branch assignment path)
+	var sm_fury_gen_self_choice := CardEffect.new()
+	sm_fury_gen_self_choice.effect_type = CardData.EffectType.CHOICE
+	sm_fury_gen_self_choice.target_type = CardData.TargetType.SELF
 	
-	# --- UNIT ABILITY ---
-	# Choice: Opponent loses 1 Shield die OR opponent loses 2 Shield tokens
-	var sm_fury_unit_choice := CardEffect.new()
-	sm_fury_unit_choice.effect_type = CardData.EffectType.CHOICE
-	sm_fury_unit_choice.target_type = CardData.TargetType.OPPONENT
+	# Option A: Execute the 1-die self-reroll sequence
+	var fury_self_reroll_opt := CardEffect.new()
+	fury_self_reroll_opt.effect_type = CardData.EffectType.REROLL
+	fury_self_reroll_opt.target_type = CardData.TargetType.SELF
+	fury_self_reroll_opt.value = 1
 	
-	# Option A: Lose 1 Shield Die
-	var fury_opt_a := CardEffect.new()
-	fury_opt_a.effect_type = CardData.EffectType.REROLL
-	fury_opt_a.target_type = CardData.TargetType.OPPONENT
-	fury_opt_a.value = 1
+	# Option B: Decline the option and pass seamlessly
+	var fury_self_pass_opt := CardEffect.new()
+	fury_self_pass_opt.effect_type = CardData.EffectType.NONE
+	fury_self_pass_opt.target_type = CardData.TargetType.SELF
 	
-	# Option B: Lose 2 Shield Tokens
-	var fury_opt_b := CardEffect.new()
-	fury_opt_b.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
-	fury_opt_b.target_type = CardData.TargetType.OPPONENT
-	fury_opt_b.value = -2
-	fury_opt_b.pool_type = CardData.DicePoolType.DEFENSE
+	sm_fury_gen_self_choice.choices = [fury_self_reroll_opt, fury_self_pass_opt]
+	card.general_ability.append(sm_fury_gen_self_choice)
 	
-	sm_fury_unit_choice.choices = [fury_opt_a, fury_opt_b]
-	card.unit_ability.append(sm_fury_unit_choice)
+	# --- UNIT ABILITY (AUTOMATED CONDITIONAL) ---
+	var sm_fury_unit := CardEffect.new()
+	sm_fury_unit.effect_type = CardData.EffectType.SHIELD_DEBUFF_CONDITIONAL
+	sm_fury_unit.target_type = CardData.TargetType.OPPONENT
+	sm_fury_unit.value = 2  
+	sm_fury_unit.pool_type = CardData.DicePoolType.DEFENSE
+	card.unit_ability.append(sm_fury_unit)
 	
 	db[card.card_id] = card
 	

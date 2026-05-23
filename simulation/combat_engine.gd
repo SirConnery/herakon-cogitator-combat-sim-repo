@@ -522,6 +522,15 @@ static func _has_reached_max_dice(side_data: Dictionary) -> bool:
 	var side_dice: int = side_data[Stat.OFFENCE] + side_data[Stat.DEFENCE] + side_data[Stat.MORALE]
 	return side_dice >= 8
 
+static func _get_token_index(role: String, pool_type: int, target_opponent: bool) -> int:
+	var is_attacker := (role == "Attacker")
+	var subject_is_attacker := is_attacker if not target_opponent else not is_attacker
+	
+	var base_idx := 0 if subject_is_attacker else 2
+	var offset := 0 if pool_type == CardData.DicePoolType.OFFENSE else 1
+	
+	return base_idx + offset
+
 #endregion
 
 
@@ -598,9 +607,14 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.CHOICE: _execute_choice_selection,
 	CardData.EffectType.GAIN_DICE: _execute_gain_dice,
 	CardData.EffectType.GAIN_SPECIFIC_DICE: _execute_gain_specific_dice,
+	CardData.EffectType.LOSE_SPECIFIC_DICE: _execute_lose_specific_dice,
 	CardData.EffectType.REROLL: _execute_reroll,
+	
 	CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN: _execute_gain_specific_combat_token,
+	
 	CardData.EffectType.RALLY: _execute_rally, 
+
+	CardData.EffectType.SHIELD_DEBUFF_CONDITIONAL: _execute_shield_debuff_conditional,
 	CardData.EffectType.DESTROY_FOR_DESTROY: _execute_destroy_for_destroy,
 }
 
@@ -662,11 +676,15 @@ static func _execute_choice_selection(fx: Array, token_pools: Array, side_data: 
 	if not options is Array or options.is_empty():
 		return
 		
+	var is_attacker := (role == "Attacker")
+	var opponent_side_data: Dictionary = side_data.get("parent_state", {}).get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
+		
 	var valid_options: Array = []
 	for sub_fx in options:
 		if not sub_fx is Array:
 			continue
 		var effect_type: int = sub_fx[0]
+		var target_type: int = sub_fx[1]
 		
 		match effect_type:
 			CardData.EffectType.RALLY:
@@ -675,6 +693,14 @@ static func _execute_choice_selection(fx: Array, token_pools: Array, side_data: 
 			CardData.EffectType.GAIN_DICE, CardData.EffectType.GAIN_SPECIFIC_DICE:
 				var current_total: int = side_data[Stat.OFFENCE] + side_data[Stat.DEFENCE] + side_data[Stat.MORALE]
 				if current_total < 8:
+					valid_options.append(sub_fx)
+			CardData.EffectType.REROLL:
+				var target_ctx = opponent_side_data if target_type == 1 else side_data
+				var pool_to_check: int = sub_fx[3]
+				
+				if pool_to_check == 2 and not target_ctx.is_empty() and target_ctx[Stat.DEFENCE] > 0:
+					valid_options.append(sub_fx)
+				elif pool_to_check != 2 and not target_ctx.is_empty():
 					valid_options.append(sub_fx)
 			_:
 				valid_options.append(sub_fx)
@@ -687,6 +713,13 @@ static func _execute_choice_selection(fx: Array, token_pools: Array, side_data: 
 		return
 		
 	var sub_effect_type: int = chosen_sub_fx[0]
+	
+	# Handles optional choice passes cleanly without throwing an unresolved error
+	if sub_effect_type == CardData.EffectType.NONE:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 🎲 Tactical Choice: %s elected to pass on their optional self-reroll action." % role])
+		return
+
 	if EFFECT_RESOLVERS.has(sub_effect_type):
 		EFFECT_RESOLVERS[sub_effect_type].call(chosen_sub_fx, token_pools, side_data, role, card_id, units_valid, on_event)
 
@@ -761,6 +794,80 @@ static func _execute_gain_specific_dice(fx: Array, _token_pools: Array, side_dat
 	side_data[Stat.DEFENCE] += b_defence
 	side_data[Stat.MORALE] += b_morale
 
+static func _execute_lose_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	if fx[2] is Array:
+		return
+		
+	var requested_val: int = fx[2]
+	var target_type: int = fx[1]
+	var pool_type: int = fx[3]
+	
+	var is_attacker := (role == "Attacker")
+	var targets_self := (target_type == 0)
+	
+	# Determine whose dice pool is shrinking
+	var target_side_data := side_data
+	var target_role := role
+	if not targets_self:
+		target_role = "Defender" if is_attacker else "Attacker"
+		target_side_data = side_data.get("parent_state", {}).get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
+		
+	if target_side_data.is_empty():
+		return
+
+	var labels := {1: "Offence", 2: "Defence", 3: "Morale"}
+	var stat_map := {1: Stat.OFFENCE, 2: Stat.DEFENCE, 3: Stat.MORALE}
+	
+	var lost_offence := 0
+	var lost_defence := 0
+	var lost_morale := 0
+
+	# --- BRANCH 1: Strip From A Specific Targeted Pool ---
+	if pool_type in stat_map:
+		var target_stat = stat_map[pool_type]
+		var available_dice: int = target_side_data[target_stat]
+		var actual_lost = min(requested_val, available_dice)
+		
+		if actual_lost > 0:
+			target_side_data[target_stat] -= actual_lost
+			match pool_type:
+				1: lost_offence = actual_lost
+				2: lost_defence = actual_lost
+				3: lost_morale = actual_lost
+				
+			if on_event.is_valid():
+				on_event.call("ability_triggered", [card_id, "Resolved LOSE_SPECIFIC_DICE: %s lost %d %s die/dice." % [target_role, actual_lost, labels[pool_type]]])
+
+	# --- BRANCH 2: Strip Randomly From Any Existing Pools ---
+	elif pool_type == 0:
+		for iteration in range(requested_val):
+			var o_count: int = target_side_data[Stat.OFFENCE]
+			var d_count: int = target_side_data[Stat.DEFENCE]
+			var m_count: int = target_side_data[Stat.MORALE]
+			var total_dice := o_count + d_count + m_count
+			
+			if total_dice == 0:
+				break # Opponent is bone-dry, nothing left to take
+				
+			var picked_idx := randi() % total_dice
+			if picked_idx < o_count:
+				target_side_data[Stat.OFFENCE] -= 1
+				lost_offence += 1
+			elif picked_idx < (o_count + d_count):
+				target_side_data[Stat.DEFENCE] -= 1
+				lost_defence += 1
+			else:
+				target_side_data[Stat.MORALE] -= 1
+				lost_morale += 1
+				
+		var total_lost_classes := lost_offence + lost_defence + lost_morale
+		if total_lost_classes > 0 and on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "Resolved LOSE_SPECIFIC_DICE: %s lost %d random dice portfolio entries (-%d⚔️, -%d🛡️, -%d🎖️)." % [target_role, total_lost_classes, lost_offence, lost_defence, lost_morale]])
+
+	# Broadcast a master state updates call log if changes occurred
+	if (lost_offence + lost_defence + lost_morale) > 0 and on_event.is_valid():
+		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
+
 
 static func _execute_reroll(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, _card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	if fx[2] is Array:
@@ -834,6 +941,7 @@ static func _execute_gain_specific_combat_token(fx: Array, token_pools: Array, _
 
 	if on_event.is_valid():
 		on_event.call("tokens_updated", [role, token_pools[base_idx], token_pools[base_idx + 1]])
+
 
 
 static func _execute_rally(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
@@ -1006,5 +1114,45 @@ static func _find_lethal_sacrifice_target(squads: Array, total_damage: int, roun
 							sacrifice_target = {"squad": squad, "index": i}
 							
 	return sacrifice_target
+
+static func _execute_shield_debuff_conditional(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
+	var max_tokens_to_strip: int = fx[2]
+	var pool_type: int = fx[3]
+	
+	# 1. Use the token index helper to inspect the opponent's pool status silently
+	var opp_token_idx := _get_token_index(role, pool_type, true)
+	var current_opp_tokens: int = token_pools[opp_token_idx]
+	
+	# --- BRANCH 1: Opponent has tokens -> Outsource to generic token handler ---
+	if current_opp_tokens > 0:
+		var tokens_lost = min(current_opp_tokens, max_tokens_to_strip)
+		
+		# Build a temporary runtime effect payload targeted at the enemy's tokens
+		var token_payload := [
+			CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN, # Index 0: EffectType
+			1,                                             # Index 1: TargetType.OPPONENT
+			-tokens_lost,                                  # Index 2: Value (Negative modifier strips tokens)
+			pool_type,                                     # Index 3: PoolType
+			fx[4],                                         # Index 4: Block Type
+			fx[5]                                          # Index 5: Requirements Array
+		]
+		
+		_execute_gain_specific_combat_token(token_payload, token_pools, side_data, role, card_id, units_valid, on_event)
+		
+	# --- BRANCH 2: Opponent has 0 tokens -> Outsource to generic dice dropper ---
+	else:
+		# Build a temporary runtime effect payload targeted at the enemy's dice pool
+		var dice_payload := [
+			CardData.EffectType.LOSE_SPECIFIC_DICE,         # Index 0: EffectType
+			1,                                             # Index 1: TargetType.OPPONENT
+			1,                                             # Index 2: Value (Count of dice to drop)
+			pool_type,                                     # Index 3: PoolType
+			fx[4],                                         # Index 4: Block Type
+			fx[5]                                          # Index 5: Requirements Array
+		]
+		
+		_execute_lose_specific_dice(dice_payload, token_pools, side_data, role, card_id, units_valid, on_event)
+
+
 
 #endregion
