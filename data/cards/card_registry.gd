@@ -4,6 +4,7 @@ extends RefCounted
 enum CardID {
 	# --- SPACE MARINES (SM) ---
 	SM_AMBUSH							= 1001,
+	SM_RECONNAISSANCE					= 1002,
 	SM_COMBAT_FAITH_IN_EMPEROR			= 1005,
 
 	# --- ORKS (ORKS) ---
@@ -37,6 +38,39 @@ static func get_database() -> Dictionary:
 	sm_ambush_unit.target_type = CardData.TargetType.OPPONENT
 	sm_ambush_unit.value = 1 # Number of Morale dice penalty cost to tax the enemy
 	card.unit_ability.append(sm_ambush_unit)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 1002: Reconnaissance ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.SM_RECONNAISSANCE
+	card.card_name = "Reconnaissance"
+	card.defence_icons = 1
+	card.required_unit_types = CardData.UnitType.NONE
+	
+	# General Ability: Choice between 2 Offence Tokens or 2 Defence Tokens
+	var sm_recon_choice := CardEffect.new()
+	sm_recon_choice.effect_type = CardData.EffectType.CHOICE
+	sm_recon_choice.target_type = CardData.TargetType.SELF
+	
+	# Option A: Gain 2 Offence Tokens
+	var recon_opt_a := CardEffect.new()
+	recon_opt_a.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
+	recon_opt_a.target_type = CardData.TargetType.SELF
+	recon_opt_a.value = 2
+	recon_opt_a.pool_type = CardData.DicePoolType.OFFENSE
+	
+	# Option B: Gain 2 Defence Tokens
+	var recon_opt_b := CardEffect.new()
+	recon_opt_b.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
+	recon_opt_b.target_type = CardData.TargetType.SELF
+	recon_opt_b.value = 2
+	recon_opt_b.pool_type = CardData.DicePoolType.DEFENSE
+	
+	sm_recon_choice.choices = [recon_opt_a, recon_opt_b]
+	card.general_ability.append(sm_recon_choice)
 	
 	db[card.card_id] = card
 	

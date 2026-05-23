@@ -171,8 +171,15 @@ func engine_callback(event_type: String, data: Array) -> void:
 		# CARD EFFECTS
 		# =========================================================
 		"card_icons_calculated":
-			print("🎴 %s card icons -> ⚔️ %d | 🛡️ %d | 🎖️ %d"
-				% [data[0], data[1], data[2], data[3]])
+			var role_label: String = data[0]
+			var off_icons: int = data[1]
+			var def_icons: int = data[2]
+			var mor_icons: int = data[3]
+			
+			print("🎴 %s card icons -> ⚔️ %d | 🛡️ %d | 🎖️ %d" % [role_label, off_icons, def_icons, mor_icons])
+
+			if current_panel != null:
+				current_panel.set_assess_damage_step_card_icons(role_label, off_icons, def_icons, mor_icons)
 
 
 		"ability_triggered":

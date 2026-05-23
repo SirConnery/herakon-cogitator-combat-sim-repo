@@ -15,10 +15,10 @@ class_name CombatRoundPanel
 @onready var att_cards_played_images: HBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/CardsPlayed/CardsPlayedImages
 @onready var att_assess_damage_step_units_unrouted_value: VBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue
 @onready var att_assess_damage_step_units_routed_value: VBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/UnitsRouted/Layout/UnitsRoutedValue
+@onready var att_assess_damage_step_icons_from_cards_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/CardsPanel/Layout/IconsFromCardsValue
 @onready var att_assess_damage_step_base_dice_rolls_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DicePanel/Layout/BaseDiceRollsValue
 @onready var att_assess_damage_step_tokens_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/Tokens/Layout/TokensValue
 @onready var att_assess_damage_step_morale_from_units_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel/Layout/MoraleFromUnitsValue
-@onready var att_assess_damage_step_cards_played_images: HBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/CardsPlayed/CardsPlayedImages
 @onready var att_damage_suffered_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DamageDealt/Layout/DamageSufferedValue
 
 @onready var def_combat_round_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout/RoundStartHeaderPanel/CombatRoundTextLayout/CombatRoundValue
@@ -31,10 +31,10 @@ class_name CombatRoundPanel
 @onready var def_cards_played_images: HBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/CardsPlayed/CardsPlayedImages
 @onready var def_assess_damage_step_units_unrouted_value: VBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue
 @onready var def_assess_damage_step_units_routed_value: VBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsRouted/Layout/UnitsRoutedValue
+@onready var def_assess_damage_step_icons_from_cards_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/CardsPanel/Layout/IconsFromCardsValue
 @onready var def_assess_damage_step_base_dice_rolls_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DicePanel/Layout/BaseDiceRollsValue
 @onready var def_assess_damage_step_tokens_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/Tokens/Layout/TokensValue
 @onready var def_assess_damage_step_morale_from_units_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel/Layout/MoraleFromUnitsValue
-@onready var def_assess_damage_step_cards_played_images: HBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/CardsPlayed/CardsPlayedImages
 @onready var def_damage_suffered_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DamageDealt/Layout/DamageSufferedValue
 
 #endregion
@@ -84,6 +84,18 @@ func set_damage_assessment_pools(role: String,damage: int) -> void:
 		att_damage_suffered_value.text = "%d 💥" % damage
 	else:
 		def_damage_suffered_value.text = "%d 💥" % damage
+
+func set_assess_damage_step_card_icons(role: String, offence: int, defence: int, morale: int) -> void:
+	var is_attacker := (role == "Attacker")
+	
+	var icon_string := "0" if (offence == 0 and defence == 0 and morale == 0) else "%d ⚔️\n%d 🛡️\n%d 🎖️" % [offence, defence, morale]
+	
+	if is_attacker:
+		if att_assess_damage_step_icons_from_cards_value != null:
+			att_assess_damage_step_icons_from_cards_value.text = icon_string
+	else:
+		if def_assess_damage_step_icons_from_cards_value != null:
+			def_assess_damage_step_icons_from_cards_value.text = icon_string
 
 ## Standard use case: Card tokens that apply immediately during the active step
 func set_assess_damage_step_tokens(role: String, offence_tokens: int, defence_tokens: int) -> void:
