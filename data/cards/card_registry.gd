@@ -10,13 +10,14 @@ enum CardID {
 	SM_COMBAT_FAITH_IN_EMPEROR				= 1005,
 	SM_HOLD_THE_LINE						= 1006,
 	SM_GLORY_AND_DEATH						= 1007,
+	SM_DROP_POD_ASSAULT						= 1008,
 
 	# --- ORKS (ORKS) ---
-	ORKS_GRETCHIN						= 2001,
-	ORKS_MEK_BOYZ						= 2002,
-	ORKS_ARD_BOYZ						= 2003,
-	ORKS_SHOOTA_BOYZ					= 2004,
-	ORKS_SLUGGA_BOYZ					= 2005,
+	ORKS_GRETCHIN						= 3001,
+	ORKS_MEK_BOYZ						= 3002,
+	ORKS_ARD_BOYZ						= 3003,
+	ORKS_SHOOTA_BOYZ					= 3004,
+	ORKS_SLUGGA_BOYZ					= 3005,
 }
 
 static func get_database() -> Dictionary:
@@ -296,6 +297,32 @@ static func get_database() -> Dictionary:
 	
 	sm_glory_unit_choice.choices = [glory_opt_a, glory_opt_b]
 	card.unit_ability.append(sm_glory_unit_choice)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 1008: Drop Pod Assault ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.SM_DROP_POD_ASSAULT
+	card.card_name = "Drop Pod Assault"
+	card.card_tier = CardData.CardTier.TIER_0
+	card.offence_icons = 1
+	card.defence_icons = 1
+	card.required_unit_types = [CardData.UnitType.SPACE_MARINES]
+	
+	# --- GENERAL ABILITY ---
+	var sm_drop_gen := CardEffect.new()
+	sm_drop_gen.effect_type = CardData.EffectType.GAIN_DICE
+	sm_drop_gen.target_type = CardData.TargetType.SELF
+	sm_drop_gen.value = 1
+	card.general_ability.append(sm_drop_gen)
+	
+	# --- UNIT ABILITY ---
+	var sm_drop_unit := CardEffect.new()
+	sm_drop_unit.effect_type = CardData.EffectType.SPEND_MORALE_TO_SPAWN_UNIT
+	sm_drop_unit.target_type = CardData.TargetType.SELF
+	card.unit_ability.append(sm_drop_unit)
 	
 	db[card.card_id] = card
 	

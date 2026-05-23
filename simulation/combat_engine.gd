@@ -429,6 +429,31 @@ static func log_current_extra_icons(on_event: Callable, atk_icons: Array, def_ic
 static func _is_attacker(side: int) -> bool:
 	return side == Side.ATTACKER
 
+static func _spend_die_to_continue(side_data: Dictionary, stat_key: int, amount: int, role: String, on_event: Callable) -> bool:
+	if side_data[stat_key] < amount:
+		return false
+		
+	side_data[stat_key] -= amount
+	
+	if on_event.is_valid():
+		on_event.call("dice_updated", [role, side_data[Stat.OFFENCE], side_data[Stat.DEFENCE], side_data[Stat.MORALE]])
+		
+	return true
+
+static func _spawn_ground_unit(side_data: Dictionary, unit_name: String, unit_type: int, tier: int, combat: int, health: int, morale: int) -> void:
+	var new_unit_payload := {
+		"name": unit_name, 
+		"tier": tier, 
+		"unit_type": unit_type,
+		"is_ship": false, 
+		"combat_value": combat, 
+		"health_value": health, 
+		"morale_value": morale, 
+		"alive_figures": [health],
+		"figures_routed": [false]
+	}
+	side_data["squads"].append(new_unit_payload)
+
 static func _check_card_unit_reqs_met(card_id: int, card_db: Dictionary, player_side: Dictionary) -> bool:
 	if not card_db.has(card_id):
 		return false
@@ -679,13 +704,14 @@ static var EFFECT_RESOLVERS = {
 	
 	
 	# SM
-	CardData.EffectType.SHIELD_DEBUFF_CONDITIONAL: _execute_shield_debuff_conditional, # FAITH_IN_THE_EMPEROR
+	CardData.EffectType.SHIELD_DEBUFF_CONDITIONAL: _execute_shield_debuff_conditional, # Faith In the Emperor
 	CardData.EffectType.RALLY_IF_DEFENDING: _execute_rally_if_defending, # Hold the Line
 	CardData.EffectType.RALLY_IF_ATTACKING: _execute_rally_if_attacking, # Glory and Death
+	CardData.EffectType.SPEND_MORALE_TO_SPAWN_UNIT: _execute_spend_morale_to_spawn_unit, # Drop Pod Assault
 	
 	# ORK
-	CardData.EffectType.DESTROY_FOR_DESTROY: _execute_destroy_for_destroy, # GRETCHIN
-	CardData.EffectType.DISCARD_STEAL_ICONS: _execute_discard_steal_icons, # MEK_BOYZ
+	CardData.EffectType.DESTROY_FOR_DESTROY: _execute_destroy_for_destroy, # Gretchin
+	CardData.EffectType.DISCARD_STEAL_ICONS: _execute_discard_steal_icons, # Mek Boyz
 }
 
 #endregion
@@ -1536,5 +1562,58 @@ static func _execute_rally_if_attacking(fx: Array, token_pools: Array, side_data
 		
 	# Conditions met -> Forward parameters straight into your core rally pipeline
 	_execute_rally(fx, token_pools, side_data, role, card_id, units_valid, on_event)
+
+
+static func _execute_spend_morale_to_spawn_unit(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
+	if not units_valid:
+		return
+
+	# 1. Pipeline the resource check through your flat modifier check hook
+	if not _spend_die_to_continue(side_data, Stat.MORALE, 1, role, on_event):
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 🪂 Spawning failed: Insufficient Morale dice pool."])
+		return
+
+	# 2. Hardcode the spawn pools strictly by card ID to maintain pure flat execution speed
+	var unit_name := ""
+	var unit_type: int = 0
+	var tier := 0
+	var combat_val := 0
+	var health_val := 0
+	var morale_val := 0
+
+	match card_id:
+		1008: # SM_DROP_POD_ASSAULT
+			var spawn_roll := randi() % 2
+			if spawn_roll == 0:
+				unit_name = "Scouts"
+				unit_type = CardData.UnitType.SCOUTS
+				tier = 0
+				combat_val = 1
+				health_val = 2
+				morale_val = 2
+			else:
+				unit_name = "Space Marines"
+				unit_type = CardData.UnitType.SPACE_MARINES
+				tier = 1
+				combat_val = 2
+				health_val = 3
+				morale_val = 3
+				
+		# Future proofed: Easily drop incoming faction spawn tricks right here
+		# 2006: # ORKS_GREEN_TIDE
+		#    ... configuration parameters ...
+
+	# 3. Inject directly using your high-speed primitive ground unit helper
+	if not unit_name.is_empty():
+		_spawn_ground_unit(side_data, unit_name, unit_type, tier, combat_val, health_val, morale_val)
+
+	# 4. Fire localized telemetry updates
+	if on_event.is_valid():
+		on_event.call("ability_triggered", [card_id, "↳ 🪂 Spent 1 Morale die! Deployed a fresh, unrouted %s squad." % unit_name])
+		
+		var parent_state: Dictionary = side_data.get("parent_state", {})
+		if not parent_state.is_empty():
+			log_current_army_statuses(parent_state, on_event, "damage_step")
 
 #endregion
