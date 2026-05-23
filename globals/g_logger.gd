@@ -41,9 +41,6 @@ func _role_color(role: String) -> String:
 #region Engine Callback
 
 func engine_callback(event_type: String, data: Array) -> void:
-	# ==============================================================================
-	# FIXED: Sync index FIRST so _get_panel() always references the correct round panel
-	# ==============================================================================
 	if event_type == "round_start":
 		active_round_index = data[0]
 
@@ -68,7 +65,41 @@ func engine_callback(event_type: String, data: Array) -> void:
 					panel.update_unit_displays(true, "Deploying...", "")
 					panel.update_unit_displays(false, "Deploying...", "")
 
-
+		
+		
+		# =========================================================
+		# UNITS
+		# =========================================================
+		"unit_status_logged":
+			# data = [side_name, unrouted_str, routed_str, optional_phase_context]
+			print("💂    Units unrouted and routed -> %s: %s | %s" % [data[0], data[1], data[2]])
+			
+			if current_panel != null:
+				var active_attacker_name: String = ""
+				var controller = context.get("controller_ref")
+				if controller != null:
+					var raw_factions = FactionRegistry.get_database()
+					var atk_profile = raw_factions.get(controller.attacker_faction)
+					active_attacker_name = atk_profile.get("name", FactionRegistry.FactionID.keys()[controller.attacker_faction])
+				
+				var is_attacker :bool = (data[0] == active_attacker_name)
+				
+				# Extract target phase context if the engine provided it, otherwise default to "all"
+				var phase_context: String = data[3] if data.size() > 3 else "all"
+				
+				# Execute universal unified visual router pass
+				current_panel.update_unit_displays(is_attacker, data[1], data[2], phase_context)
+		
+		
+		"unit_morale_status_logged":
+			var role_label: String = data[0]
+			var morale_val: int = data[1]
+			var phase_context: String = data[2]
+			
+			print("🧠     %s Unit 🎖️ %d (%s)" % [role_label, morale_val, phase_context])
+			
+			if current_panel != null:
+				current_panel.set_unit_morale(role_label, morale_val, phase_context)
 		# =========================================================
 		# DICE
 		# =========================================================
@@ -120,7 +151,19 @@ func engine_callback(event_type: String, data: Array) -> void:
 			var controller = context.get("controller_ref")
 			if controller and controller.has_method("_print_cards_drawn"):
 				controller._print_cards_drawn(data[0], data[1])
+		
+		"card_icons_logged":
+			var role_label: String = data[0]
+			var off_icons: int = data[1]
+			var def_icons: int = data[2]
+			var mor_icons: int = data[3]
+			var phase_context: String = data[4]
+			
+			print("🎴 %s card icons updated (%s) -> ⚔️ %d | 🛡️ %d | 🎖️ %d" % [role_label, phase_context, off_icons, def_icons, mor_icons])
 
+			if current_panel != null:
+				var is_attacker: bool = (role_label == "Attacker")
+				current_panel.update_card_icons_displays(is_attacker, off_icons, def_icons, mor_icons, phase_context)
 		
 		# =========================================================
 		# EXTRA ICONS
@@ -140,38 +183,6 @@ func engine_callback(event_type: String, data: Array) -> void:
 			var round_num: int = data[0]
 			print("")
 			print("\n🔄--- COMBAT ROUND %d ---" % (round_num + 1))
-
-
-		"unit_status_logged":
-			# data = [side_name, unrouted_str, routed_str, optional_phase_context]
-			print("💂    Units unrouted and routed -> %s: %s | %s" % [data[0], data[1], data[2]])
-			
-			if current_panel != null:
-				var active_attacker_name: String = ""
-				var controller = context.get("controller_ref")
-				if controller != null:
-					var raw_factions = FactionRegistry.get_database()
-					var atk_profile = raw_factions.get(controller.attacker_faction)
-					active_attacker_name = atk_profile.get("name", FactionRegistry.FactionID.keys()[controller.attacker_faction])
-				
-				var is_attacker :bool = (data[0] == active_attacker_name)
-				
-				# Extract target phase context if the engine provided it, otherwise default to "all"
-				var phase_context: String = data[3] if data.size() > 3 else "all"
-				
-				# Execute universal unified visual router pass
-				current_panel.update_unit_displays(is_attacker, data[1], data[2], phase_context)
-		
-		
-		"unit_morale_calculated":
-			var role_label: String = data[0]
-			var morale_val: int = data[1]
-			var phase_context: String = data[2] if data.size() > 2 else "round_start"
-			
-			print("🧠     %s Unit 🎖 ️ %d (%s)" % [role_label, morale_val, phase_context])
-			
-			if current_panel != null:
-				current_panel.set_unit_morale(role_label, morale_val, phase_context)
 		
 		"assess_damage_step_start":
 			print("-- Assess Damage Step started. -- ")

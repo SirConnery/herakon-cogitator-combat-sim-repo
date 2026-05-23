@@ -9,6 +9,7 @@ class_name CombatRoundPanel
 @onready var att_faction_name_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/Layout/FactionName/Layout/FactionNameValue
 @onready var att_units_unrouted_value: VBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue
 @onready var att_units_routed_value: VBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/UnitsRouted/Layout/UnitsRoutedValue
+@onready var att_icons_from_cards_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/CardsPanel/Layout/IconsFromCardsValue
 @onready var att_base_dice_rolls_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/DicePanel/Layout/BaseDiceRollsValue
 @onready var att_tokens_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/Tokens/Layout/TokensValue
 @onready var att_morale_from_units_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel/Layout/MoraleFromUnitsValue
@@ -19,7 +20,6 @@ class_name CombatRoundPanel
 @onready var att_assess_damage_step_base_dice_rolls_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DicePanel/Layout/BaseDiceRollsValue
 @onready var att_assess_damage_step_tokens_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/Tokens/Layout/TokensValue
 @onready var att_assess_damage_step_extra_icons_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/ExtraIcons/Layout/ExtraIconsValue
-
 @onready var att_assess_damage_step_morale_from_units_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel/Layout/MoraleFromUnitsValue
 @onready var att_damage_suffered_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DamageDealt/Layout/DamageSufferedValue
 
@@ -27,6 +27,7 @@ class_name CombatRoundPanel
 @onready var def_faction_name_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout/FactionName/Layout/FactionNameValue
 @onready var def_units_unrouted_value: VBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue
 @onready var def_units_routed_value: VBoxContainer = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsRouted/Layout/UnitsRoutedValue
+@onready var def_icons_from_cards_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/CardsPanel/Layout/IconsFromCardsValue
 @onready var def_base_dice_rolls_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/DicePanel/Layout/BaseDiceRollsValue
 @onready var def_tokens_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/Tokens/Layout/TokensValue
 @onready var def_morale_from_units_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel/Layout/MoraleFromUnitsValue
@@ -88,17 +89,20 @@ func set_damage_assessment_pools(role: String,damage: int) -> void:
 	else:
 		def_damage_suffered_value.text = "%d 💥" % damage
 
-func set_assess_damage_step_card_icons(role: String, offence: int, defence: int, morale: int) -> void:
-	var is_attacker := (role == "Attacker")
+func update_card_icons_displays(is_attacker: bool, offence: int, defence: int, morale: int, target_phase: String = "all") -> void:
+	var icon_string := "0" if (offence == 0 and defence == 0 and morale == 0) else "%d ⚔️ \n %d 🛡️ \n %d 🎖️" % [offence, defence, morale]
 	
-	var icon_string := "0" if (offence == 0 and defence == 0 and morale == 0) else "%d ⚔️\n%d 🛡️\n%d 🎖️" % [offence, defence, morale]
-	
-	if is_attacker:
-		if att_assess_damage_step_icons_from_cards_value != null:
-			att_assess_damage_step_icons_from_cards_value.text = icon_string
-	else:
-		if def_assess_damage_step_icons_from_cards_value != null:
-			def_assess_damage_step_icons_from_cards_value.text = icon_string
+	# 1. Update Starting Layout
+	if target_phase == "all" or target_phase == "round_start":
+		var target_label: Label = att_icons_from_cards_value if is_attacker else def_icons_from_cards_value
+		if target_label != null:
+			target_label.text = icon_string
+
+	# 2. Update Damage Assessment Snapshot Layout
+	if target_phase == "all" or target_phase == "damage_step":
+		var target_assess_label: Label = att_assess_damage_step_icons_from_cards_value if is_attacker else def_assess_damage_step_icons_from_cards_value
+		if target_assess_label != null:
+			target_assess_label.text = icon_string
 
 ## Standard use case: Card tokens that apply immediately during the active step
 func set_assess_damage_step_tokens(role: String, offence_tokens: int, defence_tokens: int) -> void:

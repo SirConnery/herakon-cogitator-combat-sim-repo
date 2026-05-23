@@ -65,8 +65,6 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 	var def_survivors := 0
 	var final_atk_morale := 0
 	var final_def_morale := 0
-	var atk_morale_from_units := 0
-	var def_morale_from_units := 0
 
 	# ==============================================================================
 	# ENGINE SIMULATION START
@@ -110,11 +108,7 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 	if on_event.is_valid():
 		on_event.call("roll_dice_phase", [])
 		log_current_dice_pools(on_event, atk, def, "round_start")
-		
-		atk_morale_from_units = _calculate_current_morale_from_units(atk)
-		def_morale_from_units = _calculate_current_morale_from_units(def)
-		on_event.call("unit_morale_calculated", ["Attacker", atk_morale_from_units, "round_start"])
-		on_event.call("unit_morale_calculated", ["Defender", def_morale_from_units, "round_start"])
+		log_current_unit_morale(on_event, atk, def, "round_start")
 
 	# --- DRAW COMBAT CARDS STEP ---
 	atk["cards_in_hand"] = []
@@ -147,16 +141,12 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 
 		if on_event.is_valid():
 			on_event.call("round_start", [round_index])
-			atk_morale_from_units = _calculate_current_morale_from_units(atk)
-			def_morale_from_units = _calculate_current_morale_from_units(def)
-			
 			log_current_army_statuses(state, on_event)
 			log_current_dice_pools(on_event, atk, def, "round_start")
 			log_current_extra_icons(on_event, atk["extra_icons"], def["extra_icons"], "round_start")
-			
-			on_event.call("unit_morale_calculated", ["Attacker", atk_morale_from_units, "round_start"])
-			on_event.call("unit_morale_calculated", ["Defender", def_morale_from_units, "round_start"])
-			
+			log_current_unit_morale(on_event, atk, def, "round_start")
+			log_current_card_icons(on_event, [card_icons_atk_offence, card_icons_atk_defence, card_icons_atk_morale], [card_icons_def_offence, card_icons_def_defence, card_icons_def_morale], "round_start")
+
 
 		# --- PLAY COMBAT CARDS ---
 		atk_idx = randi() % atk["cards_in_hand"].size()
@@ -188,10 +178,7 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 			card_icons_def_defence += d[1]
 			card_icons_def_morale += d[2]
 
-		if on_event.is_valid():
-			on_event.call("card_icons_calculated", ["Attacker", card_icons_atk_offence, card_icons_atk_defence, card_icons_atk_morale])
-			on_event.call("card_icons_calculated", ["Defender", card_icons_def_offence, card_icons_def_defence, card_icons_def_morale])
-			
+
 		# --- INSTANTIATE LOCAL OPERATION SCRATCHPADS ---
 		token_pools[0] = 0 # Attacker Offence Token
 		token_pools[1] = 0 # Attacker Defence Token
@@ -208,21 +195,19 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 			on_event.call("assess_damage_step_start", [])
 			log_current_army_statuses(state, on_event, "damage_step")
 			log_current_dice_pools(on_event, atk, def, "damage_step")
-			
-			atk_morale_from_units = _calculate_current_morale_from_units(atk)
-			def_morale_from_units = _calculate_current_morale_from_units(def)
-			on_event.call("unit_morale_calculated", ["Attacker", atk_morale_from_units, "damage_step"])
-			on_event.call("unit_morale_calculated", ["Defender", def_morale_from_units, "damage_step"])
+			log_current_unit_morale(on_event, atk, def, "damage_step")
 			log_current_extra_icons(on_event, atk["extra_icons"], def["extra_icons"], "damage_step")
+			log_current_card_icons(on_event, [card_icons_atk_offence, card_icons_atk_defence, card_icons_atk_morale], [card_icons_def_offence, card_icons_def_defence, card_icons_def_morale], "damage_step")
+
 			
 		atk.erase("parent_state")
 		def.erase("parent_state")
 
-		# --- CHANGED: Safely query the round-scoped dynamic icon modifiers ---
+		# --- Safely query the round-scoped dynamic icon modifiers ---
 		var atk_ex: Array = atk.get("extra_icons", [0, 0, 0])
 		var def_ex: Array = def.get("extra_icons", [0, 0, 0])
 
-		# --- CHANGED: Append extra_icons array values straight into the battle equations ---
+		# --- Append extra_icons array values straight into the battle equations ---
 		context[0] = atk[Stat.OFFENCE] + card_icons_atk_offence + token_pools[0] + atk_ex[0] # atk_offence
 		context[1] = atk[Stat.DEFENCE] + card_icons_atk_defence + token_pools[1] + atk_ex[1] # atk_defence
 		context[2] = def[Stat.OFFENCE] + card_icons_def_offence + token_pools[2] + def_ex[0] # def_offence
@@ -404,6 +389,16 @@ static func log_current_army_statuses(state: Dictionary, on_event: Callable, pha
 		
 		on_event.call("unit_status_logged", [side_name, unrouted_str, routed_str, phase_context])
 
+static func log_current_unit_morale(on_event: Callable, atk_side: Dictionary, def_side: Dictionary, phase_context: String = "all") -> void:
+	if not on_event.is_valid():
+		return
+		
+	var atk_morale := _calculate_current_morale_from_units(atk_side)
+	var def_morale := _calculate_current_morale_from_units(def_side)
+	
+	on_event.call("unit_morale_status_logged", ["Attacker", atk_morale, phase_context])
+	on_event.call("unit_morale_status_logged", ["Defender", def_morale, phase_context])
+
 static func log_current_dice_pools(on_event: Callable, atk_side: Dictionary, def_side: Dictionary, phase_context: String = "all") -> void:
 	if not on_event.is_valid():
 		return
@@ -418,6 +413,16 @@ static func log_current_dice_pools(on_event: Callable, atk_side: Dictionary, def
 	
 	on_event.call("dice_pool_status_logged", ["Attacker", atk_o, atk_d, atk_m, phase_context])
 	on_event.call("dice_pool_status_logged", ["Defender", def_o, def_d, def_m, phase_context])
+
+static func log_current_card_icons(on_event: Callable, atk_icons: Array, def_icons: Array, phase_context: String = "all") -> void:
+	if not on_event.is_valid():
+		return
+		
+	var a = atk_icons if atk_icons.size() == 3 else [0, 0, 0]
+	var d = def_icons if def_icons.size() == 3 else [0, 0, 0]
+	
+	on_event.call("card_icons_logged", ["Attacker", a[0], a[1], a[2], phase_context])
+	on_event.call("card_icons_logged", ["Defender", d[0], d[1], d[2], phase_context])
 
 static func log_current_extra_icons(on_event: Callable, atk_icons: Array, def_icons: Array, phase_context: String = "all") -> void:
 	var a = atk_icons if atk_icons.size() == 3 else [0, 0, 0]
