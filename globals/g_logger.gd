@@ -230,29 +230,27 @@ func engine_callback(event_type: String, data: Array) -> void:
 
 
 		# =========================================================
-		# POOL DEBUG
-		# =========================================================
-		"pools_updated":
-			print("📌 %s pools -> ⚔️ %d | 🛡️ %d" % [data[0], data[1], data[2]])
-
-
-		# =========================================================
 		# DAMAGE APPLICATION EVENTS
 		# =========================================================
 		"unit_routed":
-			print("🏳️ %s '%s' routed (took %d dmg)" % [data[0], data[1], data[2]])
-
+			var message := "🏳️ %s '%s' routed (took %d dmg)" % [data[0], data[1], data[2]]
+			print(message)
+			# Routes directly to your scrolling panel text display
+			if current_panel:
+				current_panel.append_console_log(message)
 
 		"unit_destroyed":
 			var cond := "ROUTED" if data[3] else "HEALTHY"
-			print("💀 %s '%s' (%s) destroyed (%d dmg)"
-				% [data[0], data[1], cond, data[2]])
-
+			var message := "💀 %s '%s' (%s) destroyed (%d dmg)" % [data[0], data[1], cond, data[2]]
+			print(message)
+			if current_panel:
+				current_panel.append_console_log(message)
 
 		"damage_absorbed":
-			print("🛡️ %s '%s' absorbed %d damage while routed"
-				% [data[0], data[1], data[2]])
-
+			var message := "🛡️ %s '%s' absorbed %d damage while routed" % [data[0], data[1], data[2]]
+			print(message)
+			if current_panel:
+				current_panel.append_console_log(message)
 
 		"unit_rallied":
 			var controller = context.get("controller_ref")
@@ -261,8 +259,10 @@ func engine_callback(event_type: String, data: Array) -> void:
 			if controller:
 				card_name = controller.get_card_metadata(data[3], "card_name")
 
-			print("🤝 %s rallied '%s' (%d HP) via %s"
-				% [data[0], data[1], data[2], card_name])
+			var message := "🤝 %s rallied '%s' (%d HP) via %s" % [data[0], data[1], data[2], card_name]
+			print(message)
+			if current_panel:
+				current_panel.append_console_log(message)
 
 
 		# =========================================================

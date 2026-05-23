@@ -11,7 +11,7 @@ class_name SimController
 @export var attacker_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.SM
 @export var defender_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.ORKS
 
-var is_ground_combat := true
+var is_ground_combat := false
 
 @onready var card_db: Dictionary = CardRegistry.get_database()
 
@@ -55,21 +55,22 @@ func run_single_logged_battle() -> void:
 	# ==============================================================================
 	var atk_profile = raw_factions.get(attacker_faction)
 	var def_profile = raw_factions.get(defender_faction)
-	
+
 	# Extracting via your active "name" property key, fallback to stringified enum on missing entry
 	var atk_name_string: String = atk_profile.get("name", FactionRegistry.FactionID.keys()[attacker_faction])
 	var def_name_string: String = def_profile.get("name", FactionRegistry.FactionID.keys()[defender_faction])
-	
-	match_state["attacker"]["name"] = atk_name_string
-	match_state["defender"]["name"] = def_name_string
+
+	match_state[SimCombatEngine.Side.ATTACKER]["name"] = atk_name_string
+	match_state[SimCombatEngine.Side.DEFENDER]["name"] = def_name_string
 	# ==============================================================================
 	
 	# Package dynamic helper metadata into a context block for G_Logger to consume asynchronously
+	# UPDATED: Replaced "attacker" and "defender" string literals with integer enum keys
 	var logging_context := {
 		"game_stage_string": GameStageGenerator.Stage.keys()[current_stage].capitalize(),
 		"matchup_scale": _get_weighted_matchup_string(attacker_power, defender_power),
-		"attacker_composition": _format_squad_composition_string(match_state["attacker"]["squads"]),
-		"defender_composition": _format_squad_composition_string(match_state["defender"]["squads"]),
+		"attacker_composition": _format_squad_composition_string(match_state[SimCombatEngine.Side.ATTACKER]["squads"]),
+		"defender_composition": _format_squad_composition_string(match_state[SimCombatEngine.Side.DEFENDER]["squads"]),
 		"controller_ref": self
 	}
 	
@@ -114,9 +115,11 @@ func _flatten_card_database(raw_db: Dictionary) -> Dictionary:
 		
 		# Always treat abilities as clean sequential loops
 		for fx in card.general_ability:
-			effects_list.append(_flatten_single_effect(fx, true, CardData.UnitType.NONE))
+			# CHANGED: Pass an empty array [] instead of CardData.UnitType.NONE
+			effects_list.append(_flatten_single_effect(fx, true, []))
 			
 		for fx in card.unit_ability:
+			# Pass the type array directly down into your effect scraper
 			effects_list.append(_flatten_single_effect(fx, false, card.required_unit_types))
 				
 		flat_db[card_id] = [
@@ -127,7 +130,7 @@ func _flatten_card_database(raw_db: Dictionary) -> Dictionary:
 		]
 	return flat_db
 
-func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_val: int) -> Array:
+func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_types: Array) -> Array:
 	var raw_effect_type: int = int(fx.effect_type)
 	var value_slot: Variant = fx.value
 	
@@ -138,29 +141,26 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_v
 		if not raw_choices.is_empty():
 			for sub_fx in raw_choices:
 				if sub_fx != null:
-					# FIXED: Forward the unit requirement bitmask down into the nested sub-choices
-					# so that inner choice paths maintain the master card validation rules!
-					var flat_sub = _flatten_single_effect(sub_fx, is_general_ability, req_unit_val)
+					# Forward the validation array down into nested paths safely
+					var flat_sub = _flatten_single_effect(sub_fx, is_general_ability, req_unit_types)
 					flattened_choices.append(flat_sub)
 					
 		value_slot = flattened_choices
 	else:
-		# Safeguard for atomic operations (Dice, Rally, Reroll)
 		if value_slot is Array:
 			value_slot = 1
 		else:
 			value_slot = int(value_slot)
 			
-	# Convert the boolean flag cleanly back into a 0 or 1 integer structure for your engine layout
 	var ability_block_type_id: int = 0 if is_general_ability else 1
 			
 	return [
-		fx.effect_type,         # Index 0
-		fx.target_type,         # Index 1
-		value_slot,             # Index 2
-		fx.pool_type,           # Index 3
+		fx.effect_type,          # Index 0
+		fx.target_type,          # Index 1
+		value_slot,              # Index 2
+		fx.pool_type,            # Index 3
 		ability_block_type_id,  # Index 4
-		int(req_unit_val)       # Index 5 - Ensured robust bitmask integer safety pass
+		req_unit_types          # Index 5 - Stores the flat requirement Array directly
 	]
 
 func _prepare_faction_blueprint(faction_id: int, factions: Dictionary, randomized_tiers: PackedInt32Array) -> Dictionary:
@@ -193,9 +193,20 @@ func _prepare_faction_blueprint(faction_id: int, factions: Dictionary, randomize
 func _instantiate_match_state(atk_blueprint: Dictionary, def_blueprint: Dictionary) -> Dictionary:
 	var atk_squads = _build_match_units(atk_blueprint["selected_units"])
 	var def_squads = _build_match_units(def_blueprint["selected_units"])
+	
 	return {
-		"attacker": {"name": "Attacker", "combat_deck": atk_blueprint["combat_deck"].duplicate(), "play_area": [0,0,0], "squads": atk_squads},
-		"defender": {"name": "Defender", "combat_deck": def_blueprint["combat_deck"].duplicate(), "play_area": [0,0,0], "squads": def_squads}
+		SimCombatEngine.Side.ATTACKER: {
+			"name": "Attacker", 
+			"combat_deck": atk_blueprint["combat_deck"].duplicate(), 
+			"play_area": [0,0,0], 
+			"squads": atk_squads
+		},
+		SimCombatEngine.Side.DEFENDER: {
+			"name": "Defender", 
+			"combat_deck": def_blueprint["combat_deck"].duplicate(), 
+			"play_area": [0,0,0], 
+			"squads": def_squads
+		}
 	}
 
 func _build_match_units(selected_units: Array) -> Array[Dictionary]:

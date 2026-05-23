@@ -3,13 +3,13 @@ extends RefCounted
 
 enum CardID {
 	# --- SPACE MARINES (SM) ---
-	SM_AMBUSH							= 1001,
-	SM_RECONNAISSANCE					= 1002,
-	SM_FURY_OF_THE_ULTRAMAR				= 1003,
-	SM_COMBAT_FAITH_IN_EMPEROR			= 1005,
+	SM_AMBUSH                            = 1001,
+	SM_RECONNAISSANCE                    = 1002,
+	SM_FURY_OF_THE_ULTRAMAR                = 1003,
+	SM_COMBAT_FAITH_IN_EMPEROR            = 1005,
 
 	# --- ORKS (ORKS) ---
-	ORKS_GRETCHIN						= 2001,
+	ORKS_GRETCHIN                        = 2001,
 }
 
 static func get_database() -> Dictionary:
@@ -23,7 +23,8 @@ static func get_database() -> Dictionary:
 	card.card_id = CardID.SM_AMBUSH
 	card.card_name = "Ambush"
 	card.offence_icons = 1
-	card.required_unit_types = CardData.UnitType.SCOUTS | CardData.UnitType.STRIKE_CRUISERS
+	# CHANGED: Converted from bitmask flag to standard Array layout
+	card.required_unit_types = [CardData.UnitType.SCOUTS, CardData.UnitType.STRIKE_CRUISERS]
 	
 	# General ability: Gain 2 offence tokens
 	var sm_ambush_gen := CardEffect.new()
@@ -49,7 +50,8 @@ static func get_database() -> Dictionary:
 	card.card_id = CardID.SM_RECONNAISSANCE
 	card.card_name = "Reconnaissance"
 	card.defence_icons = 1
-	card.required_unit_types = CardData.UnitType.NONE
+	# CHANGED: Emptied array signifies no active constraints needed
+	card.required_unit_types = []
 	
 	# General Ability: Choice between 2 Offence Tokens or 2 Defence Tokens
 	var sm_recon_choice := CardEffect.new()
@@ -81,7 +83,8 @@ static func get_database() -> Dictionary:
 	card = CardData.new()
 	card.card_id = CardID.SM_FURY_OF_THE_ULTRAMAR
 	card.card_name = "Fury of the Ultramar"
-	card.required_unit_types = CardData.UnitType.SPACE_MARINES | CardData.UnitType.STRIKE_CRUISERS
+	# CHANGED: Converted from bitmask flag to standard Array layout
+	card.required_unit_types = [CardData.UnitType.SPACE_MARINES, CardData.UnitType.STRIKE_CRUISERS]
 	
 	# --- GENERAL ABILITY ---
 	# 1. Opponent rerolls 1 die
@@ -104,15 +107,15 @@ static func get_database() -> Dictionary:
 	sm_fury_unit_choice.effect_type = CardData.EffectType.CHOICE
 	sm_fury_unit_choice.target_type = CardData.TargetType.OPPONENT
 	
-	# Option A: Lose 1 Shield Die (We will implement this via hostile reroll target modification or negative dice allocation hooks)
+	# Option A: Lose 1 Shield Die
 	var fury_opt_a := CardEffect.new()
-	fury_opt_a.effect_type = CardData.EffectType.REROLL # Forces a re-check modification on a defensive value
+	fury_opt_a.effect_type = CardData.EffectType.REROLL
 	fury_opt_a.target_type = CardData.TargetType.OPPONENT
 	fury_opt_a.value = 1
 	
-	# Option B: Lose 2 Shield Tokens (Can be passed as negative modifiers to token allocation logic)
+	# Option B: Lose 2 Shield Tokens
 	var fury_opt_b := CardEffect.new()
-	fury_opt_b.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN # Handled as negative tracking
+	fury_opt_b.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
 	fury_opt_b.target_type = CardData.TargetType.OPPONENT
 	fury_opt_b.value = -2
 	fury_opt_b.pool_type = CardData.DicePoolType.DEFENSE
@@ -129,7 +132,8 @@ static func get_database() -> Dictionary:
 	card.card_id = CardID.SM_COMBAT_FAITH_IN_EMPEROR
 	card.card_name = "Faith In the Emperor"
 	card.offence_icons = 1
-	card.required_unit_types = CardData.UnitType.SCOUTS
+	# CHANGED: Single requirements are wrapped neatly in single-item arrays
+	card.required_unit_types = [CardData.UnitType.SCOUTS]
 	
 	# General effect
 	var sm_gen_1 := CardEffect.new()
@@ -166,7 +170,8 @@ static func get_database() -> Dictionary:
 	card = CardData.new()
 	card.card_id = CardID.ORKS_GRETCHIN
 	card.card_name = "Gretchin"
-	card.required_unit_types = CardData.UnitType.ONSLAUGHTS
+	# CHANGED: Converted from bitmask flag to standard Array layout
+	card.required_unit_types = [CardData.UnitType.ONSLAUGHTS]
 	
 	var ork_gen_1 := CardEffect.new()
 	ork_gen_1.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
