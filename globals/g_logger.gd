@@ -65,8 +65,8 @@ func engine_callback(event_type: String, data: Array) -> void:
 			for panel in active_round_panels:
 				if panel != null:
 					panel.set_faction_titles(atk_name, def_name)
-					panel.set_tokens("Attacker", 0, 0)
-					panel.set_tokens("Defender", 0, 0)
+					panel.set_assess_damage_step_tokens("Attacker", 0, 0)
+					panel.set_assess_damage_step_tokens("Defender", 0, 0)
 					panel.update_unit_displays(true, "Deploying...", "")
 					panel.update_unit_displays(false, "Deploying...", "")
 
@@ -155,11 +155,14 @@ func engine_callback(event_type: String, data: Array) -> void:
 		
 		
 		"unit_morale_calculated":
-			# data = [role_string ("Attacker"/"Defender"), morale_value (int)]
-			print("🧠     %s Unit 🎖️ %d" % [data[0], data[1]])
+			var role_label: String = data[0]
+			var morale_val: int = data[1]
+			var phase_context: String = data[2] if data.size() > 2 else "round_start"
+			
+			print("🧠     %s Unit 🎖 ️ %d (%s)" % [role_label, morale_val, phase_context])
 			
 			if current_panel != null:
-				current_panel.set_unit_morale(data[0], data[1])
+				current_panel.set_unit_morale(role_label, morale_val, phase_context)
 		
 		"assess_damage_step_start":
 			print("-- Assess Damage Step started. -- ")
@@ -186,10 +189,18 @@ func engine_callback(event_type: String, data: Array) -> void:
 				current_panel.append_console_log(msg)
 		
 		"tokens_updated":
-			print("🪙 %s tokens updated -> %d ⚔️ | %d 🛡️" % [data[0], data[1], data[2]])
+			var role_label: String = data[0]
+			var offence: int = data[1]
+			var defence: int = data[2]
+			var phase_context: String = data[3] if data.size() > 3 else "damage_step"
+			
+			print("🪙 %s tokens updated (%s) -> %d ⚔️ | %d 🛡️" % [role_label, phase_context, offence, defence])
 
 			if current_panel:
-				current_panel.set_tokens(data[0], data[1], data[2])
+				if phase_context == "round_start":
+					current_panel.set_round_start_tokens(role_label, offence, defence)
+				else:
+					current_panel.set_assess_damage_step_tokens(role_label, offence, defence)
 
 		# =========================================================
 		# DAMAGE PIPELINE

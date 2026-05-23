@@ -105,8 +105,8 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		
 		atk_morale_from_units = _calculate_current_morale_from_units(atk)
 		def_morale_from_units = _calculate_current_morale_from_units(def)
-		on_event.call("unit_morale_calculated", ["Attacker", atk_morale_from_units])
-		on_event.call("unit_morale_calculated", ["Defender", def_morale_from_units])
+		on_event.call("unit_morale_calculated", ["Attacker", atk_morale_from_units, "round_start"])
+		on_event.call("unit_morale_calculated", ["Defender", def_morale_from_units, "round_start"])
 
 	# --- DRAW COMBAT CARDS STEP ---
 	atk["cards_in_hand"] = []
@@ -140,8 +140,10 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 			
 			log_current_army_statuses(state, on_event)
 			log_current_dice_pools(on_event, atk["dice_offence"], atk["dice_defence"], atk["dice_morale"], def["dice_offence"], def["dice_defence"], def["dice_morale"], "round_start")
-			on_event.call("unit_morale_calculated", ["Attacker", atk_morale_from_units])
-			on_event.call("unit_morale_calculated", ["Defender", def_morale_from_units])
+			
+			# FIXED: Synced with your unified target_phase layout routing
+			on_event.call("unit_morale_calculated", ["Attacker", atk_morale_from_units, "round_start"])
+			on_event.call("unit_morale_calculated", ["Defender", def_morale_from_units, "round_start"])
 
 		# --- PLAY COMBAT CARDS ---
 		atk_idx = randi() % atk["cards_in_hand"].size()
@@ -195,7 +197,12 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 			on_event.call("assess_damage_step_start", [])
 			log_current_army_statuses(state, on_event, "damage_step")
 			log_current_dice_pools(on_event, atk["dice_offence"], atk["dice_defence"], atk["dice_morale"], def["dice_offence"], def["dice_defence"], def["dice_morale"], "damage_step")
-		
+			
+			atk_morale_from_units = _calculate_current_morale_from_units(atk)
+			def_morale_from_units = _calculate_current_morale_from_units(def)
+			on_event.call("unit_morale_calculated", ["Attacker", atk_morale_from_units, "damage_step"])
+			on_event.call("unit_morale_calculated", ["Defender", def_morale_from_units, "damage_step"])
+			
 		atk.erase("parent_state")
 		def.erase("parent_state")
 
@@ -227,9 +234,15 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		def_routing_lethal = _is_routing_lethal(atk_card_id, card_db, def)
 		atk_routing_lethal = _is_routing_lethal(def_card_id, card_db, atk)
 
-		apply_damage(def, context["net_damage_to_defender"], round_index, def_routing_lethal, on_event)
-		apply_damage(atk, context["net_damage_to_attacker"], round_index, atk_routing_lethal, on_event)
+		# FIXED: Capture returned arrays containing figures routed during this specific step
+		var defender_newly_routed_array: Array[Dictionary] = apply_damage(def, context["net_damage_to_defender"], round_index, def_routing_lethal, on_event)
+		var attacker_newly_routed_array: Array[Dictionary] = apply_damage(atk, context["net_damage_to_attacker"], round_index, atk_routing_lethal, on_event)
 
+		# FIXED: Inject these active collections into the workspace mapping context
+		context["defender_newly_routed"] = defender_newly_routed_array
+		context["attacker_newly_routed"] = attacker_newly_routed_array
+
+		# Fire the after-damage timing window check with data populated
 		_execute_timing_hook(CardData.TimingWindow.AFTER_DAMAGE, state, context, round_index, card_db, on_event)
 
 	# --- FINAL WIN CONDITION RESOLUTION EVALUATION ---
@@ -519,7 +532,7 @@ static func _execute_timing_hook(window: int, state: Dictionary, context: Dictio
 					# --- HOOK: DESTROY ON ROUT OR SPEND ---
 					if effect_type == CardData.EffectType.DESTROY_ON_ROUT_OR_SPEND:
 						var newly_routed: Array = side["routed_list"]
-						var ransom_cost: int = fx[2] # Dynamically grab the cost from the card data!
+						var ransom_cost: int = int(fx[2]) # Explicitly cast atomic data point
 						
 						if newly_routed.is_empty():
 							continue
@@ -533,20 +546,24 @@ static func _execute_timing_hook(window: int, state: Dictionary, context: Dictio
 								continue
 								
 							if on_event.is_valid():
-								on_event.call("ability_triggered", [active_card_id, "Ambush activates! Checking ransom on newly routed %s figure." % squad["name"]])
+								on_event.call("ability_triggered", [active_card_id, "Ambush triggers! Demanding destruction ransom on newly routed %s figure." % squad["name"]])
 							
 							var opponent_side: Dictionary = side["opponent"]
 							
 							# Check if opponent can pay the ransom
 							if opponent_side.get("dice_morale", 0) >= ransom_cost:
 								opponent_side["dice_morale"] -= ransom_cost
+								
+								# FIXED: Route through standard callback pipeline so UI captures the text payload
 								if on_event.is_valid():
-									print("    ↳ 🤝 Opponent spends %d Morale dice ransom! The unit survives." % ransom_cost)
+									on_event.call("ability_triggered", [active_card_id, "↳ 🤝 Opponent spends %d Morale dice ransom! The %s unit survives." % [ransom_cost, squad["name"]]])
 							else:
 								# Insufficient Morale to pay! Instant Execution!
 								squad["alive_figures"][idx] = 0
 								squad["figures_routed"][idx] = true
+								
 								if on_event.is_valid():
+									on_event.call("ability_triggered", [active_card_id, "↳ 🪓 Ransom unpaid! Instant death execution resolved on %s." % squad["name"]])
 									on_event.call("unit_destroyed", [side["opp_role"], squad["name"], 0, true])
 
 #endregion
@@ -576,8 +593,17 @@ static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, t
 	var unit_phase_started := false
 	
 	for fx in effects_list:
+		var effect_type: int = fx[0]
 		var is_unit_fx: bool = (fx[4] == 1)
 		
+		# ==============================================================================
+		# Proactive Passive Ability Logging Hook
+		# ==============================================================================
+		if effect_type == CardData.EffectType.DESTROY_ON_ROUT_OR_SPEND:
+			if on_event.is_valid():
+				on_event.call("ability_triggered", [active_card_id, "⚠️ Passive Threat Primed: Any units routed this round face destruction!"])
+		# ==============================================================================
+
 		if not is_unit_fx and not general_phase_started:
 			general_phase_started = true
 			if on_event.is_valid(): on_event.call("ability_block_started", [role_label, "General"])
@@ -592,12 +618,13 @@ static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, t
 					on_event.call("unit_ability_not_resolved", [role_label, active_card_id, [req_unit]])
 				continue
 		
-		var effect_type: int = fx[0]
 		if EFFECT_RESOLVERS.has(effect_type):
 			# Pass token_pools for token-based tracking, side_data for physical dice modifications
 			EFFECT_RESOLVERS[effect_type].call(fx, token_pools, side_data, role_label, active_card_id, on_event)
 		else:
-			print("    -> ⚠️ Engine skipped non-instant or unresolved effect archetype: %d" % effect_type)
+			# Safety check to avoid skipping passive logs that don't need active atomic modifiers
+			if effect_type != CardData.EffectType.DESTROY_ON_ROUT_OR_SPEND:
+				print("    -> ⚠️ Engine skipped non-instant or unresolved effect archetype: %d" % effect_type)
 
 # ==============================================================================
 # ATOMIC MECHANIC RESOLVERS

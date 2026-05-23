@@ -63,11 +63,21 @@ func update_dice_displays(is_attacker: bool, offence: int, defence: int, morale_
 		if target_assess_label != null:
 			target_assess_label.text = dice_string
 
-func set_unit_morale(role: String, morale_value: int) -> void:
-	if role == "Attacker":
-		att_morale_from_units_value.text = str(morale_value) + " 🎖️"
-	else:
-		def_morale_from_units_value.text = str(morale_value) + " 🎖️"
+func set_unit_morale(role: String, morale_value: int, target_phase: String = "all") -> void:
+	var is_attacker := (role == "Attacker")
+	var morale_string := "0" if morale_value == 0 else str(morale_value) + " 🎖 `"
+	
+	# 1. Update Starting Layout Snapshot
+	if target_phase == "all" or target_phase == "round_start":
+		var target_label: Label = att_morale_from_units_value if is_attacker else def_morale_from_units_value
+		if target_label != null:
+			target_label.text = morale_string
+
+	# 2. Update Damage Assess Step Layout
+	if target_phase == "all" or target_phase == "damage_step":
+		var target_assess_label: Label = att_assess_damage_step_morale_from_units_value if is_attacker else def_assess_damage_step_morale_from_units_value
+		if target_assess_label != null:
+			target_assess_label.text = morale_string
 
 func set_damage_assessment_pools(role: String,damage: int) -> void:
 	if role == "Attacker":
@@ -75,17 +85,29 @@ func set_damage_assessment_pools(role: String,damage: int) -> void:
 	else:
 		def_damage_suffered_value.text = "%d 💥" % damage
 
-func set_tokens(role: String, offence_tokens: int, defence_tokens: int) -> void:
-	var token_string := "+%d ⚔️ | +%d 🛡️" % [offence_tokens, defence_tokens]
+## Standard use case: Card tokens that apply immediately during the active step
+func set_assess_damage_step_tokens(role: String, offence_tokens: int, defence_tokens: int) -> void:
+	var token_string := "0" if (offence_tokens == 0 and defence_tokens == 0) else "+%d ⚔️\n+%d 🛡️" % [offence_tokens, defence_tokens]
 	
 	if role == "Attacker":
-		att_tokens_value.text = token_string
-		if "att_assess_damage_step_tokens_value" in self and att_assess_damage_step_tokens_value != null:
+		if att_assess_damage_step_tokens_value != null:
 			att_assess_damage_step_tokens_value.text = token_string
 	else:
-		def_tokens_value.text = token_string
-		if "def_assess_damage_step_tokens_value" in self and def_assess_damage_step_tokens_value != null:
+		if def_assess_damage_step_tokens_value != null:
 			def_assess_damage_step_tokens_value.text = token_string
+
+
+## Special use case: Delayed/Persistent effects that carry forward into Round Start
+func set_round_start_tokens(role: String, offence_tokens: int, defence_tokens: int) -> void:
+	var token_string := "0" if (offence_tokens == 0 and defence_tokens == 0) else "+%d ⚔️ | +%d 🛡️" % [offence_tokens, defence_tokens]
+	
+	if role == "Attacker":
+		if att_tokens_value != null:
+			att_tokens_value.text = token_string
+	else:
+		if def_tokens_value != null:
+			def_tokens_value.text = token_string
+
 
 func append_console_log(message: String) -> void:
 	console_log_value.text += message + "\n"
