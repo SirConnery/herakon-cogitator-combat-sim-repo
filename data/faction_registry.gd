@@ -40,11 +40,11 @@ static func get_database() -> Dictionary:
 		"name": "Orks",
 		"upgrade_deck": [1,1,1,1,1],
 		"combat_deck": [
-			CardRegistry.CardID.ORKS_MEK_BOYZ,
-			CardRegistry.CardID.ORKS_MEK_BOYZ,
-			CardRegistry.CardID.ORKS_MEK_BOYZ,
-			CardRegistry.CardID.ORKS_MEK_BOYZ,
-			CardRegistry.CardID.ORKS_MEK_BOYZ
+			CardRegistry.CardID.ORKS_ARD_BOYZ,
+			CardRegistry.CardID.ORKS_ARD_BOYZ,
+			CardRegistry.CardID.ORKS_ARD_BOYZ,
+			CardRegistry.CardID.ORKS_ARD_BOYZ,
+			CardRegistry.CardID.ORKS_ARD_BOYZ
 		],
 		"units": [
 			{"unit_type": CardData.UnitType.ORK_BOYZ, "unit_name": "Ork Boyz", "tier": 0, "is_ship": false, "unit_count": 9, "combat_value": 2, "health_value": 2, "morale_value": 1},

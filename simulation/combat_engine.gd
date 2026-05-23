@@ -644,6 +644,8 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.LOSE_SPECIFIC_DICE: _execute_lose_specific_dice,
 	CardData.EffectType.CONVERT_DICE_TO_SPECIFIC_DICE: _execute_convert_dice_to_specific_dice,
 	CardData.EffectType.REROLL: _execute_reroll,
+	CardData.EffectType.REROLL_ALL_SPECIFIC_DICE: _execute_reroll_all_specific_dice,
+	CardData.EffectType.REROLL_SPECIFIC_DICE_FOR_EACH_UNIT: _execute_reroll_specific_dice_for_each_unit,
 	
 	CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN: _execute_gain_specific_combat_token,
 	
@@ -998,7 +1000,7 @@ static func _execute_convert_dice_to_specific_dice(fx: Array, _token_pools: Arra
 			if not atk_side.is_empty() and not def_side.is_empty():
 				log_current_dice_pools(on_event, atk_side, def_side, "Conversion")
 
-static func _execute_reroll(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, _card_id: int, _units_valid: bool, on_event: Callable) -> void:
+static func _execute_reroll(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	if fx[2] is Array:
 		return
 		
@@ -1017,40 +1019,182 @@ static func _execute_reroll(fx: Array, _token_pools: Array, side_data: Dictionar
 	if target_side_data.is_empty():
 		return
 
-	var icon_names := {0: "Offence", 1: "Defence", 2: "Morale"}
+	var current_o: int = target_side_data[Stat.OFFENCE]
+	var current_d: int = target_side_data[Stat.DEFENCE]
+	var current_m: int = target_side_data[Stat.MORALE]
+	var total_dice := current_o + current_d + current_m
+	
+	var actual_reroll_count: int = min(val, total_dice)
+	if actual_reroll_count <= 0:
+		return
 
-	for iteration in range(val):
-		var o_count: int = target_side_data[Stat.OFFENCE]
-		var d_count: int = target_side_data[Stat.DEFENCE]
-		var m_count: int = target_side_data[Stat.MORALE]
-		var total_dice: int = o_count + d_count + m_count
-		
-		if total_dice == 0:
-			break
-			
-		var picked_index := randi() % total_dice
-		var face_removed := -1
-		
-		if picked_index < o_count:
-			face_removed = 0
-			target_side_data[Stat.OFFENCE] -= 1
-		elif picked_index < (o_count + d_count):
-			face_removed = 1
-			target_side_data[Stat.DEFENCE] -= 1
-		else:
-			face_removed = 2
-			target_side_data[Stat.MORALE] -= 1
-			
+	var removed_o := 0
+	var removed_d := 0
+	var removed_m := 0
+	
+	# 1. Generate an index array tracking the frozen state of the pool
+	var flat_pool: Array[int] = []
+	for i in range(current_o): flat_pool.append(0)
+	for i in range(current_d): flat_pool.append(1)
+	for i in range(current_m): flat_pool.append(2)
+	
+	# 2. Extract targeted categories safely without mutation loops
+	for iteration in range(actual_reroll_count):
+		var picked_idx := randi() % flat_pool.size()
+		match flat_pool.pop_at(picked_idx):
+			0: removed_o += 1
+			1: removed_d += 1
+			2: removed_m += 1
+
+	# 3. Apply the combined removal batch instantly
+	target_side_data[Stat.OFFENCE] -= removed_o
+	target_side_data[Stat.DEFENCE] -= removed_d
+	target_side_data[Stat.MORALE] -= removed_m
+	
+	# 4. Roll fresh replacement metrics into an insertion tracker
+	var added_o := 0
+	var added_d := 0
+	var added_m := 0
+	
+	for iteration in range(actual_reroll_count):
 		var face_added := _roll_custom_die_index()
-		
 		match face_added:
-			0: target_side_data[Stat.OFFENCE] += 1
-			1: target_side_data[Stat.DEFENCE] += 1
-			2: target_side_data[Stat.MORALE] += 1
+			0: added_o += 1
+			1: added_d += 1
+			2: added_m += 1
 			
-		if on_event.is_valid():
-			on_event.call("dice_rerolled_log", [target_role, icon_names[face_removed], icon_names[face_added]])
+	# 5. Inject newly rolled faces back into play systems all at once
+	target_side_data[Stat.OFFENCE] += added_o
+	target_side_data[Stat.DEFENCE] += added_d
+	target_side_data[Stat.MORALE] += added_m
 
+	# 6. Print clean unified summary
+	if on_event.is_valid():
+		var summary_msg := "↳ 🎲 Tactical Reroll: Selected %d random dice (-%d⚔️, -%d🛡️, -%d🎖️). Simultaneous results -> +%d ⚔️ | +%d 🛡️ | +%d 🎖️" % [
+			actual_reroll_count, removed_o, removed_d, removed_m, added_o, added_d, added_m
+		]
+		on_event.call("ability_triggered", [card_id, summary_msg])
+		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
+
+static func _execute_reroll_all_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var pool_type: int = fx[3]
+	var targets_self: bool = (fx[1] == 0)
+	
+	var target_side_data := side_data
+	var target_role := role
+	if not targets_self:
+		var is_attacker := (role == "Attacker")
+		target_role = "Defender" if is_attacker else "Attacker"
+		target_side_data = side_data.get("parent_state", {}).get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
+		
+	if target_side_data.is_empty():
+		return
+
+	var stat_map := {1: Stat.OFFENCE, 2: Stat.DEFENCE, 3: Stat.MORALE}
+	var labels := {1: "Offence", 2: "Defence", 3: "Morale"}
+	
+	if not pool_type in stat_map:
+		return
+		
+	var target_stat = stat_map[pool_type]
+	var total_to_reroll: int = target_side_data[target_stat]
+	
+	if total_to_reroll <= 0:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 🔄 Reroll All skipped: %s has 0 %s dice." % [target_role, labels[pool_type]]])
+		return
+	
+	# 1. Take the entire frozen batch out of the live pool instantly
+	target_side_data[target_stat] = 0
+	
+	# 2. Roll all fresh faces into an isolated temporary buffer
+	var results := [0, 0, 0] # [Offence, Defence, Morale]
+	for i in range(total_to_reroll):
+		var face_added := _roll_custom_die_index()
+		results[face_added] += 1
+			
+	# 3. Commit the new batch results back to the live pool all at once
+	target_side_data[Stat.OFFENCE] += results[0]
+	target_side_data[Stat.DEFENCE] += results[1]
+	target_side_data[Stat.MORALE] += results[2]
+
+	# 4. Print a single consolidated batch summary to eliminate log confusion
+	if on_event.is_valid():
+		var summary_msg := "↳ 🎲 Batch Roll Resolved: Picked up all %d %s dice. Simultaneous results -> +%d ⚔️ | +%d 🛡️ | +%d 🎖️" % [
+			total_to_reroll, labels[pool_type], results[0], results[1], results[2]
+		]
+		on_event.call("ability_triggered", [card_id, summary_msg])
+		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
+
+
+static func _execute_reroll_specific_dice_for_each_unit(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var target_unit_type: int = fx[2]
+	var pool_type: int = fx[3]
+	var targets_self: bool = (fx[1] == 0)
+	
+	var is_attacker := (role == "Attacker")
+	var user_side_data := side_data
+	var target_side_data := side_data
+	var target_role := role
+	
+	if not targets_self:
+		target_role = "Defender" if is_attacker else "Attacker"
+		target_side_data = side_data.get("parent_state", {}).get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
+	else:
+		user_side_data = side_data.get("parent_state", {}).get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
+
+	if target_side_data.is_empty() or user_side_data.is_empty():
+		return
+
+	var unit_count := 0
+	for squad in user_side_data["squads"]:
+		var squad_type: int = int(squad.get("unit_type", 0))
+		if squad_type == target_unit_type:
+			for i in range(squad["alive_figures"].size()):
+				if squad["alive_figures"][i] > 0 and not squad["figures_routed"][i]:
+					unit_count += 1
+					
+	if unit_count <= 0:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ ⚠️ Disruptive Presence failed: No active scaling units found."])
+		return
+
+	var stat_map := {1: Stat.OFFENCE, 2: Stat.DEFENCE, 3: Stat.MORALE}
+	var labels := {1: "Offence", 2: "Defence", 3: "Morale"}
+	
+	if not pool_type in stat_map:
+		return
+		
+	var target_stat = stat_map[pool_type]
+	var available_dice: int = target_side_data[target_stat]
+	var final_reroll_count: int = min(unit_count, available_dice)
+	
+	if final_reroll_count <= 0:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 🔄 Disrupt skipped: %s has 0 %s dice to target." % [target_role, labels[pool_type]]])
+		return
+
+	# 1. Deduct the whole target chunk safely up front
+	target_side_data[target_stat] -= final_reroll_count
+	
+	# 2. Roll fresh outcomes into an isolated tracking buffer
+	var results := [0, 0, 0]
+	for iteration in range(final_reroll_count):
+		var face_added := _roll_custom_die_index()
+		results[face_added] += 1
+
+	# 3. Inject new rolled allocations back into active state systems
+	target_side_data[Stat.OFFENCE] += results[0]
+	target_side_data[Stat.DEFENCE] += results[1]
+	target_side_data[Stat.MORALE] += results[2]
+
+	# 4. Print clean unified summary
+	if on_event.is_valid():
+		var summary_msg := "↳ 🪓 Disruptive Presence: Found %d matching units! Forced %s to simultaneous-reroll %d %s dice -> Gained +%d ⚔️ | +%d 🛡️ | +%d 🎖️" % [
+			unit_count, target_role, final_reroll_count, labels[pool_type], results[0], results[1], results[2]
+		]
+		on_event.call("ability_triggered", [card_id, summary_msg])
+		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
 #endregion
 
 
@@ -1355,6 +1499,7 @@ static func _execute_shield_debuff_conditional(fx: Array, token_pools: Array, si
 		]
 		
 		_execute_lose_specific_dice(dice_payload, token_pools, side_data, role, card_id, units_valid, on_event)
+
 
 
 
