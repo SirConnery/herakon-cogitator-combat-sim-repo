@@ -7,7 +7,6 @@ class_name SimController
 @export var current_stage: GameStageGenerator.Stage = GameStageGenerator.Stage.EARLY
 #@export var current_stage: GameStageGenerator.Stage = randi_range(0, 2) # change to this for random stages
 
-
 @export var attacker_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.SM
 @export var defender_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.ORKS
 
@@ -24,8 +23,10 @@ func _ready() -> void:
 		print("--- DISPATCHING PRODUCTION MASS RUNS ---")
 		# Pure high-speed loop logic goes here when ready...
 
+
 func show_ui() -> void:
 	pass
+
 
 func run_single_logged_battle() -> void:
 	var raw_cards: Dictionary = CardRegistry.get_database()
@@ -50,9 +51,9 @@ func run_single_logged_battle() -> void:
 	
 	var match_state: Dictionary = _instantiate_match_state(attacker_blueprint, defender_blueprint)
 	
-	# ==============================================================================
-	# FIXED: Look up registered faction profile strings using the "name" key
-	# ==============================================================================
+	# Inject the flat card database directly into the state container context
+	match_state["card_db"] = flat_card_db
+	
 	var atk_profile = raw_factions.get(attacker_faction)
 	var def_profile = raw_factions.get(defender_faction)
 
@@ -62,10 +63,8 @@ func run_single_logged_battle() -> void:
 
 	match_state[SimCombatEngine.Side.ATTACKER]["name"] = atk_name_string
 	match_state[SimCombatEngine.Side.DEFENDER]["name"] = def_name_string
-	# ==============================================================================
 	
 	# Package dynamic helper metadata into a context block for G_Logger to consume asynchronously
-	# UPDATED: Replaced "attacker" and "defender" string literals with integer enum keys
 	var logging_context := {
 		"game_stage_string": GameStageGenerator.Stage.keys()[current_stage].capitalize(),
 		"matchup_scale": _get_weighted_matchup_string(attacker_power, defender_power),
@@ -82,12 +81,14 @@ func run_single_logged_battle() -> void:
 	
 	G_Logger.finalize_battle_logger(attacker_won)
 
+
 ## Calculates the total structural combat weight of a generated squad list
 func _calculate_squads_weight(selected_units: Array) -> int:
 	var total_weight := 0
 	for unit in selected_units:
 		total_weight += unit["combat_value"] + unit["health_value"] + unit["morale_value"]
 	return total_weight
+
 
 ## Compares the total calculated power weights to classify the matchup thresholds
 func _get_weighted_matchup_string(atk_weight: int, def_weight: int) -> String:
@@ -96,7 +97,7 @@ func _get_weighted_matchup_string(atk_weight: int, def_weight: int) -> String:
 	
 	var difference_pct = abs(atk_weight - def_weight) / max_weight
 	
-	# Define a tolerance threshold (e.g., within 15% of each other is considered an "Equal" fight)	
+	# Define a tolerance threshold (e.g., within 25% of each other is considered an "Equal" fight)    
 	if difference_pct <= 0.25:
 		return "Equal Matchup (Power: %d vs %d)" % [atk_weight, def_weight]
 	elif atk_weight > def_weight:
@@ -115,11 +116,9 @@ func _flatten_card_database(raw_db: Dictionary) -> Dictionary:
 		
 		# Always treat abilities as clean sequential loops
 		for fx in card.general_ability:
-			# CHANGED: Pass an empty array [] instead of CardData.UnitType.NONE
 			effects_list.append(_flatten_single_effect(fx, true, []))
 			
 		for fx in card.unit_ability:
-			# Pass the type array directly down into your effect scraper
 			effects_list.append(_flatten_single_effect(fx, false, card.required_unit_types))
 				
 		flat_db[card_id] = [
@@ -129,6 +128,7 @@ func _flatten_card_database(raw_db: Dictionary) -> Dictionary:
 			effects_list         # Index 3
 		]
 	return flat_db
+
 
 func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_types: Array) -> Array:
 	var raw_effect_type: int = int(fx.effect_type)
@@ -141,7 +141,6 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_t
 		if not raw_choices.is_empty():
 			for sub_fx in raw_choices:
 				if sub_fx != null:
-					# Forward the validation array down into nested paths safely
 					var flat_sub = _flatten_single_effect(sub_fx, is_general_ability, req_unit_types)
 					flattened_choices.append(flat_sub)
 					
@@ -162,6 +161,7 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_t
 		ability_block_type_id,  # Index 4
 		req_unit_types          # Index 5 - Stores the flat requirement Array directly
 	]
+
 
 func _prepare_faction_blueprint(faction_id: int, factions: Dictionary, randomized_tiers: PackedInt32Array) -> Dictionary:
 	var faction_raw = factions[faction_id]
@@ -186,9 +186,12 @@ func _prepare_faction_blueprint(faction_id: int, factions: Dictionary, randomize
 			push_error("Faction %d lacks ground units for Tier %d!" % [faction_id, tier])
 
 	return {
-		"combat_deck": faction_raw["combat_deck"].duplicate(), 
+		"upgrade_deck": faction_raw.get("upgrade_deck", []).duplicate(),
+		"combat_deck": faction_raw.get("combat_deck", []).duplicate(),
+		"cards_in_hand": [], # Initialized empty, ready for draw step loops
 		"selected_units": selected_units_blueprints
 	}
+
 
 func _instantiate_match_state(atk_blueprint: Dictionary, def_blueprint: Dictionary) -> Dictionary:
 	var atk_squads = _build_match_units(atk_blueprint["selected_units"])
@@ -197,17 +200,22 @@ func _instantiate_match_state(atk_blueprint: Dictionary, def_blueprint: Dictiona
 	return {
 		SimCombatEngine.Side.ATTACKER: {
 			"name": "Attacker", 
-			"combat_deck": atk_blueprint["combat_deck"].duplicate(), 
+			"upgrade_deck": atk_blueprint["upgrade_deck"].duplicate(),
+			"combat_deck": atk_blueprint["combat_deck"].duplicate(),
+			"cards_in_hand": atk_blueprint["cards_in_hand"].duplicate(),
 			"play_area": [0,0,0], 
 			"squads": atk_squads
 		},
 		SimCombatEngine.Side.DEFENDER: {
 			"name": "Defender", 
-			"combat_deck": def_blueprint["combat_deck"].duplicate(), 
+			"upgrade_deck": def_blueprint["upgrade_deck"].duplicate(),
+			"combat_deck": def_blueprint["combat_deck"].duplicate(),
+			"cards_in_hand": def_blueprint["cards_in_hand"].duplicate(),
 			"play_area": [0,0,0], 
 			"squads": def_squads
 		}
 	}
+
 
 func _build_match_units(selected_units: Array) -> Array[Dictionary]:
 	var runtime_squads: Array[Dictionary] = []
@@ -234,6 +242,7 @@ func _build_match_units(selected_units: Array) -> Array[Dictionary]:
 		})
 	return runtime_squads
 
+
 #region Helper functions
 
 ## Helper function to dynamically count duplicates and pretty-print composition rosters
@@ -255,14 +264,13 @@ func _format_squad_composition_string(squads: Array) -> String:
 		
 	return ", ".join(items)
 
+
 func _print_cards_drawn(atk_drawn_ids: Array, def_drawn_ids: Array) -> void:
 	print("\n=== PHASE 1.5: DRAWING COMBAT HANDS ===")
 	
 	print("Attacker Draws:")
 	for card_id in atk_drawn_ids:
-		# Fetch the CardData object from the dictionary
 		var card: CardData = card_db.get(card_id)
-		# Safe fallback just in case an ID doesn't exist in the database
 		var card_name: String = card.card_name if card != null else "Card #" + str(card_id)
 		print("  - " + card_name)
 		
@@ -284,16 +292,14 @@ func get_card_metadata(card_id: int, property_name: String) -> Variant:
 		
 	var card: CardData = card_db[card_id]
 	
-	# 2. Check if the property actually exists on the CardData object
 	if not property_name in card:
 		push_error("Metadata Error: Property '%s' does not exist on CardData." % property_name)
 		return null
 		
-	# 3. Dynamic lookup
 	var value: Variant = card.get(property_name)
 	
-	# 4. Smart Conversion: If they asked for the unit type requirement, convert the enum to a pretty string
 	if property_name == "required_unit_types" and value is int:
 		return CardData.UnitType.keys()[value].capitalize()
 		
 	return value
+#endregion

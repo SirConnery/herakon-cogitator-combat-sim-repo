@@ -11,7 +11,8 @@ enum CardID {
 
 	# --- ORKS (ORKS) ---
 	ORKS_GRETCHIN                        = 2001,
-	ORKS_MEK_BOYZ
+	ORKS_MEK_BOYZ						= 2002,
+	ORKS_ARD_BOYZ						= 2003,
 }
 
 static func get_database() -> Dictionary:
@@ -190,7 +191,6 @@ static func get_database() -> Dictionary:
 	
 	db[card.card_id] = card
 	
-
 	# ==========================================================================
 	# --- CARD 2001: Gretchin ---
 	# ==========================================================================
@@ -233,6 +233,7 @@ static func get_database() -> Dictionary:
 	card = CardData.new()
 	card.card_id = CardID.ORKS_MEK_BOYZ
 	card.card_name = "Mek Boyz"
+	card.morale_icons = 1
 	card.required_unit_types = [CardData.UnitType.ORK_BOYZ, CardData.UnitType.ONSLAUGHTS]
 	
 	# --- GENERAL ABILITY ---
@@ -250,8 +251,31 @@ static func get_database() -> Dictionary:
 	
 	db[card.card_id] = card
 	
+	# ==========================================================================
+	# --- CARD 2003: Ard Boyz ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ORKS_ARD_BOYZ
+	card.card_name = "Ard Boyz"
+	card.defence_icons = 2
+	card.required_unit_types = [CardData.UnitType.ORK_BOYZ]
 	
+	# --- GENERAL ABILITY ---
+	var ork_ard_gen := CardEffect.new()
+	ork_ard_gen.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
+	ork_ard_gen.target_type = CardData.TargetType.SELF
+	ork_ard_gen.pool_type = CardData.DicePoolType.OFFENSE
+	card.general_ability.append(ork_ard_gen)
 	
+	# --- UNIT ABILITY ---
+	var ork_ard_unit := CardEffect.new()
+	ork_ard_unit.effect_type = CardData.EffectType.REROLL_SPECIFIC_DICE_FOR_EACH_UNIT
+	ork_ard_unit.target_type = CardData.TargetType.OPPONENT
+	ork_ard_unit.value = CardData.UnitType.ORK_BOYZ # Unit type enum to look up and count
+	ork_ard_unit.pool_type = CardData.DicePoolType.OFFENSE # Target pool to disrupt
+	card.unit_ability.append(ork_ard_unit)
+	
+	db[card.card_id] = card
 	
 	
 	

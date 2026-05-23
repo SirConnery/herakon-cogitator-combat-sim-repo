@@ -18,6 +18,8 @@ class_name CombatRoundPanel
 @onready var att_assess_damage_step_icons_from_cards_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/CardsPanel/Layout/IconsFromCardsValue
 @onready var att_assess_damage_step_base_dice_rolls_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DicePanel/Layout/BaseDiceRollsValue
 @onready var att_assess_damage_step_tokens_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/Tokens/Layout/TokensValue
+@onready var att_assess_damage_step_extra_icons_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/ExtraIcons/Layout/ExtraIconsValue
+
 @onready var att_assess_damage_step_morale_from_units_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel/Layout/MoraleFromUnitsValue
 @onready var att_damage_suffered_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DamageDealt/Layout/DamageSufferedValue
 
@@ -34,6 +36,7 @@ class_name CombatRoundPanel
 @onready var def_assess_damage_step_icons_from_cards_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/CardsPanel/Layout/IconsFromCardsValue
 @onready var def_assess_damage_step_base_dice_rolls_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DicePanel/Layout/BaseDiceRollsValue
 @onready var def_assess_damage_step_tokens_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/Tokens/Layout/TokensValue
+@onready var def_assess_damage_step_extra_icons_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/ExtraIcons/Layout/ExtraIconsValue
 @onready var def_assess_damage_step_morale_from_units_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel/Layout/MoraleFromUnitsValue
 @onready var def_damage_suffered_value: Label = $CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DamageDealt/Layout/DamageSufferedValue
 
@@ -119,6 +122,20 @@ func set_round_start_tokens(role: String, offence_tokens: int, defence_tokens: i
 	else:
 		if def_tokens_value != null:
 			def_tokens_value.text = token_string
+
+func update_extra_icons(is_attacker: bool, offence: int, defence: int, morale_dice: int, target_phase: String = "all") -> void:
+	var extra_icons := "%d ⚔️ \n %d 🛡️ \n %d 🎖️" % [offence, defence, morale_dice]
+	
+	# 1. Update Starting Layout
+	if target_phase == "all" or target_phase == "round_start":
+		var target_label: Label = att_assess_damage_step_extra_icons_value if is_attacker else def_assess_damage_step_extra_icons_value
+		target_label.text = extra_icons
+
+	# 2. Update Damage Assessment Snapshot Layout
+	if target_phase == "all" or target_phase == "damage_step":
+		var target_assess_label: Label = att_assess_damage_step_extra_icons_value if is_attacker else def_assess_damage_step_extra_icons_value
+		if target_assess_label != null:
+			target_assess_label.text = extra_icons
 
 
 func append_console_log(message: String) -> void:

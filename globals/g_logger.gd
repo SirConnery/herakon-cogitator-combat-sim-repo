@@ -65,8 +65,6 @@ func engine_callback(event_type: String, data: Array) -> void:
 			for panel in active_round_panels:
 				if panel != null:
 					panel.set_faction_titles(atk_name, def_name)
-					panel.set_assess_damage_step_tokens("Attacker", 0, 0)
-					panel.set_assess_damage_step_tokens("Defender", 0, 0)
 					panel.update_unit_displays(true, "Deploying...", "")
 					panel.update_unit_displays(false, "Deploying...", "")
 
@@ -123,7 +121,18 @@ func engine_callback(event_type: String, data: Array) -> void:
 			if controller and controller.has_method("_print_cards_drawn"):
 				controller._print_cards_drawn(data[0], data[1])
 
-
+		
+		# =========================================================
+		# EXTRA ICONS
+		# =========================================================
+		
+		"extra_icons_logged":
+			print("🎴 %s extra icons updated (%s) -> %d ⚔️ | %d 🛡️ | %d 🎖️" % [data[0], data[4], data[1], data[2], data[3]])
+			
+			if current_panel:
+				var is_attacker: bool = (data[0] == "Attacker")
+				var phase_context: String = data[4]
+				current_panel.update_extra_icons(is_attacker, data[1], data[2], data[3], phase_context)
 		# =========================================================
 		# ROUND FLOW
 		# =========================================================
