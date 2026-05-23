@@ -1,6 +1,8 @@
 extends Object
 class_name SimCombatEngine
 
+#region Starting vars and functions
+
 # --- HIGH-SPEED SIMULATION ENUMS ---
 enum Side { ATTACKER, DEFENDER }
 enum Stat { OFFENCE, DEFENCE, MORALE }
@@ -12,6 +14,8 @@ static func _roll_custom_die_index() -> int:
 	if roll <= 2:   return 0 # Offence
 	elif roll <= 4: return 1 # Defence
 	return 2                 # Morale
+
+#endregion
 
 #region Main Loop
 
@@ -600,14 +604,14 @@ static func _execute_timing_hook(window: int, state: Dictionary, context: Array,
 
 #endregion
 
-
-#region Instant Card Abilities
+#region Effect Resolvers database
 
 static var EFFECT_RESOLVERS = {
 	CardData.EffectType.CHOICE: _execute_choice_selection,
 	CardData.EffectType.GAIN_DICE: _execute_gain_dice,
 	CardData.EffectType.GAIN_SPECIFIC_DICE: _execute_gain_specific_dice,
 	CardData.EffectType.LOSE_SPECIFIC_DICE: _execute_lose_specific_dice,
+	CardData.EffectType.CONVERT_DICE_TO_SPECIFIC_DICE: _execute_convert_dice_to_specific_dice,
 	CardData.EffectType.REROLL: _execute_reroll,
 	
 	CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN: _execute_gain_specific_combat_token,
@@ -617,6 +621,11 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.SHIELD_DEBUFF_CONDITIONAL: _execute_shield_debuff_conditional,
 	CardData.EffectType.DESTROY_FOR_DESTROY: _execute_destroy_for_destroy,
 }
+
+#endregion
+
+
+#region Main Resolvers
 
 static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, token_pools: Array, side_id: int, state: Dictionary, on_event: Callable) -> void:
 	var card_data: Array = card_db[active_card_id]
@@ -723,7 +732,9 @@ static func _execute_choice_selection(fx: Array, token_pools: Array, side_data: 
 	if EFFECT_RESOLVERS.has(sub_effect_type):
 		EFFECT_RESOLVERS[sub_effect_type].call(chosen_sub_fx, token_pools, side_data, role, card_id, units_valid, on_event)
 
+#endregion
 
+#region Generic Dice functions
 static func _execute_gain_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	if fx[2] is Array:
 		return
@@ -868,6 +879,72 @@ static func _execute_lose_specific_dice(fx: Array, _token_pools: Array, side_dat
 	if (lost_offence + lost_defence + lost_morale) > 0 and on_event.is_valid():
 		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
 
+static func _execute_convert_dice_to_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var max_to_convert: int = fx[2]
+	var target_pool_type: int = fx[3]
+	
+	var is_attacker := (role == "Attacker")
+	var targets_self = (fx[1] == 0)
+	
+	var target_side_data := side_data
+	var target_role := role
+	if not targets_self:
+		target_role = "Defender" if is_attacker else "Attacker"
+		target_side_data = side_data.get("parent_state", {}).get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
+		
+	if target_side_data.is_empty():
+		return
+
+	var stat_map := {1: Stat.OFFENCE, 2: Stat.DEFENCE, 3: Stat.MORALE}
+	if not target_pool_type in stat_map:
+		return
+		
+	var target_stat = stat_map[target_pool_type]
+	var converted_count := 0
+	var stripped_counts := {Stat.OFFENCE: 0, Stat.DEFENCE: 0, Stat.MORALE: 0}
+
+	for conversion in range(max_to_convert):
+		var best_source_stat := -1
+		var max_available_dice := 0
+		
+		for src_stat in [Stat.OFFENCE, Stat.DEFENCE, Stat.MORALE]:
+			if src_stat == target_stat:
+				continue
+			if target_side_data[src_stat] > max_available_dice:
+				max_available_dice = target_side_data[src_stat]
+				best_source_stat = src_stat
+				
+		if best_source_stat == -1 or max_available_dice <= 0:
+			break
+			
+		target_side_data[best_source_stat] -= 1
+		target_side_data[target_stat] += 1
+		
+		stripped_counts[best_source_stat] += 1
+		converted_count += 1
+
+	if converted_count > 0 and on_event.is_valid():
+		var labels := {Stat.OFFENCE: "Offence", Stat.DEFENCE: "Defence", Stat.MORALE: "Morale"}
+		var breakdown_parts: Array[String] = []
+		for stat_key in stripped_counts:
+			if stripped_counts[stat_key] > 0:
+				breakdown_parts.append("%d %s" % [stripped_counts[stat_key], labels[stat_key]])
+				
+		on_event.call("ability_triggered", [card_id, "↳ 🔄 Dice Conversion: %s turned %d alternate dice (%s) directly into %s dice!" % [target_role, converted_count, ", ".join(breakdown_parts), labels[target_stat]]])
+		
+		# --- CHANGED: Safely unpack the master parent state and pass context to your unified helper ---
+		var parent_state: Dictionary = side_data.get("parent_state", {})
+		if not parent_state.is_empty():
+			var atk_side: Dictionary = parent_state.get(Side.ATTACKER, {})
+			var def_side: Dictionary = parent_state.get(Side.DEFENDER, {})
+			
+			if not atk_side.is_empty() and not def_side.is_empty():
+				log_current_dice_pools(
+					on_event,
+					atk_side[Stat.OFFENCE], atk_side[Stat.DEFENCE], atk_side[Stat.MORALE],
+					def_side[Stat.OFFENCE], def_side[Stat.DEFENCE], def_side[Stat.MORALE],
+					"Conversion"
+				)
 
 static func _execute_reroll(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, _card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	if fx[2] is Array:
@@ -922,6 +999,9 @@ static func _execute_reroll(fx: Array, _token_pools: Array, side_data: Dictionar
 		if on_event.is_valid():
 			on_event.call("dice_rerolled_log", [target_role, icon_names[face_removed], icon_names[face_added]])
 
+#endregion
+
+#region Generic Token functions
 
 static func _execute_gain_specific_combat_token(fx: Array, token_pools: Array, _side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	if fx[2] is Array:
@@ -942,7 +1022,9 @@ static func _execute_gain_specific_combat_token(fx: Array, token_pools: Array, _
 	if on_event.is_valid():
 		on_event.call("tokens_updated", [role, token_pools[base_idx], token_pools[base_idx + 1]])
 
+#endregion
 
+#region Generic Rally and Routing functions
 
 static func _execute_rally(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	if fx[2] is Array:
@@ -973,6 +1055,72 @@ static func _execute_rally(fx: Array, _token_pools: Array, side_data: Dictionary
 		else:
 			break
 
+#endregion
+
+
+#region Passive Card Abilities and helpers
+
+static func _is_routing_lethal(opp_card_id: int, card_db: Dictionary, my_state: Dictionary) -> bool:
+	if not card_db.has(opp_card_id):
+		return false
+		
+	var effects_list: Array = card_db[opp_card_id][3]
+	for fx in effects_list:
+		if fx[0] == CardData.EffectType.DESTROY_ON_ROUT_OR_SPEND:
+			var ransom_cost: int = fx[2]
+			if my_state.get(Stat.MORALE, 0) < ransom_cost:
+				return true
+	return false
+
+
+static func _find_lethal_sacrifice_target(squads: Array, total_damage: int, round_index: int, restrict_to_unrouted: bool, is_routing_lethal: bool) -> Dictionary:
+	var sacrifice_target: Dictionary = {}
+	
+	if round_index < 2:
+		var highest_health_unit: Dictionary = _find_highest_health_living_unit(squads, restrict_to_unrouted)
+		
+		if not highest_health_unit.is_empty():
+			var big_squad = highest_health_unit["squad"]
+			var big_idx = highest_health_unit["index"]
+			var big_hp = big_squad["alive_figures"][big_idx]
+			
+			var lowest_tier_unit: Dictionary = _find_lowest_tier_living_unit(squads, restrict_to_unrouted)
+			var low_squad = lowest_tier_unit["squad"]
+			var low_idx = lowest_tier_unit["index"]
+			var low_hp = low_squad["alive_figures"][low_idx]
+			
+			var overflow_survivable = (total_damage - low_hp) < big_hp
+			if is_routing_lethal:
+				overflow_survivable = (total_damage - low_hp) <= 0
+				
+			if lowest_tier_unit["squad"] != highest_health_unit["squad"] and overflow_survivable:
+				sacrifice_target = lowest_tier_unit
+			else:
+				sacrifice_target = highest_health_unit
+	else:
+		var lowest_priority: float = 9999.0
+		
+		for squad in squads:
+			for i in range(squad["alive_figures"].size()):
+				if squad["alive_figures"][i] > 0:
+					if restrict_to_unrouted and squad["figures_routed"][i]:
+						continue
+						
+					var priority: float = float(squad["morale_value"]) / float(squad["health_value"])
+					
+					if priority < lowest_priority:
+						lowest_priority = priority
+						sacrifice_target = {"squad": squad, "index": i}
+					elif abs(priority - lowest_priority) < 0.001 and not sacrifice_target.is_empty():
+						if squad["figures_routed"][i] and not sacrifice_target["squad"]["figures_routed"][sacrifice_target["index"]]:
+							sacrifice_target = {"squad": squad, "index": i}
+							
+	return sacrifice_target
+
+#endregion
+
+
+#region Instant Card abilities
 
 static func _execute_destroy_for_destroy(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
 	if not units_valid:
@@ -1053,67 +1201,6 @@ static func _execute_destroy_for_destroy(fx: Array, _token_pools: Array, side_da
 		var enemy_list_string := ", ".join(victim_names)
 		on_event.call("ability_triggered", [card_id, "↳ ⚖️ Trade Complete: Sacrificed [%s] to destroy enemy [%s]!" % [friendly_list_string, enemy_list_string]])
 
-#endregion
-
-
-#region Passive Card Abilities and helpers
-
-static func _is_routing_lethal(opp_card_id: int, card_db: Dictionary, my_state: Dictionary) -> bool:
-	if not card_db.has(opp_card_id):
-		return false
-		
-	var effects_list: Array = card_db[opp_card_id][3]
-	for fx in effects_list:
-		if fx[0] == CardData.EffectType.DESTROY_ON_ROUT_OR_SPEND:
-			var ransom_cost: int = fx[2]
-			if my_state.get(Stat.MORALE, 0) < ransom_cost:
-				return true
-	return false
-
-
-static func _find_lethal_sacrifice_target(squads: Array, total_damage: int, round_index: int, restrict_to_unrouted: bool, is_routing_lethal: bool) -> Dictionary:
-	var sacrifice_target: Dictionary = {}
-	
-	if round_index < 2:
-		var highest_health_unit: Dictionary = _find_highest_health_living_unit(squads, restrict_to_unrouted)
-		
-		if not highest_health_unit.is_empty():
-			var big_squad = highest_health_unit["squad"]
-			var big_idx = highest_health_unit["index"]
-			var big_hp = big_squad["alive_figures"][big_idx]
-			
-			var lowest_tier_unit: Dictionary = _find_lowest_tier_living_unit(squads, restrict_to_unrouted)
-			var low_squad = lowest_tier_unit["squad"]
-			var low_idx = lowest_tier_unit["index"]
-			var low_hp = low_squad["alive_figures"][low_idx]
-			
-			var overflow_survivable = (total_damage - low_hp) < big_hp
-			if is_routing_lethal:
-				overflow_survivable = (total_damage - low_hp) <= 0
-				
-			if lowest_tier_unit["squad"] != highest_health_unit["squad"] and overflow_survivable:
-				sacrifice_target = lowest_tier_unit
-			else:
-				sacrifice_target = highest_health_unit
-	else:
-		var lowest_priority: float = 9999.0
-		
-		for squad in squads:
-			for i in range(squad["alive_figures"].size()):
-				if squad["alive_figures"][i] > 0:
-					if restrict_to_unrouted and squad["figures_routed"][i]:
-						continue
-						
-					var priority: float = float(squad["morale_value"]) / float(squad["health_value"])
-					
-					if priority < lowest_priority:
-						lowest_priority = priority
-						sacrifice_target = {"squad": squad, "index": i}
-					elif abs(priority - lowest_priority) < 0.001 and not sacrifice_target.is_empty():
-						if squad["figures_routed"][i] and not sacrifice_target["squad"]["figures_routed"][sacrifice_target["index"]]:
-							sacrifice_target = {"squad": squad, "index": i}
-							
-	return sacrifice_target
 
 static func _execute_shield_debuff_conditional(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
 	var max_tokens_to_strip: int = fx[2]

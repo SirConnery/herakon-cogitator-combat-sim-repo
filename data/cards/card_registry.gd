@@ -6,6 +6,7 @@ enum CardID {
 	SM_AMBUSH                            = 1001,
 	SM_RECONNAISSANCE                    = 1002,
 	SM_FURY_OF_THE_ULTRAMAR                = 1003,
+	SM_BLESSED_POWER_ARMOUR					= 1004,
 	SM_COMBAT_FAITH_IN_EMPEROR            = 1005,
 
 	# --- ORKS (ORKS) ---
@@ -119,6 +120,32 @@ static func get_database() -> Dictionary:
 	sm_fury_unit.value = 2  
 	sm_fury_unit.pool_type = CardData.DicePoolType.DEFENSE
 	card.unit_ability.append(sm_fury_unit)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 1004: Blessed Power Armour ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.SM_BLESSED_POWER_ARMOUR
+	card.card_name = "Blessed Power Armour"
+	card.required_unit_types = [CardData.UnitType.SPACE_MARINES, CardData.UnitType.STRIKE_CRUISERS]
+	
+	# --- GENERAL ABILITY ---
+	var sm_blessed_gen := CardEffect.new()
+	sm_blessed_gen.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
+	sm_blessed_gen.target_type = CardData.TargetType.SELF
+	sm_blessed_gen.value = 2
+	sm_blessed_gen.pool_type = CardData.DicePoolType.DEFENSE
+	card.general_ability.append(sm_blessed_gen)
+	
+	# --- UNIT ABILITY ---
+	var sm_blessed_unit := CardEffect.new()
+	sm_blessed_unit.effect_type = CardData.EffectType.CONVERT_DICE_TO_SPECIFIC_DICE
+	sm_blessed_unit.target_type = CardData.TargetType.SELF
+	sm_blessed_unit.value = 2
+	sm_blessed_unit.pool_type = CardData.DicePoolType.DEFENSE
+	card.unit_ability.append(sm_blessed_unit)
 	
 	db[card.card_id] = card
 	

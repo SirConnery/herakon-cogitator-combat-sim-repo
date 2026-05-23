@@ -16,11 +16,11 @@ static func get_database() -> Dictionary:
 		"name": "Space Marines",
 		"upgrade_deck": [1,1,1,1,1],
 		"combat_deck": [
-			CardRegistry.CardID.SM_FURY_OF_THE_ULTRAMAR,
-			CardRegistry.CardID.SM_FURY_OF_THE_ULTRAMAR,
-			CardRegistry.CardID.SM_FURY_OF_THE_ULTRAMAR,
-			CardRegistry.CardID.SM_FURY_OF_THE_ULTRAMAR,
-			CardRegistry.CardID.SM_FURY_OF_THE_ULTRAMAR
+			CardRegistry.CardID.SM_BLESSED_POWER_ARMOUR,
+			CardRegistry.CardID.SM_BLESSED_POWER_ARMOUR,
+			CardRegistry.CardID.SM_BLESSED_POWER_ARMOUR,
+			CardRegistry.CardID.SM_BLESSED_POWER_ARMOUR,
+			CardRegistry.CardID.SM_BLESSED_POWER_ARMOUR
 		],
 		"units": [
 			{"unit_type": CardData.UnitType.SCOUTS, "unit_name": "Scouts", "tier": 0, "is_ship": false, "unit_count": 6, "combat_value": 1, "health_value": 2, "morale_value": 2},
@@ -29,7 +29,7 @@ static func get_database() -> Dictionary:
 			{"unit_type": CardData.UnitType.WARLORD_TITANS, "unit_name": "Warlord Titans", "tier": 3, "is_ship": false, "unit_count": 3, "combat_value": 3, "health_value": 5, "morale_value": 4},
 			# Space Marine Ships
 			{"unit_type": CardData.UnitType.STRIKE_CRUISERS, "unit_name": "Strike Cruisers", "tier": 0, "is_ship": true, "unit_count": 3, "combat_value": 2, "health_value": 2, "morale_value": 2},
-			{"unit_type": CardData.UnitType.BATTLE_BARGES, "unit_name": "Battle Barges", "tier": 2, "is_ship": true, "unit_count": 3, "combat_value": 4, "health_value": 5, "morale_value": 4}
+			{"unit_type": CardData.UnitType.BATTLE_BARGES, "unit_name": "Battle Barges", "tier": 2, "is_ship": true, "unit_count": 3, "combat_value": 4, "health_value": 5, "morale_value": 4},
 		]
 	}
 	
