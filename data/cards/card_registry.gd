@@ -11,6 +11,7 @@ enum CardID {
 
 	# --- ORKS (ORKS) ---
 	ORKS_GRETCHIN                        = 2001,
+	ORKS_MEK_BOYZ
 }
 
 static func get_database() -> Dictionary:
@@ -84,6 +85,7 @@ static func get_database() -> Dictionary:
 	card = CardData.new()
 	card.card_id = CardID.SM_FURY_OF_THE_ULTRAMAR
 	card.card_name = "Fury of the Ultramar"
+	card.offence_icons = 1
 	card.required_unit_types = [CardData.UnitType.SPACE_MARINES, CardData.UnitType.STRIKE_CRUISERS]
 	
 	# --- GENERAL ABILITY ---
@@ -129,6 +131,7 @@ static func get_database() -> Dictionary:
 	card = CardData.new()
 	card.card_id = CardID.SM_BLESSED_POWER_ARMOUR
 	card.card_name = "Blessed Power Armour"
+	card.defence_icons = 1
 	card.required_unit_types = [CardData.UnitType.SPACE_MARINES, CardData.UnitType.STRIKE_CRUISERS]
 	
 	# --- GENERAL ABILITY ---
@@ -155,7 +158,7 @@ static func get_database() -> Dictionary:
 	card = CardData.new()
 	card.card_id = CardID.SM_COMBAT_FAITH_IN_EMPEROR
 	card.card_name = "Faith In the Emperor"
-	card.offence_icons = 1
+	card.morale_icons = 1
 	# CHANGED: Single requirements are wrapped neatly in single-item arrays
 	card.required_unit_types = [CardData.UnitType.SCOUTS]
 	
@@ -194,7 +197,6 @@ static func get_database() -> Dictionary:
 	card = CardData.new()
 	card.card_id = CardID.ORKS_GRETCHIN
 	card.card_name = "Gretchin"
-	# CHANGED: Converted from bitmask flag to standard Array layout
 	card.required_unit_types = [CardData.UnitType.ONSLAUGHTS]
 	
 	var ork_gen_1 := CardEffect.new()
@@ -224,5 +226,33 @@ static func get_database() -> Dictionary:
 	card.unit_ability.append(ork_unit_1)
 	
 	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 2002: Mek Boyz ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ORKS_MEK_BOYZ
+	card.card_name = "Mek Boyz"
+	card.required_unit_types = [CardData.UnitType.ORK_BOYZ, CardData.UnitType.ONSLAUGHTS]
+	
+	# --- GENERAL ABILITY ---
+	var ork_mek_gen := CardEffect.new()
+	ork_mek_gen.effect_type = CardData.EffectType.GAIN_DICE
+	ork_mek_gen.target_type = CardData.TargetType.SELF
+	ork_mek_gen.value = 1
+	card.general_ability.append(ork_mek_gen)
+	
+	# --- UNIT ABILITY ---
+	var ork_mek_unit := CardEffect.new()
+	ork_mek_unit.effect_type = CardData.EffectType.DISCARD_STEAL_ICONS
+	ork_mek_unit.target_type = CardData.TargetType.OPPONENT
+	card.unit_ability.append(ork_mek_unit)
+	
+	db[card.card_id] = card
+	
+	
+	
+	
+	
 	
 	return db

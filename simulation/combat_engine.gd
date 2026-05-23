@@ -606,6 +606,7 @@ static func _execute_timing_hook(window: int, state: Dictionary, context: Array,
 
 #region Effect Resolvers database
 
+# Resolvers for instant effects
 static var EFFECT_RESOLVERS = {
 	CardData.EffectType.CHOICE: _execute_choice_selection,
 	CardData.EffectType.GAIN_DICE: _execute_gain_dice,
@@ -617,9 +618,13 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN: _execute_gain_specific_combat_token,
 	
 	CardData.EffectType.RALLY: _execute_rally, 
-
-	CardData.EffectType.SHIELD_DEBUFF_CONDITIONAL: _execute_shield_debuff_conditional,
-	CardData.EffectType.DESTROY_FOR_DESTROY: _execute_destroy_for_destroy,
+	
+	# SM
+	CardData.EffectType.SHIELD_DEBUFF_CONDITIONAL: _execute_shield_debuff_conditional, # FAITH_IN_THE_EMPEROR
+	
+	# ORK
+	CardData.EffectType.DESTROY_FOR_DESTROY: _execute_destroy_for_destroy, # GRETCHIN
+	CardData.EffectType.DISCARD_STEAL_ICONS: _execute_discard_steal_icons, # MEK_BOYZ
 }
 
 #endregion
@@ -771,18 +776,33 @@ static func _execute_gain_specific_dice(fx: Array, _token_pools: Array, side_dat
 		return
 		
 	var requested_val: int = fx[2]
+	var target_type: int = fx[1]
 	var pool_type: int = fx[3]
 	
-	var current_total_dice: int = side_data[Stat.OFFENCE] + side_data[Stat.DEFENCE] + side_data[Stat.MORALE]
+	var is_attacker := (role == "Attacker")
+	var targets_self := (target_type == 0)
+	
+	# FIXED: Dynamically resolve who is actually gaining the dice portfolio entries
+	var target_side_data := side_data
+	var target_role := role
+	if not targets_self:
+		target_role = "Defender" if is_attacker else "Attacker"
+		target_side_data = side_data.get("parent_state", {}).get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
+		
+	if target_side_data.is_empty():
+		return
+
+	# Evaluate cap restrictions based on the true target's pool size
+	var current_total_dice: int = target_side_data[Stat.OFFENCE] + target_side_data[Stat.DEFENCE] + target_side_data[Stat.MORALE]
 	var allowed_val: int = min(requested_val, 8 - current_total_dice)
 	
 	if allowed_val <= 0:
 		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "Resolved GAIN_SPECIFIC_DICE skipped - Already at maximum 8 dice cap."])
+			on_event.call("ability_triggered", [card_id, "Resolved GAIN_SPECIFIC_DICE skipped - %s already at maximum 8 dice cap." % target_role])
 		return
 		
 	if on_event.is_valid(): 
-		on_event.call("ability_triggered", [card_id, "Resolved GAIN_SPECIFIC_DICE (Allowed: %d out of %d)" % [allowed_val, requested_val]])
+		on_event.call("ability_triggered", [card_id, "Resolved GAIN_SPECIFIC_DICE (Allowed: %d out of %d for %s)" % [allowed_val, requested_val, target_role]])
 		
 	var b_offence := 0; var b_defence := 0; var b_morale := 0
 	
@@ -799,11 +819,25 @@ static func _execute_gain_specific_dice(fx: Array, _token_pools: Array, side_dat
 			3: b_morale = allowed_val
 			
 	if on_event.is_valid(): 
-		on_event.call("bonus_dice_rolled", [role, b_offence, b_defence, b_morale])
+		on_event.call("bonus_dice_rolled", [target_role, b_offence, b_defence, b_morale])
 	
-	side_data[Stat.OFFENCE] += b_offence
-	side_data[Stat.DEFENCE] += b_defence
-	side_data[Stat.MORALE] += b_morale
+	target_side_data[Stat.OFFENCE] += b_offence
+	target_side_data[Stat.DEFENCE] += b_defence
+	target_side_data[Stat.MORALE] += b_morale
+
+	# --- FIXED: Use your synchronized double-sided logger to update dashboard UI frames ---
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	if not parent_state.is_empty() and on_event.is_valid():
+		var atk_side: Dictionary = parent_state.get(Side.ATTACKER, {})
+		var def_side: Dictionary = parent_state.get(Side.DEFENDER, {})
+		
+		if not atk_side.is_empty() and not def_side.is_empty():
+			log_current_dice_pools(
+				on_event,
+				atk_side[Stat.OFFENCE], atk_side[Stat.DEFENCE], atk_side[Stat.MORALE],
+				def_side[Stat.OFFENCE], def_side[Stat.DEFENCE], def_side[Stat.MORALE],
+				"Dice Gain"
+			)
 
 static func _execute_lose_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	if fx[2] is Array:
