@@ -8,6 +8,8 @@ enum CardID {
 	SM_FURY_OF_THE_ULTRAMAR					= 1003,
 	SM_BLESSED_POWER_ARMOUR					= 1004,
 	SM_COMBAT_FAITH_IN_EMPEROR				= 1005,
+	SM_HOLD_THE_LINE						= 1006,
+	SM_GLORY_AND_DEATH						= 1007,
 
 	# --- ORKS (ORKS) ---
 	ORKS_GRETCHIN						= 2001,
@@ -27,8 +29,8 @@ static func get_database() -> Dictionary:
 	card = CardData.new()
 	card.card_id = CardID.SM_AMBUSH
 	card.card_name = "Ambush"
+	card.card_tier = CardData.CardTier.STARTER
 	card.offence_icons = 1
-	# CHANGED: Converted from bitmask flag to standard Array layout
 	card.required_unit_types = [CardData.UnitType.SCOUTS, CardData.UnitType.STRIKE_CRUISERS]
 	
 	# General ability: Gain 2 offence tokens
@@ -54,6 +56,7 @@ static func get_database() -> Dictionary:
 	card = CardData.new()
 	card.card_id = CardID.SM_RECONNAISSANCE
 	card.card_name = "Reconnaissance"
+	card.card_tier = CardData.CardTier.STARTER
 	card.defence_icons = 1
 	# CHANGED: Emptied array signifies no active constraints needed
 	card.required_unit_types = []
@@ -88,6 +91,7 @@ static func get_database() -> Dictionary:
 	card = CardData.new()
 	card.card_id = CardID.SM_FURY_OF_THE_ULTRAMAR
 	card.card_name = "Fury of the Ultramar"
+	card.card_tier = CardData.CardTier.STARTER
 	card.offence_icons = 1
 	card.required_unit_types = [CardData.UnitType.SPACE_MARINES, CardData.UnitType.STRIKE_CRUISERS]
 	
@@ -134,6 +138,7 @@ static func get_database() -> Dictionary:
 	card = CardData.new()
 	card.card_id = CardID.SM_BLESSED_POWER_ARMOUR
 	card.card_name = "Blessed Power Armour"
+	card.card_tier = CardData.CardTier.STARTER
 	card.defence_icons = 1
 	card.required_unit_types = [CardData.UnitType.SPACE_MARINES, CardData.UnitType.STRIKE_CRUISERS]
 	
@@ -161,6 +166,7 @@ static func get_database() -> Dictionary:
 	card = CardData.new()
 	card.card_id = CardID.SM_COMBAT_FAITH_IN_EMPEROR
 	card.card_name = "Faith In the Emperor"
+	card.card_tier = CardData.CardTier.STARTER
 	card.morale_icons = 1
 	# CHANGED: Single requirements are wrapped neatly in single-item arrays
 	card.required_unit_types = [CardData.UnitType.SCOUTS]
@@ -194,11 +200,112 @@ static func get_database() -> Dictionary:
 	db[card.card_id] = card
 	
 	# ==========================================================================
+	# --- CARD 1006: Hold the Line ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.SM_HOLD_THE_LINE
+	card.card_name = "Hold the Line"
+	card.card_tier = CardData.CardTier.TIER_0
+	card.defence_icons = 1
+	card.morale_icons = 1
+	card.required_unit_types = [CardData.UnitType.SPACE_MARINES, CardData.UnitType.STRIKE_CRUISERS]
+	
+	# --- GENERAL ABILITY ---
+	# Part 1: Gain 2 shield tokens
+	var sm_hold_gen_tokens := CardEffect.new()
+	sm_hold_gen_tokens.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
+	sm_hold_gen_tokens.target_type = CardData.TargetType.SELF
+	sm_hold_gen_tokens.value = 2
+	sm_hold_gen_tokens.pool_type = CardData.DicePoolType.DEFENSE
+	card.general_ability.append(sm_hold_gen_tokens)
+	
+	# Part 2: Conditional reactive recovery if caught on the defensive
+	var sm_hold_gen_rally := CardEffect.new()
+	sm_hold_gen_rally.effect_type = CardData.EffectType.RALLY_IF_DEFENDING
+	sm_hold_gen_rally.target_type = CardData.TargetType.SELF
+	sm_hold_gen_rally.value = 1
+	card.general_ability.append(sm_hold_gen_rally)
+	
+	# --- UNIT ABILITY ---
+	# Gain 1 S or 1 M
+	var sm_hold_unit_choice := CardEffect.new()
+	sm_hold_unit_choice.effect_type = CardData.EffectType.CHOICE
+	sm_hold_unit_choice.target_type = CardData.TargetType.SELF
+	
+	var hold_opt_a := CardEffect.new()
+	hold_opt_a.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
+	hold_opt_a.target_type = CardData.TargetType.SELF
+	hold_opt_a.value = 1
+	hold_opt_a.pool_type = CardData.DicePoolType.DEFENSE
+	
+	var hold_opt_b := CardEffect.new()
+	hold_opt_b.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
+	hold_opt_b.target_type = CardData.TargetType.SELF
+	hold_opt_b.value = 1
+	hold_opt_b.pool_type = CardData.DicePoolType.MORALE
+	
+	sm_hold_unit_choice.choices = [hold_opt_a, hold_opt_b]
+	card.unit_ability.append(sm_hold_unit_choice)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 1007: Glory and Death ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.SM_GLORY_AND_DEATH
+	card.card_name = "Glory and Death"
+	card.card_tier = CardData.CardTier.TIER_0
+	card.offence_icons = 1
+	card.morale_icons = 1
+	card.required_unit_types = [CardData.UnitType.SPACE_MARINES, CardData.UnitType.STRIKE_CRUISERS]
+	
+	# --- GENERAL ABILITY ---
+	# Part 1: Push frontline momentum by granting 2 immediate offense tokens
+	var sm_glory_gen_tokens := CardEffect.new()
+	sm_glory_gen_tokens.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
+	sm_glory_gen_tokens.target_type = CardData.TargetType.SELF
+	sm_glory_gen_tokens.value = 2
+	sm_glory_gen_tokens.pool_type = CardData.DicePoolType.OFFENSE
+	card.general_ability.append(sm_glory_gen_tokens)
+	
+	# Part 2: Capitalize on tactical pressure to rally an unrouted unit when attacking
+	var sm_glory_gen_rally := CardEffect.new()
+	sm_glory_gen_rally.effect_type = CardData.EffectType.RALLY_IF_ATTACKING
+	sm_glory_gen_rally.target_type = CardData.TargetType.SELF
+	sm_glory_gen_rally.value = 1
+	card.general_ability.append(sm_glory_gen_rally)
+	
+	# --- UNIT ABILITY ---
+	# Enemy loses 1 Shield or Morale dice
+	var sm_glory_unit_choice := CardEffect.new()
+	sm_glory_unit_choice.effect_type = CardData.EffectType.CHOICE
+	sm_glory_unit_choice.target_type = CardData.TargetType.OPPONENT
+	
+	var glory_opt_a := CardEffect.new()
+	glory_opt_a.effect_type = CardData.EffectType.LOSE_SPECIFIC_DICE
+	glory_opt_a.target_type = CardData.TargetType.OPPONENT
+	glory_opt_a.value = 1
+	glory_opt_a.pool_type = CardData.DicePoolType.DEFENSE
+	
+	var glory_opt_b := CardEffect.new()
+	glory_opt_b.effect_type = CardData.EffectType.LOSE_SPECIFIC_DICE
+	glory_opt_b.target_type = CardData.TargetType.OPPONENT
+	glory_opt_b.value = 1
+	glory_opt_b.pool_type = CardData.DicePoolType.MORALE
+	
+	sm_glory_unit_choice.choices = [glory_opt_a, glory_opt_b]
+	card.unit_ability.append(sm_glory_unit_choice)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
 	# --- CARD 2001: Gretchin ---
 	# ==========================================================================
 	card = CardData.new()
 	card.card_id = CardID.ORKS_GRETCHIN
 	card.card_name = "Gretchin"
+	card.card_tier = CardData.CardTier.STARTER
 	card.required_unit_types = [CardData.UnitType.ONSLAUGHTS]
 	
 	var ork_gen_1 := CardEffect.new()
@@ -235,6 +342,7 @@ static func get_database() -> Dictionary:
 	card = CardData.new()
 	card.card_id = CardID.ORKS_MEK_BOYZ
 	card.card_name = "Mek Boyz"
+	card.card_tier = CardData.CardTier.STARTER
 	card.morale_icons = 1
 	card.required_unit_types = [CardData.UnitType.ORK_BOYZ, CardData.UnitType.ONSLAUGHTS]
 	
@@ -259,6 +367,7 @@ static func get_database() -> Dictionary:
 	card = CardData.new()
 	card.card_id = CardID.ORKS_ARD_BOYZ
 	card.card_name = "Ard Boyz"
+	card.card_tier = CardData.CardTier.STARTER
 	card.defence_icons = 2
 	card.required_unit_types = [CardData.UnitType.ORK_BOYZ]
 	
@@ -285,6 +394,7 @@ static func get_database() -> Dictionary:
 	card = CardData.new()
 	card.card_id = CardID.ORKS_SHOOTA_BOYZ
 	card.card_name = "Shoota Boyz"
+	card.card_tier = CardData.CardTier.STARTER
 	card.offence_icons = 2
 	card.required_unit_types = [CardData.UnitType.ORK_BOYZ]
 	
@@ -313,6 +423,7 @@ static func get_database() -> Dictionary:
 	card = CardData.new()
 	card.card_id = CardID.ORKS_SLUGGA_BOYZ
 	card.card_name = "Slugga Boyz"
+	card.card_tier = CardData.CardTier.STARTER
 	card.offence_icons = 1
 	card.defence_icons = 1
 	card.required_unit_types = [CardData.UnitType.ORK_BOYZ, CardData.UnitType.ONSLAUGHTS]

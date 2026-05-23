@@ -1,6 +1,8 @@
 extends Resource
 class_name CardData
 
+enum CardTier { UNASSIGNED = -1, STARTER, TIER_0, TIER_2, TIER_3 }
+
 enum EffectType { NONE, 
 CHOICE,
 
@@ -19,11 +21,14 @@ RALLY,
 #SM
 DESTROY_ON_ROUT_OR_SPEND,  # Ambush
 SHIELD_DEBUFF_CONDITIONAL, # Fury of the Ultramar
+RALLY_IF_DEFENDING, # Hold the Line
+RALLY_IF_ATTACKING, # Glory and Death
 
 #ORKS
 DESTROY_FOR_DESTROY,
 DISCARD_STEAL_ICONS, 
 }
+
 
 enum TargetType { SELF, OPPONENT }
 enum DicePoolType { RANDOM, OFFENSE, DEFENSE, MORALE }
@@ -67,6 +72,7 @@ enum UnitType {
 
 @export var card_id: int
 @export var card_name: String
+@export var card_tier: CardTier = CardTier.UNASSIGNED
 
 @export_category("Combat Stats")
 @export var offence_icons: int

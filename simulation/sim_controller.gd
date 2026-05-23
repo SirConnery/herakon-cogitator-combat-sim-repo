@@ -7,7 +7,7 @@ class_name SimController
 @export var current_stage: GameStageGenerator.Stage = GameStageGenerator.Stage.EARLY
 #@export var current_stage: GameStageGenerator.Stage = randi_range(0, 2) # change to this for random stages
 
-@export var attacker_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.SM
+@export var attacker_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.SPACE_MARINES
 @export var defender_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.ORKS
 
 var is_ground_combat := true
@@ -131,6 +131,10 @@ func _flatten_card_database(raw_db: Dictionary) -> Dictionary:
 	var flat_db: Dictionary = {}
 	for card_id in raw_db:
 		var card: CardData = raw_db[card_id]
+		
+		assert(card.card_tier != CardData.CardTier.UNASSIGNED, 
+			"CRITICAL DATA ERROR: Card '%s' (ID: %d) has an unassigned or missing CardTier property!" % [card.card_name, card_id])
+		
 		var effects_list: Array = []
 		
 		# Always treat abilities as clean sequential loops

@@ -3,7 +3,8 @@ class_name GameStageGenerator
 enum Stage { EARLY, MID, LATE }
 
 ## Master testing toggle: When true, forces blueprints to bypass dynamic generation and use debug pools
-static var use_debug_deck_for_testing: bool = true
+static var use_debug_deck_for_testing := true
+static var debug_deck_uses_1_card := true
 
 
 static func choose_weighted(weights: PackedFloat32Array) -> int:
@@ -65,7 +66,18 @@ static func generate_faction_blueprint(faction_id: int, stage: Stage, unit_count
 ## Compiles the combat deck based on current test configurations or upgrade deck drafting rules
 static func compile_combat_deck(faction_raw: Dictionary) -> Array:
 	if use_debug_deck_for_testing:
-		return faction_raw.get("debug_deck", []).duplicate()
+		var debug_pool: Array = faction_raw.get("debug_deck", [])
+		
+		if debug_deck_uses_1_card:
+			assert(debug_pool.size() > 0, "CRITICAL CONFIG ERROR: debug_deck is empty but debug_deck_uses_1_card is enabled!")
+			
+			var target_card = debug_pool[0]
+			var single_card_deck: Array = []
+			for i in range(10):
+				single_card_deck.append(target_card)
+			return single_card_deck
+			
+		return debug_pool.duplicate()
 	
 	var upgrade_pool: Array = faction_raw.get("upgrade_deck", [])
 	var compiled_deck: Array = []

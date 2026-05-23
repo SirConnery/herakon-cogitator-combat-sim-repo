@@ -204,10 +204,13 @@ func engine_callback(event_type: String, data: Array) -> void:
 
 		"ability_triggered":
 			var controller = context.get("controller_ref")
-			var card_name := "Card #" + str(data[0])
+			var card_name := "Card #" + str(data[0]) 
 
 			if controller:
-				card_name = controller.get_card_metadata(data[0], "card_name")
+				var fetched_name = controller.get_card_metadata(data[0], "card_name")
+				# Guard against Nil entries before committing to our strict type string
+				if fetched_name != null and str(fetched_name) != "":
+					card_name = str(fetched_name)
 
 			var msg := "  [*] %s: %s" % [card_name, data[1]]
 			print(msg)

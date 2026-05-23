@@ -69,7 +69,7 @@ func update_dice_displays(is_attacker: bool, offence: int, defence: int, morale_
 
 func set_unit_morale(role: String, morale_value: int, target_phase: String = "all") -> void:
 	var is_attacker := (role == "Attacker")
-	var morale_string := "0" if morale_value == 0 else str(morale_value) + " 🎖 `"
+	var morale_string := "0" if morale_value == 0 else str(morale_value) + " 🎖"
 	
 	# 1. Update Starting Layout Snapshot
 	if target_phase == "all" or target_phase == "round_start":
