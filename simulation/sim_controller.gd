@@ -4,7 +4,9 @@ class_name SimController
 @export var is_combat_debugger_used: bool = true
 @export var total_iterations: int = 1000000
 
-@export var current_stage: GameStageGenerator.Stage = GameStageGenerator.Stage.EARLY
+@export var current_stage: GameStageGenerator.Stage = GameStageGenerator.Stage.LATE
+#@export var current_stage: GameStageGenerator.Stage = randi_range(0, 2) # change to this for random stages
+
 
 @export var attacker_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.SM
 @export var defender_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.ORKS
@@ -129,7 +131,6 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_v
 	var raw_effect_type: int = int(fx.effect_type)
 	var value_slot: Variant = fx.value
 	
-	# Future-proofed checking using the exact enum path instead of integer values
 	if raw_effect_type == CardData.EffectType.CHOICE:
 		var flattened_choices: Array = []
 		var raw_choices = fx.choices
@@ -137,8 +138,9 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_v
 		if not raw_choices.is_empty():
 			for sub_fx in raw_choices:
 				if sub_fx != null:
-					# Nested sub-choices within a choice container default to generic flags
-					var flat_sub = _flatten_single_effect(sub_fx, true, CardData.UnitType.NONE)
+					# FIXED: Forward the unit requirement bitmask down into the nested sub-choices
+					# so that inner choice paths maintain the master card validation rules!
+					var flat_sub = _flatten_single_effect(sub_fx, is_general_ability, req_unit_val)
 					flattened_choices.append(flat_sub)
 					
 		value_slot = flattened_choices
@@ -158,7 +160,7 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_v
 		value_slot,             # Index 2
 		fx.pool_type,           # Index 3
 		ability_block_type_id,  # Index 4
-		req_unit_val            # Index 5
+		int(req_unit_val)       # Index 5 - Ensured robust bitmask integer safety pass
 	]
 
 func _prepare_faction_blueprint(faction_id: int, factions: Dictionary, randomized_tiers: PackedInt32Array) -> Dictionary:

@@ -5,6 +5,7 @@ enum CardID {
 	# --- SPACE MARINES (SM) ---
 	SM_AMBUSH							= 1001,
 	SM_RECONNAISSANCE					= 1002,
+	SM_FURY_OF_THE_ULTRAMAR				= 1003,
 	SM_COMBAT_FAITH_IN_EMPEROR			= 1005,
 
 	# --- ORKS (ORKS) ---
@@ -22,7 +23,7 @@ static func get_database() -> Dictionary:
 	card.card_id = CardID.SM_AMBUSH
 	card.card_name = "Ambush"
 	card.offence_icons = 1
-	card.required_unit_types = CardData.UnitType.SCOUTS # Assumes Scouts for Space Marine ambush actions
+	card.required_unit_types = CardData.UnitType.SCOUTS | CardData.UnitType.STRIKE_CRUISERS
 	
 	# General ability: Gain 2 offence tokens
 	var sm_ambush_gen := CardEffect.new()
@@ -71,6 +72,53 @@ static func get_database() -> Dictionary:
 	
 	sm_recon_choice.choices = [recon_opt_a, recon_opt_b]
 	card.general_ability.append(sm_recon_choice)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 1003: Fury of the Ultramar ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.SM_FURY_OF_THE_ULTRAMAR
+	card.card_name = "Fury of the Ultramar"
+	card.required_unit_types = CardData.UnitType.SPACE_MARINES | CardData.UnitType.STRIKE_CRUISERS
+	
+	# --- GENERAL ABILITY ---
+	# 1. Opponent rerolls 1 die
+	var sm_fury_gen_1 := CardEffect.new()
+	sm_fury_gen_1.effect_type = CardData.EffectType.REROLL
+	sm_fury_gen_1.target_type = CardData.TargetType.OPPONENT
+	sm_fury_gen_1.value = 1
+	card.general_ability.append(sm_fury_gen_1)
+	
+	# 2. You reroll 1 die (Random balance modification)
+	var sm_fury_gen_2 := CardEffect.new()
+	sm_fury_gen_2.effect_type = CardData.EffectType.REROLL
+	sm_fury_gen_2.target_type = CardData.TargetType.SELF
+	sm_fury_gen_2.value = 1
+	card.general_ability.append(sm_fury_gen_2)
+	
+	# --- UNIT ABILITY ---
+	# Choice: Opponent loses 1 Shield die OR opponent loses 2 Shield tokens
+	var sm_fury_unit_choice := CardEffect.new()
+	sm_fury_unit_choice.effect_type = CardData.EffectType.CHOICE
+	sm_fury_unit_choice.target_type = CardData.TargetType.OPPONENT
+	
+	# Option A: Lose 1 Shield Die (We will implement this via hostile reroll target modification or negative dice allocation hooks)
+	var fury_opt_a := CardEffect.new()
+	fury_opt_a.effect_type = CardData.EffectType.REROLL # Forces a re-check modification on a defensive value
+	fury_opt_a.target_type = CardData.TargetType.OPPONENT
+	fury_opt_a.value = 1
+	
+	# Option B: Lose 2 Shield Tokens (Can be passed as negative modifiers to token allocation logic)
+	var fury_opt_b := CardEffect.new()
+	fury_opt_b.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN # Handled as negative tracking
+	fury_opt_b.target_type = CardData.TargetType.OPPONENT
+	fury_opt_b.value = -2
+	fury_opt_b.pool_type = CardData.DicePoolType.DEFENSE
+	
+	sm_fury_unit_choice.choices = [fury_opt_a, fury_opt_b]
+	card.unit_ability.append(sm_fury_unit_choice)
 	
 	db[card.card_id] = card
 	

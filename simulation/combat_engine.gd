@@ -482,9 +482,12 @@ static func _is_mutual_annihilation(state: Dictionary) -> bool:
 	var def_survivors: int = _count_living_units(state["defender"])
 	return atk_survivors == 0 and def_survivors == 0
 
-static func _has_active_unit_type(side_data: Dictionary, required_type: int) -> bool:
+static func _has_active_unit_type(side_data: Dictionary, required_mask: int) -> bool:
 	for squad in side_data["squads"]:
-		if int(squad.get("unit_type", -1)) == required_type:
+		var squad_type: int = int(squad.get("unit_type", 0))
+		
+		# BITWISE CHECK: If the squad's type bit matches any bit in the requirement mask
+		if (squad_type & required_mask) != 0:
 			for i in range(squad["alive_figures"].size()):
 				if squad["alive_figures"][i] > 0 and not squad["figures_routed"][i]:
 					return true
@@ -589,40 +592,51 @@ static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, t
 	var role_label := "Attacker" if is_attacker else "Defender"
 	var side_data: Dictionary = state["attacker"] if is_attacker else state["defender"]
 	
+	# Pre-flight Validation: Check if this card contains any Unit abilities, 
+	# and if so, whether the player possesses the matching units to field them.
+	var has_valid_units := true
+	for fx in effects_list:
+		var is_unit_fx: bool = (fx[4] == 1)
+		if is_unit_fx:
+			var req_mask: int = fx[5]
+			if req_mask != 0 and not _has_active_unit_type(side_data, req_mask):
+				has_valid_units = false
+				if on_event.is_valid():
+					on_event.call("unit_ability_not_resolved", [role_label, active_card_id, [req_mask]])
+				break # Abort evaluation pass; requirements failed
+
 	var general_phase_started := false
 	var unit_phase_started := false
 	
 	for fx in effects_list:
-		var effect_type: int = fx[0]
 		var is_unit_fx: bool = (fx[4] == 1)
 		
-		# ==============================================================================
-		# Proactive Passive Ability Logging Hook
-		# ==============================================================================
+		# CRITICAL PLACEMENT: Catch and skip failed unit abilities right at the start
+		# of the iteration, before any logging, headers, or execution routing can occur!
+		if is_unit_fx and not has_valid_units:
+			continue
+
+		var effect_type: int = fx[0]
+
+		# --- PROACTIVE PASSIVE LOGGING ---
 		if effect_type == CardData.EffectType.DESTROY_ON_ROUT_OR_SPEND:
 			if on_event.is_valid():
 				on_event.call("ability_triggered", [active_card_id, "⚠️ Passive Threat Primed: Any units routed this round face destruction!"])
-		# ==============================================================================
 
+		# --- VISUAL BLOCK TIMING HEADERS ---
 		if not is_unit_fx and not general_phase_started:
 			general_phase_started = true
 			if on_event.is_valid(): on_event.call("ability_block_started", [role_label, "General"])
 		elif is_unit_fx and not unit_phase_started:
 			unit_phase_started = true
 			if on_event.is_valid(): on_event.call("ability_block_started", [role_label, "Unit"])
-
-		if is_unit_fx:
-			var req_unit: int = fx[5]
-			if req_unit != 0 and not _has_active_unit_type(side_data, req_unit):
-				if on_event.is_valid():
-					on_event.call("unit_ability_not_resolved", [role_label, active_card_id, [req_unit]])
-				continue
 		
+		# --- EFFECT RESOLUTION ROUTING ---
 		if EFFECT_RESOLVERS.has(effect_type):
 			# Pass token_pools for token-based tracking, side_data for physical dice modifications
 			EFFECT_RESOLVERS[effect_type].call(fx, token_pools, side_data, role_label, active_card_id, on_event)
 		else:
-			# Safety check to avoid skipping passive logs that don't need active atomic modifiers
+			# Safety boundary check to prevent skipping passive capabilities lacking active atomic resolvers
 			if effect_type != CardData.EffectType.DESTROY_ON_ROUT_OR_SPEND:
 				print("    -> ⚠️ Engine skipped non-instant or unresolved effect archetype: %d" % effect_type)
 
