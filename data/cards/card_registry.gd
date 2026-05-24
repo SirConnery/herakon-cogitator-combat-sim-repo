@@ -13,7 +13,8 @@ enum CardID {
 	SM_DROP_POD_ASSAULT						= 1008,
 	SM_VETERAN_SCOUTS						= 1009,
 	SM_SHOW_NO_FEAR							= 1010,
-	SM_BREAK_THE_LINE						= 1011, 
+	SM_BREAK_THE_LINE						= 1011,
+	SM_ARMOURED_ADVANCE						= 1012, 
 
 	# --- ORKS (ORKS) ---
 	ORKS_GRETCHIN						= 3001,
@@ -417,6 +418,32 @@ static func get_database() -> Dictionary:
 	sm_break_unit.target_type = CardData.TargetType.OPPONENT
 	sm_break_unit.value = 1
 	card.unit_ability.append(sm_break_unit)
+	
+	db[card.card_id] = card
+	
+# ==========================================================================
+	# --- CARD 1012: Armoured Advance ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.SM_ARMOURED_ADVANCE
+	card.card_name = "Armoured Advance"
+	card.card_tier = CardData.CardTier.TIER_2
+	card.offence_icons = 2
+	card.defence_icons = 1
+	card.required_unit_types = [CardData.UnitType.LAND_RAIDERS, CardData.UnitType.BATTLE_BARGES]
+	
+	# General ability: Gain 1 dice (Executed unconditionally)
+	var sm_armoured_gen := CardEffect.new()
+	sm_armoured_gen.effect_type = CardData.EffectType.GAIN_DICE
+	sm_armoured_gen.target_type = CardData.TargetType.SELF
+	sm_armoured_gen.value = 1
+	card.general_ability.append(sm_armoured_gen)
+	
+	# Unit ability: Resolve an additional assess damage step this round
+	var sm_armoured_unit := CardEffect.new()
+	sm_armoured_unit.effect_type = CardData.EffectType.ADDITIONAL_ASSESS_DAMAGE_STEP_THIS_ROUND
+	sm_armoured_unit.target_type = CardData.TargetType.SELF
+	card.unit_ability.append(sm_armoured_unit)
 	
 	db[card.card_id] = card
 	

@@ -47,10 +47,6 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 	var def_card_id := 0
 
 	var token_pools := [0, 0, 0, 0] 
-	var context := [0, 0, 0, 0, 0, 0]
-
-	var def_routing_lethal := false
-	var atk_routing_lethal := false
 
 	# --- 4. TIEBREAKER & RESOLUTION VARIABLES ---
 	var atk_survivors := 0
@@ -102,6 +98,7 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 	# --- PHASE 2: THREE-ROUND COMBAT ENGINE CRUCIBLE LOOP ---
 	for round_index in range(3):
 		state["current_round_index"] = round_index
+		state["extra_damage_steps_this_round"] = 0
 		
 		if _count_living_units(atk) == 0 or _count_living_units(def) == 0:
 			if on_event.is_valid():
@@ -155,50 +152,20 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		_resolve_instant_ability(atk_card_id, card_db, token_pools, Side.ATTACKER, state, on_event)
 		_resolve_instant_ability(def_card_id, card_db, token_pools, Side.DEFENDER, state, on_event)
 		
-		# --- LIVE STREAM TRACKING RESOLUTION PASS ---
-		var atk_card_icons := _get_live_card_icons(atk, card_db, round_index)
-		var def_card_icons := _get_live_card_icons(def, card_db, round_index)
+		# --- DYNAMIC MULTI-PASS DAMAGE LOOP WRAPPER ---
+		var extra_steps: int = state.get("extra_damage_steps_this_round", 0)
 		
-		# --- CENTRALIZED DAMAGE STEP TELEMETRY ---
-		if on_event.is_valid():
-			_log_phase_telemetry("damage_step", state, card_db, round_index, on_event, atk_card_icons, def_card_icons)
+		for pass_index in range(1 + extra_steps):
+			# Intercept step processing if a player has been completely eradicated
+			if pass_index > 0 and (_count_living_units(atk) == 0 or _count_living_units(def) == 0):
+				break
+				
+			# Route arguments out to our dedicated damage evaluation processor cleanly
+			_assess_damage_step(state, card_db, round_index, pass_index, token_pools, atk_card_id, def_card_id, on_event)
 
+		# Clear link states at the end of the round context pipeline completely
 		atk.erase("parent_state")
 		def.erase("parent_state")
-
-		var atk_ex: Array = atk.get("extra_icons", [0, 0, 0])
-		var def_ex: Array = def.get("extra_icons", [0, 0, 0])
-
-		context[0] = atk[Stat.OFFENCE] + atk_card_icons[0] + token_pools[0] + atk_ex[0] 
-		context[1] = atk[Stat.DEFENCE] + atk_card_icons[1] + token_pools[1] + atk_ex[1] 
-		context[2] = def[Stat.OFFENCE] + def_card_icons[0] + token_pools[2] + def_ex[0] 
-		context[3] = def[Stat.DEFENCE] + def_card_icons[1] + token_pools[3] + def_ex[1] 
-	
-		_execute_timing_hook(CardData.TimingWindow.BEFORE_DAMAGE, state, context, round_index, card_db, on_event)
-
-		if on_event.is_valid():
-			on_event.call("damage_pre_calculated", ["Attacker", context[0], context[1]])
-			on_event.call("damage_pre_calculated", ["Defender", context[2], context[3]])
-		
-		context[4] = max(0, context[0] - context[3]) 
-		context[5] = max(0, context[2] - context[1]) 
-
-		_execute_timing_hook(CardData.TimingWindow.DURING_DAMAGE, state, context, round_index, card_db, on_event)
-		
-		if on_event.is_valid():
-			on_event.call("damage_resolved", ["Attacker", context[5]])
-			on_event.call("damage_resolved", ["Defender", context[4]])
-
-		def_routing_lethal = _is_routing_lethal(atk_card_id, card_db, def)
-		atk_routing_lethal = _is_routing_lethal(def_card_id, card_db, atk)
-
-		var defender_newly_routed_array: Array[Dictionary] = apply_damage(def, context[4], round_index, def_routing_lethal, atk_card_id, on_event)
-		var attacker_newly_routed_array: Array[Dictionary] = apply_damage(atk, context[5], round_index, atk_routing_lethal, def_card_id, on_event)
-
-		state["defender_newly_routed"] = defender_newly_routed_array
-		state["attacker_newly_routed"] = attacker_newly_routed_array
-
-		_execute_timing_hook(CardData.TimingWindow.AFTER_DAMAGE, state, context, round_index, card_db, on_event)
 
 	# --- FINAL WIN CONDITION RESOLUTION EVALUATION ---
 	atk_survivors = _count_living_units(atk)
@@ -227,6 +194,61 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		on_event.call("tiebreaker_morale", [final_atk_morale, final_def_morale])
 
 	return final_atk_morale >= final_def_morale
+
+#endregion
+
+#region Assess Damage Step
+
+## Evaluates and applies a single discrete damage pass calculation for the round
+static func _assess_damage_step(state: Dictionary, card_db: Dictionary, round_index: int, pass_index: int, token_pools: Array, atk_card_id: int, def_card_id: int, on_event: Callable) -> void:
+	var atk: Dictionary = state[Side.ATTACKER]
+	var def: Dictionary = state[Side.DEFENDER]
+	
+	# 1. Gather true field state configurations dynamically
+	var atk_card_icons := _get_live_card_icons(atk, card_db, round_index)
+	var def_card_icons := _get_live_card_icons(def, card_db, round_index)
+	
+	# 2. Trigger centralized telemetry logging hooks if valid observer attached
+	if on_event.is_valid():
+		if pass_index > 0:
+			on_event.call("ability_triggered", [atk_card_id, "⚡ --- BONUS ASSESS DAMAGE STEP PASS (Iteration %d) ---" % pass_index])
+		_log_phase_telemetry("damage_step", state, card_db, round_index, on_event, atk_card_icons, def_card_icons)
+
+	# 3. Compile tactical attribute modifications 
+	var atk_ex: Array = atk.get("extra_icons", [0, 0, 0])
+	var def_ex: Array = def.get("extra_icons", [0, 0, 0])
+
+	# 4. Instantiate temporary calculation scratchpad vector
+	var context := [0, 0, 0, 0, 0, 0] # [atk_atk, atk_def, def_atk, def_def, raw_atk_dmg, raw_def_dmg]
+	context[0] = atk[Stat.OFFENCE] + atk_card_icons[0] + token_pools[0] + atk_ex[0] 
+	context[1] = atk[Stat.DEFENCE] + atk_card_icons[1] + token_pools[1] + atk_ex[1] 
+	context[2] = def[Stat.OFFENCE] + def_card_icons[0] + token_pools[2] + def_ex[0] 
+	context[3] = def[Stat.DEFENCE] + def_card_icons[1] + token_pools[3] + def_ex[1] 
+
+	# 5. Pipeline damage calculations across timeline timing windows
+	_execute_timing_hook(CardData.TimingWindow.BEFORE_DAMAGE, state, context, round_index, card_db, on_event)
+
+	if on_event.is_valid():
+		on_event.call("damage_pre_calculated", ["Attacker", context[0], context[1]])
+		on_event.call("damage_pre_calculated", ["Defender", context[2], context[3]])
+	
+	context[4] = max(0, context[0] - context[3]) 
+	context[5] = max(0, context[2] - context[1]) 
+
+	_execute_timing_hook(CardData.TimingWindow.DURING_DAMAGE, state, context, round_index, card_db, on_event)
+	
+	if on_event.is_valid():
+		on_event.call("damage_resolved", ["Attacker", context[5]])
+		on_event.call("damage_resolved", ["Defender", context[4]])
+
+	# 6. Evaluate routing thresholds and write back state mutations
+	var def_routing_lethal := _is_routing_lethal(atk_card_id, card_db, def)
+	var atk_routing_lethal := _is_routing_lethal(def_card_id, card_db, atk)
+
+	state["defender_newly_routed"] = apply_damage(def, context[4], round_index, def_routing_lethal, atk_card_id, on_event)
+	state["attacker_newly_routed"] = apply_damage(atk, context[5], round_index, atk_routing_lethal, def_card_id, on_event)
+
+	_execute_timing_hook(CardData.TimingWindow.AFTER_DAMAGE, state, context, round_index, card_db, on_event)
 
 #endregion
 
@@ -337,7 +359,8 @@ static func _find_perfect_absorption_target(squads: Array, total_damage: int, re
 #region Logging functions
 
 ## Centralized bottleneck for all engine logging phases ("round_start" or "damage_step")
-static func _log_phase_telemetry(phase: String, state: Dictionary, card_db: Dictionary, round_index: int, on_event: Callable, atk_icons: Array[int] = [], def_icons: Array[int] = []) -> void:
+## Centralized bottleneck for all engine logging phases ("round_start" or "damage_step")
+static func _log_phase_telemetry(phase: String, state: Dictionary, card_db: Dictionary, round_index: int, on_event: Callable, atk_icons: Array = [], def_icons: Array = []) -> void:
 	var atk: Dictionary = state[Side.ATTACKER]
 	var def: Dictionary = state[Side.DEFENDER]
 	
@@ -807,6 +830,7 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.SPEND_MORALE_TO_SPAWN_UNIT: _execute_spend_morale_to_spawn_unit, # Drop Pod Assault
 	CardData.EffectType.PREVENT_ROUTING_THIS_ROUND: _execute_prevent_routing_this_round, # Show No Fear
 	CardData.EffectType.RALLY_ALL_FRIENDLY_UNITS: _execute_rally_all_friendly_units, # Show No Fear
+	CardData.EffectType.ADDITIONAL_ASSESS_DAMAGE_STEP_THIS_ROUND: _execute_additional_assess_damage_step_this_round, # Armoured Advance
 	
 	# ORK
 	CardData.EffectType.DESTROY_FOR_DESTROY: _execute_destroy_for_destroy, # Gretchin
@@ -1655,7 +1679,7 @@ static func _find_lethal_sacrifice_target(squads: Array, total_damage: int, roun
 #endregion
 
 
-#region Instant Card abilities
+#region Faction Instant Card abilities
 
 static func _execute_destroy_for_destroy(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var required_unit_types: Array = fx[5]
@@ -1721,6 +1745,7 @@ static func _execute_destroy_for_destroy(fx: Array, _token_pools: Array, side_da
 		var enemy_list_string := ", ".join(victim_names)
 		on_event.call("ability_triggered", [card_id, "↳ ⚖️ Trade Complete: Sacrificed [%s] to destroy enemy [%s]!" % [friendly_list_string, enemy_list_string]])
 
+
 static func _execute_shield_debuff_conditional(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
 	var max_tokens_to_strip: int = fx[2]
 	var pool_type: int = fx[3]
@@ -1768,6 +1793,7 @@ static func _execute_rally_if_defending(fx: Array, token_pools: Array, side_data
 	# Conditions met -> Forward parameters directly to your active rally execution pipeline
 	_execute_rally(fx, token_pools, side_data, role, card_id, units_valid, on_event)
 
+
 static func _execute_rally_if_attacking(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
 	# Conditional check: If this side isn't the designated attacker, the effect skips
 	if role != "Attacker":
@@ -1777,10 +1803,7 @@ static func _execute_rally_if_attacking(fx: Array, token_pools: Array, side_data
 	_execute_rally(fx, token_pools, side_data, role, card_id, units_valid, on_event)
 
 
-static func _execute_spend_morale_to_spawn_unit(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
-	if not units_valid:
-		return
-
+static func _execute_spend_morale_to_spawn_unit(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	# 1. Pipeline the resource check through your flat modifier check hook
 	if not _spend_die_to_continue(side_data, Stat.MORALE, 1, role, on_event):
 		if on_event.is_valid():
@@ -1825,6 +1848,7 @@ static func _execute_spend_morale_to_spawn_unit(_fx: Array, _token_pools: Array,
 		if not parent_state.is_empty():
 			log_current_army_statuses(parent_state, on_event, "damage_step")
 
+
 static func _execute_prevent_routing_this_round(fx: Array, _token_pools: Array, side_data: Dictionary, _role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var target_type: int = int(fx[1])
 	
@@ -1845,10 +1869,8 @@ static func _execute_prevent_routing_this_round(fx: Array, _token_pools: Array, 
 		if on_event.is_valid():
 			on_event.call("ability_triggered", [card_id, "↳ 🛡️ Status Activated: Friendly units cannot be routed this round."])
 
-static func _execute_rally_all_friendly_units(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
-	if not units_valid:
-		return
 
+static func _execute_rally_all_friendly_units(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	# 1. Directly invoke your existing high-speed helper
 	if not _has_any_routed_units(side_data):
 		if on_event.is_valid():
@@ -1878,6 +1900,19 @@ static func _execute_rally_all_friendly_units(_fx: Array, _token_pools: Array, s
 		if not parent_state.is_empty():
 			log_current_army_statuses(parent_state, on_event, "damage_step")
 
+
+## Unit Ability: Schedules an additional complete assess damage step to resolve this round.
+static func _execute_additional_assess_damage_step_this_round(_fx: Array, _token_pools: Array, side_data: Dictionary, _role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	if parent_state.is_empty():
+		return
+
+	# Safely increment the round's dynamic damage loop execution counter
+	var current_extras: int = parent_state.get("extra_damage_steps_this_round", 0)
+	parent_state["extra_damage_steps_this_round"] = current_extras + 1
+
+	if on_event.is_valid():
+		on_event.call("ability_triggered", [card_id, "↳ ⚔️ Armoured Advance! An additional Assess Damage step has been scheduled for this round."])
 
 
 #endregion
