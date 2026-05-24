@@ -4,7 +4,7 @@ class_name SimController
 @export var is_combat_debugger_used: bool = true
 @export var total_iterations: int = 1000000
 
-@export var current_stage: GameStageGenerator.Stage = GameStageGenerator.Stage.EARLY
+@export var current_stage: GameStageGenerator.Stage = GameStageGenerator.Stage.LATE
 #@export var current_stage: GameStageGenerator.Stage = randi_range(0, 2) # change to this for random stages
 
 @export var attacker_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.SPACE_MARINES

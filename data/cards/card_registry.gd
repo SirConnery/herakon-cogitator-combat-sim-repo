@@ -35,6 +35,7 @@ static func get_database() -> Dictionary:
 	var empty_card := CardData.new()
 	empty_card.card_id = 0
 	empty_card.card_name = "Discarded Slot"
+	empty_card.card_tier = CardData.CardTier.STARTER
 	empty_card.offence_icons = 0
 	empty_card.defence_icons = 0
 	empty_card.morale_icons = 0
@@ -408,6 +409,14 @@ static func get_database() -> Dictionary:
 	sm_break_gen.value = 3
 	sm_break_gen.pool_type = CardData.DicePoolType.RANDOM
 	card.general_ability.append(sm_break_gen)
+	
+	# --- UNIT ABILITY ---
+	# The opponent discards 1 of his faceup combat cards
+	var sm_break_unit := CardEffect.new()
+	sm_break_unit.effect_type = CardData.EffectType.OPPONENT_DISCARDS_FACEUP_CARD
+	sm_break_unit.target_type = CardData.TargetType.OPPONENT
+	sm_break_unit.value = 1
+	card.unit_ability.append(sm_break_unit)
 	
 	db[card.card_id] = card
 	

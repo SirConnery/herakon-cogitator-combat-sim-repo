@@ -165,6 +165,27 @@ func engine_callback(event_type: String, data: Array) -> void:
 				var is_attacker: bool = (role_label == "Attacker")
 				current_panel.update_card_icons_displays(is_attacker, off_icons, def_icons, mor_icons, phase_context)
 		
+		"opponent_card_discarded":
+			# data = [active_card_id, opp_role_label, discarded_card_id, target_idx]
+			var controller = context.get("controller_ref")
+			var active_card_name := "Card #" + str(data[0])
+			var discarded_card_name := "Card #" + str(data[2])
+			
+			if controller:
+				var active_fetched = controller.get_card_metadata(data[0], "card_name")
+				if active_fetched != null and str(active_fetched) != "":
+					active_card_name = str(active_fetched)
+					
+				var discarded_fetched = controller.get_card_metadata(data[2], "card_name")
+				if discarded_fetched != null and str(discarded_fetched) != "":
+					discarded_card_name = str(discarded_fetched)
+			
+			var msg := "	[*] %s: ↳ 📇 Discard forced! %s chose and recycled '%s' from slot index %d back into their combat deck." % [
+				active_card_name, data[1], discarded_card_name, data[3]
+			]
+			print(msg)
+			if current_panel:
+				current_panel.append_console_log(msg)
 		# =========================================================
 		# EXTRA ICONS
 		# =========================================================

@@ -46,14 +46,6 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 	var atk_card_id := 0
 	var def_card_id := 0
 
-	var card_icons_atk_offence = 0
-	var card_icons_atk_defence = 0
-	var card_icons_atk_morale = 0
-
-	var card_icons_def_offence = 0
-	var card_icons_def_defence = 0
-	var card_icons_def_morale = 0
-
 	var token_pools := [0, 0, 0, 0] 
 	var context := [0, 0, 0, 0, 0, 0]
 
@@ -109,7 +101,8 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 
 	# --- PHASE 2: THREE-ROUND COMBAT ENGINE CRUCIBLE LOOP ---
 	for round_index in range(3):
-
+		state["current_round_index"] = round_index
+		
 		if _count_living_units(atk) == 0 or _count_living_units(def) == 0:
 			if on_event.is_valid():
 				on_event.call("early_termination", [])
@@ -132,13 +125,9 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 				if squad["alive_figures"][i] > 0: 
 					squad["alive_figures"][i] = squad["health_value"]
 
+		# --- CENTRALIZED ROUND START TELEMETRY ---
 		if on_event.is_valid():
-			on_event.call("round_start", [round_index])
-			log_current_army_statuses(state, on_event)
-			log_current_dice_pools(on_event, atk, def, "round_start")
-			log_current_extra_icons(on_event, atk["extra_icons"], def["extra_icons"], "round_start")
-			log_current_unit_morale(on_event, atk, def, "round_start")
-			log_current_card_icons(on_event, [card_icons_atk_offence, card_icons_atk_defence, card_icons_atk_morale], [card_icons_def_offence, card_icons_def_defence, card_icons_def_morale], "round_start")
+			_log_phase_telemetry("round_start", state, card_db, round_index, on_event)
 
 		# --- PLAY COMBAT CARDS ---
 		atk_idx = randi() % atk["cards_in_hand"].size()
@@ -154,26 +143,6 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		atk["unit_abilities_unlocked"][round_index] = _check_card_unit_reqs_met(atk_card_id, card_db, atk)
 		def["unit_abilities_unlocked"][round_index] = _check_card_unit_reqs_met(def_card_id, card_db, def)
 
-		# --- CLEAR AND AGGREGATE CARD ICONS ---
-		card_icons_atk_offence = 0
-		card_icons_atk_defence = 0
-		card_icons_atk_morale = 0
-		card_icons_def_offence = 0
-		card_icons_def_defence = 0
-		card_icons_def_morale = 0
-
-		for i in range(round_index + 1):
-			var a = card_db[atk["play_area"][i]]
-			var d = card_db[def["play_area"][i]]
-
-			card_icons_atk_offence += a[0]
-			card_icons_atk_defence += a[1]
-			card_icons_atk_morale += a[2]
-
-			card_icons_def_offence += d[0]
-			card_icons_def_defence += d[1]
-			card_icons_def_morale += d[2]
-
 		# --- INSTANTIATE LOCAL OPERATION SCRATCHPADS ---
 		token_pools[0] = 0 
 		token_pools[1] = 0 
@@ -186,13 +155,13 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		_resolve_instant_ability(atk_card_id, card_db, token_pools, Side.ATTACKER, state, on_event)
 		_resolve_instant_ability(def_card_id, card_db, token_pools, Side.DEFENDER, state, on_event)
 		
+		# --- LIVE STREAM TRACKING RESOLUTION PASS ---
+		var atk_card_icons := _get_live_card_icons(atk, card_db, round_index)
+		var def_card_icons := _get_live_card_icons(def, card_db, round_index)
+		
+		# --- CENTRALIZED DAMAGE STEP TELEMETRY ---
 		if on_event.is_valid():
-			on_event.call("assess_damage_step_start", [])
-			log_current_army_statuses(state, on_event, "damage_step")
-			log_current_dice_pools(on_event, atk, def, "damage_step")
-			log_current_unit_morale(on_event, atk, def, "damage_step")
-			log_current_extra_icons(on_event, atk["extra_icons"], def["extra_icons"], "damage_step")
-			log_current_card_icons(on_event, [card_icons_atk_offence, card_icons_atk_defence, card_icons_atk_morale], [card_icons_def_offence, card_icons_def_defence, card_icons_def_morale], "damage_step")
+			_log_phase_telemetry("damage_step", state, card_db, round_index, on_event, atk_card_icons, def_card_icons)
 
 		atk.erase("parent_state")
 		def.erase("parent_state")
@@ -200,10 +169,10 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		var atk_ex: Array = atk.get("extra_icons", [0, 0, 0])
 		var def_ex: Array = def.get("extra_icons", [0, 0, 0])
 
-		context[0] = atk[Stat.OFFENCE] + card_icons_atk_offence + token_pools[0] + atk_ex[0] 
-		context[1] = atk[Stat.DEFENCE] + card_icons_atk_defence + token_pools[1] + atk_ex[1] 
-		context[2] = def[Stat.OFFENCE] + card_icons_def_offence + token_pools[2] + def_ex[0] 
-		context[3] = def[Stat.DEFENCE] + card_icons_def_defence + token_pools[3] + def_ex[1] 
+		context[0] = atk[Stat.OFFENCE] + atk_card_icons[0] + token_pools[0] + atk_ex[0] 
+		context[1] = atk[Stat.DEFENCE] + atk_card_icons[1] + token_pools[1] + atk_ex[1] 
+		context[2] = def[Stat.OFFENCE] + def_card_icons[0] + token_pools[2] + def_ex[0] 
+		context[3] = def[Stat.DEFENCE] + def_card_icons[1] + token_pools[3] + def_ex[1] 
 	
 		_execute_timing_hook(CardData.TimingWindow.BEFORE_DAMAGE, state, context, round_index, card_db, on_event)
 
@@ -247,8 +216,12 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		if on_event.is_valid(): on_event.call("victory_by_wipeout", ["Defender"])
 		return false
 
-	final_atk_morale = _calculate_current_morale_from_units(atk) + atk[Stat.MORALE] + card_icons_atk_morale
-	final_def_morale = _calculate_current_morale_from_units(def) + def[Stat.MORALE] + card_icons_def_morale
+	# Final Tiebreaker aggregates entire 3-round timeline mapping
+	var final_atk_card_icons := _get_live_card_icons(atk, card_db, 2)
+	var final_def_card_icons := _get_live_card_icons(def, card_db, 2)
+
+	final_atk_morale = _calculate_current_morale_from_units(atk) + atk[Stat.MORALE] + final_atk_card_icons[2]
+	final_def_morale = _calculate_current_morale_from_units(def) + def[Stat.MORALE] + final_def_card_icons[2]
 
 	if on_event.is_valid():
 		on_event.call("tiebreaker_morale", [final_atk_morale, final_def_morale])
@@ -363,6 +336,33 @@ static func _find_perfect_absorption_target(squads: Array, total_damage: int, re
 
 #region Logging functions
 
+## Centralized bottleneck for all engine logging phases ("round_start" or "damage_step")
+static func _log_phase_telemetry(phase: String, state: Dictionary, card_db: Dictionary, round_index: int, on_event: Callable, atk_icons: Array[int] = [], def_icons: Array[int] = []) -> void:
+	var atk: Dictionary = state[Side.ATTACKER]
+	var def: Dictionary = state[Side.DEFENDER]
+	
+	# Fallback: Automatically gather fresh live icons if they weren't passed in
+	if atk_icons.is_empty() or def_icons.is_empty():
+		atk_icons = _get_live_card_icons(atk, card_db, round_index)
+		def_icons = _get_live_card_icons(def, card_db, round_index)
+		
+	match phase:
+		"round_start":
+			on_event.call("round_start", [round_index])
+			log_current_army_statuses(state, on_event)
+			log_current_dice_pools(on_event, atk, def, "round_start")
+			log_current_extra_icons(on_event, atk["extra_icons"], def["extra_icons"], "round_start")
+			log_current_unit_morale(on_event, atk, def, "round_start")
+			log_current_card_icons(on_event, atk_icons, def_icons, "round_start")
+			
+		"damage_step":
+			on_event.call("assess_damage_step_start", [])
+			log_current_army_statuses(state, on_event, "damage_step")
+			log_current_dice_pools(on_event, atk, def, "damage_step")
+			log_current_unit_morale(on_event, atk, def, "damage_step")
+			log_current_extra_icons(on_event, atk["extra_icons"], def["extra_icons"], "damage_step")
+			log_current_card_icons(on_event, atk_icons, def_icons, "damage_step")
+
 static func log_current_army_statuses(state: Dictionary, on_event: Callable, phase_context: String = "all") -> void:
 	if not on_event.is_valid():
 		return
@@ -434,6 +434,20 @@ static func log_current_extra_icons(on_event: Callable, atk_icons: Array, def_ic
 
 static func _is_attacker(side: int) -> bool:
 	return side == Side.ATTACKER
+
+static func _get_live_card_icons(side_data: Dictionary, card_db: Dictionary, up_to_round: int) -> Array[int]:
+	var totals: Array[int] = [0, 0, 0] # [Offence, Defence, Morale]
+	var play_area: Array = side_data.get("play_area", [])
+	
+	for i in range(up_to_round + 1):
+		if i < play_area.size():
+			var card_id = play_area[i]
+			var card_entry = card_db.get(card_id, [0, 0, 0])
+			totals[0] += card_entry[0]
+			totals[1] += card_entry[1]
+			totals[2] += card_entry[2]
+			
+	return totals
 
 static func _spend_die_to_continue(side_data: Dictionary, stat_key: int, amount: int, role: String, on_event: Callable) -> bool:
 	if side_data[stat_key] < amount:
@@ -631,12 +645,13 @@ static func _get_token_index(role: String, pool_type: int, target_opponent: bool
 	return base_idx + offset
 
 ## Opponent Logic: Finds the faceup card index with the LEAST total icons. Ties broken randomly.
-static func _find_faceup_card_with_least_icons(side_data: Dictionary, card_db: Dictionary) -> int:
+static func _find_faceup_card_with_least_icons(side_data: Dictionary, card_db: Dictionary, ignored_index: int = -1) -> int:
 	var play_area: Array = side_data.get("play_area", [])
 	var valid_indices: Array[int] = []
 	
-	# Only gather slots that actually contain an active card ID
 	for i in range(play_area.size()):
+		if i == ignored_index:
+			continue
 		if play_area[i] != null and int(play_area[i]) > 0:
 			valid_indices.append(i)
 			
@@ -657,16 +672,17 @@ static func _find_faceup_card_with_least_icons(side_data: Dictionary, card_db: D
 		elif total_icons == min_icons:
 			best_indices.append(idx)
 			
-	# Tiebreaker: Randomly select from the lowest-value candidates
 	return best_indices[randi() % best_indices.size()]
 
 
 ## Player Logic: Finds the faceup card index with the MOST total icons. Ties broken randomly.
-static func _find_faceup_card_with_most_icons(side_data: Dictionary, card_db: Dictionary) -> int:
+static func _find_faceup_card_with_most_icons(side_data: Dictionary, card_db: Dictionary, ignored_index: int = -1) -> int:
 	var play_area: Array = side_data.get("play_area", [])
 	var valid_indices: Array[int] = []
 	
 	for i in range(play_area.size()):
+		if i == ignored_index:
+			continue
 		if play_area[i] != null and int(play_area[i]) > 0:
 			valid_indices.append(i)
 			
@@ -687,8 +703,13 @@ static func _find_faceup_card_with_most_icons(side_data: Dictionary, card_db: Di
 		elif total_icons == max_icons:
 			best_indices.append(idx)
 			
-	# Tiebreaker: Randomly select from the highest-value targets
 	return best_indices[randi() % best_indices.size()]
+
+
+static func add_specific_card_to_combat_deck(target_side_data: Dictionary, card_id: int) -> void:
+	var deck: Array = target_side_data.get("combat_deck", [])
+	deck.append(card_id)
+	deck.shuffle()
 
 #endregion
 
@@ -1329,10 +1350,7 @@ static func _execute_reroll_specific_dice_for_each_unit(fx: Array, _token_pools:
 		on_event.call("ability_triggered", [card_id, summary_msg])
 		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
 
-static func _execute_spend_morale_to_gain_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
-	if not units_valid:
-		return
-
+static func _execute_spend_morale_to_gain_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	# 1. Calculate dynamic spend cap based on current wallet contents vs card max value
 	var available_morale: int = side_data[Stat.MORALE]
 	var max_spend_allowed: int = int(fx[2])
@@ -1368,7 +1386,6 @@ static func _execute_spend_morale_to_gain_specific_dice(fx: Array, _token_pools:
 	# 5. Telemetry logging
 	if on_event.is_valid():
 		on_event.call("ability_triggered", [card_id, "↳ ⚡ Spent %d Morale dice! Added +%d %s dice to the core pool." % [spend_amount, spend_amount, dice_type_label]])
-
 
 #endregion
 
@@ -1519,11 +1536,10 @@ static func _execute_discard_steal_icons(_fx: Array, _token_pools: Array, side_d
 	if on_event.is_valid():
 		on_event.call("ability_triggered", [card_id, "↳ ⚙️ Mek Salvage: Discarded top enemy card! Harvested temporary extra icons: +%d⚔️ | +%d🛡️ | +%d🎖️" % [stolen_offence, stolen_defence, stolen_morale]])
 
-	# 5. Recycling Rule: Push the spent item back to bottom and reshuffle
-	opp_deck.append(stolen_card_id)
-	opp_deck.shuffle()
+	# 5. Recycling Rule: Route card straight through our updated deck helper
+	add_specific_card_to_combat_deck(opp_side_data, stolen_card_id)
 
-	# 6. UPDATED: Pass the array structures directly through to the tracking helper
+	# 6. Pass the array structures directly through to the tracking helper
 	if on_event.is_valid():
 		var atk_side: Dictionary = parent_state.get(Side.ATTACKER, {})
 		var def_side: Dictionary = parent_state.get(Side.DEFENDER, {})
@@ -1534,37 +1550,42 @@ static func _execute_discard_steal_icons(_fx: Array, _token_pools: Array, side_d
 			
 			log_current_extra_icons(on_event, atk_ex, def_ex, "damage_step")
 
-static func _execute_opponent_discards_faceup_card(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
-	if not units_valid:
-		return
 
+static func _execute_opponent_discards_faceup_card(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var parent_state: Dictionary = side_data.get("parent_state", {})
 	if parent_state.is_empty():
 		return
 
-	# 1. Locate the opponent's state data container
+	# 1. Pull the explicit round tracker integer directly from the master match state
+	var current_round: int = parent_state.get("current_round_index", 0)
+
+	# 2. Locate the opponent's state data container
 	var opponent_key = Side.DEFENDER if role == "Attacker" else Side.ATTACKER
 	var opponent_side: Dictionary = parent_state.get(opponent_key, {})
 	var card_db: Dictionary = parent_state.get("card_db", {})
 
-	# 2. Use our least-icons helper to let the opponent choose their sacrifice
-	var target_idx: int = _find_faceup_card_with_least_icons(opponent_side, card_db)
+	# 3. If Attacker, pass the current round index to ignore that specific slot
+	var ignored_idx := current_round if role == "Attacker" else -1
+
+	# 4. Find the target card index safely using our built-in filters
+	var target_idx: int = _find_faceup_card_with_least_icons(opponent_side, card_db, ignored_idx)
 	
+	# 5. Universal Fallback: Catches empty fields or early rounds cleanly
 	if target_idx == -1:
 		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 📇 Discard failed: Opponent has no faceup combat cards in play area."])
+			on_event.call("ability_triggered", [card_id, "↳ 📇 Discard skipped: Opponent has no valid faceup combat cards available to target."])
 		return
 
-	# 3. Cache the target card details for logging before erasing it
+	# 6. Perform the discard by clearing out the card slot
 	var discarded_card_id: int = opponent_side["play_area"][target_idx]
-	
-	# 4. Perform the discard by clearing out the card slot
 	opponent_side["play_area"][target_idx] = 0
 	
-	# 5. Fire telemetry updates
+	# 7. Recycle back to deck
+	add_specific_card_to_combat_deck(opponent_side, discarded_card_id)
+	
 	if on_event.is_valid():
 		var opp_role_label := "Defender" if role == "Attacker" else "Attacker"
-		on_event.call("ability_triggered", [card_id, "↳ 📇 Discard forced! %s chose and discarded card ID %d from slot index %d." % [opp_role_label, discarded_card_id, target_idx]])
+		on_event.call("opponent_card_discarded", [card_id, opp_role_label, discarded_card_id, target_idx])
 
 #endregion
 
@@ -1636,10 +1657,7 @@ static func _find_lethal_sacrifice_target(squads: Array, total_damage: int, roun
 
 #region Instant Card abilities
 
-static func _execute_destroy_for_destroy(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
-	if not units_valid:
-		return
-
+static func _execute_destroy_for_destroy(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var required_unit_types: Array = fx[5]
 	var count_to_destroy: int = fx[2]
 	
