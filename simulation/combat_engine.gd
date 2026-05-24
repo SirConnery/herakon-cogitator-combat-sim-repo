@@ -124,7 +124,7 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 
 		# --- CENTRALIZED ROUND START TELEMETRY ---
 		if on_event.is_valid():
-			_log_phase_telemetry("round_start", state, card_db, round_index, on_event)
+			_log_phase_telemetry("round_start", state, card_db, round_index, on_event, token_pools)
 
 		# --- PLAY COMBAT CARDS ---
 		atk_idx = randi() % atk["cards_in_hand"].size()
@@ -146,6 +146,7 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		token_pools[2] = 0 
 		token_pools[3] = 0 
 
+		state["card_db"] = card_db
 		atk["parent_state"] = state
 		def["parent_state"] = state
 
@@ -166,6 +167,7 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		# Clear link states at the end of the round context pipeline completely
 		atk.erase("parent_state")
 		def.erase("parent_state")
+		state.erase("card_db")
 
 	# --- FINAL WIN CONDITION RESOLUTION EVALUATION ---
 	atk_survivors = _count_living_units(atk)
@@ -212,7 +214,8 @@ static func _assess_damage_step(state: Dictionary, card_db: Dictionary, round_in
 	if on_event.is_valid():
 		if pass_index > 0:
 			on_event.call("ability_triggered", [atk_card_id, "⚡ --- BONUS ASSESS DAMAGE STEP PASS (Iteration %d) ---" % pass_index])
-		_log_phase_telemetry("damage_step", state, card_db, round_index, on_event, atk_card_icons, def_card_icons)
+			
+		_log_phase_telemetry("damage_step", state, card_db, round_index, on_event, token_pools, atk_card_icons, def_card_icons)
 
 	# 3. Compile tactical attribute modifications 
 	var atk_ex: Array = atk.get("extra_icons", [0, 0, 0])
@@ -359,12 +362,10 @@ static func _find_perfect_absorption_target(squads: Array, total_damage: int, re
 #region Logging functions
 
 ## Centralized bottleneck for all engine logging phases ("round_start" or "damage_step")
-## Centralized bottleneck for all engine logging phases ("round_start" or "damage_step")
-static func _log_phase_telemetry(phase: String, state: Dictionary, card_db: Dictionary, round_index: int, on_event: Callable, atk_icons: Array = [], def_icons: Array = []) -> void:
+static func _log_phase_telemetry(phase: String, state: Dictionary, card_db: Dictionary, round_index: int, on_event: Callable, token_pools: Array = [], atk_icons: Array = [], def_icons: Array = []) -> void:
 	var atk: Dictionary = state[Side.ATTACKER]
 	var def: Dictionary = state[Side.DEFENDER]
 	
-	# Fallback: Automatically gather fresh live icons if they weren't passed in
 	if atk_icons.is_empty() or def_icons.is_empty():
 		atk_icons = _get_live_card_icons(atk, card_db, round_index)
 		def_icons = _get_live_card_icons(def, card_db, round_index)
@@ -378,6 +379,10 @@ static func _log_phase_telemetry(phase: String, state: Dictionary, card_db: Dict
 			log_current_unit_morale(on_event, atk, def, "round_start")
 			log_current_card_icons(on_event, atk_icons, def_icons, "round_start")
 			
+			# Broadcast starting tokens out to UI panel slots
+			if not token_pools.is_empty():
+				_log_current_token_pools(on_event, token_pools, "round_start")
+			
 		"damage_step":
 			on_event.call("assess_damage_step_start", [])
 			log_current_army_statuses(state, on_event, "damage_step")
@@ -385,6 +390,10 @@ static func _log_phase_telemetry(phase: String, state: Dictionary, card_db: Dict
 			log_current_unit_morale(on_event, atk, def, "damage_step")
 			log_current_extra_icons(on_event, atk["extra_icons"], def["extra_icons"], "damage_step")
 			log_current_card_icons(on_event, atk_icons, def_icons, "damage_step")
+			
+			# Broadcast modified step tokens out to UI panel slots
+			if not token_pools.is_empty():
+				_log_current_token_pools(on_event, token_pools, "damage_step")
 
 static func log_current_army_statuses(state: Dictionary, on_event: Callable, phase_context: String = "all") -> void:
 	if not on_event.is_valid():
@@ -450,7 +459,22 @@ static func log_current_extra_icons(on_event: Callable, atk_icons: Array, def_ic
 	
 	on_event.call("extra_icons_logged", ["Attacker", a[0], a[1], a[2], phase_context])
 	on_event.call("extra_icons_logged", ["Defender", d[0], d[1], d[2], phase_context])
+
+## Unpacks the engine's flat scratchpad array and dispatches separate UI update events per side
+static func _log_current_token_pools(on_event: Callable, token_pools: Array, phase_context: String) -> void:
+	if token_pools.size() < 4:
+		return
+		
+	# Unpack and dispatch Attacker vector
+	var atk_offence: int = token_pools[0]
+	var atk_defence: int = token_pools[1]
+	on_event.call("tokens_updated", [ "Attacker", atk_offence, atk_defence, phase_context ])
 	
+	# Unpack and dispatch Defender vector
+	var def_offence: int = token_pools[2]
+	var def_defence: int = token_pools[3]
+	on_event.call("tokens_updated", [ "Defender", def_offence, def_defence, phase_context ])
+
 #endregion
 
 #region Helper Functions
@@ -736,6 +760,17 @@ static func add_specific_card_to_combat_deck(target_side_data: Dictionary, card_
 
 #endregion
 
+#region Gain Dice and Gain tokens helpers
+
+## Centralized bottleneck for modifying token pools safely across both players
+static func _gain_tokens(token_pools: Array, role: String, pool_type: int, amount: int, is_opponent: bool = false) -> void:
+	var token_idx := _get_token_index(role, pool_type, is_opponent)
+	
+	# Guard clause to ensure safety if indexing boundaries are adjusted
+	if token_idx >= 0 and token_idx < token_pools.size():
+		token_pools[token_idx] += amount
+
+#endregion
 
 #region Timing Hook
 
@@ -815,11 +850,13 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.REROLL_ALL_SPECIFIC_DICE: _execute_reroll_all_specific_dice,
 	CardData.EffectType.REROLL_SPECIFIC_DICE_FOR_EACH_UNIT: _execute_reroll_specific_dice_for_each_unit,
 	CardData.EffectType.SPEND_MORALE_TO_GAIN_SPECIFIC_DICE: _execute_spend_morale_to_gain_specific_dice,
+	CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_SPECIFIC_TOKEN: _execute_spend_specific_dice_to_gain_specific_token,
 	
 	CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN: _execute_gain_specific_combat_token,
 	CardData.EffectType.GAIN_TOKEN_PER_MORALE_DICE: _execute_gain_token_per_morale_dice,
 	
 	CardData.EffectType.RALLY: _execute_rally, 
+	CardData.EffectType.RALLY_ALL_OF_YOUR_UNITS: _execute_rally_all_of_your_units,
 	
 	CardData.EffectType.OPPONENT_DISCARDS_FACEUP_CARD: _execute_opponent_discards_faceup_card,
 	
@@ -831,6 +868,7 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.PREVENT_ROUTING_THIS_ROUND: _execute_prevent_routing_this_round, # Show No Fear
 	CardData.EffectType.RALLY_ALL_FRIENDLY_UNITS: _execute_rally_all_friendly_units, # Show No Fear
 	CardData.EffectType.ADDITIONAL_ASSESS_DAMAGE_STEP_THIS_ROUND: _execute_additional_assess_damage_step_this_round, # Armoured Advance
+	CardData.EffectType.CONVERT_SAFE_DICE_TO_MORALE: _execute_convert_safe_dice_to_morale,
 	
 	# ORK
 	CardData.EffectType.DESTROY_FOR_DESTROY: _execute_destroy_for_destroy, # Gretchin
@@ -1477,6 +1515,44 @@ static func _execute_gain_token_per_morale_dice(fx: Array, token_pools: Array, s
 		on_event.call("ability_triggered", [card_id, "↳ 🛡️ Scanned %d Morale dice (x%d payout). Gained: +%d ⚔️ | +%d 🛡️ tokens." % [current_morale_dice, multiplier, off_tokens_harvested, def_tokens_harvested]])
 		on_event.call("tokens_updated", [role, token_pools[base_idx], token_pools[base_idx + 1]])
 
+## Consumes all available dice of a specified type to generate tokens.
+## Unit Ability: Consumes all available dice of a specified stat type to generate tokens.
+static func _execute_spend_specific_dice_to_gain_specific_token(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var token_multiplier: int = fx[2]
+	var pool_type: int = fx[3]
+	
+	# 1. Map the card's pool type enum to your internal Stat keys
+	var source_stat := Stat.OFFENCE
+	var stat_label := "Offence ⚔️"
+	
+	match pool_type:
+		CardData.DicePoolType.DEFENSE:
+			source_stat = Stat.DEFENCE
+			stat_label = "Defence 🛡️"
+		CardData.DicePoolType.MORALE:
+			source_stat = Stat.MORALE
+			stat_label = "Morale 🎖️"
+
+	# 2. Capture all available dice currently residing in the player's pool
+	var spend_amount: int = side_data[source_stat]
+
+	if spend_amount <= 0:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ ⚡ Conversion skipped: 0 %s dice available to trade." % stat_label])
+		return
+
+	# 3. Process the formal consumption mutation sequence safely
+	if not _spend_die_to_continue(side_data, source_stat, spend_amount, role, on_event):
+		return
+
+	# 4. Calculate token yield and route seamlessly through our generic handler
+	var tokens_gained := spend_amount * token_multiplier
+	_gain_tokens(token_pools, role, pool_type, tokens_gained, false)
+
+	# 5. Telemetry logging output
+	if on_event.is_valid():
+		on_event.call("ability_triggered", [card_id, "↳ ⚡ Converted %d %s dice into +%d %s tokens!" % [spend_amount, stat_label, tokens_gained, stat_label]])
+
 
 #endregion
 
@@ -1511,6 +1587,36 @@ static func _execute_rally(fx: Array, _token_pools: Array, side_data: Dictionary
 		else:
 			break
 
+
+static func _execute_rally_all_of_your_units(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	# 1. Early escape bottleneck if the entire army frontline is already steady
+	if not _has_any_routed_units(side_data):
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 🎺 Rally skipped: All squads are already steady."])
+		return
+
+	var squads: Array = side_data["squads"]
+	var total_figures_rallied := 0
+	
+	# 2. Execute a high-speed primitive iteration pass over all army assets
+	for squad in squads:
+		for i in range(squad["figures_routed"].size()):
+			# Target only living figures that are actively flagged as routed
+			if squad["figures_routed"][i] and squad["alive_figures"][i] > 0:
+				squad["figures_routed"][i] = false
+				total_figures_rallied += 1
+				
+				# Fire localized UI animation trigger hooks per individual squad restoration
+				if on_event.is_valid():
+					on_event.call("unit_rallied", [role, squad["name"], squad["alive_figures"][i], card_id])
+
+	# 3. Dispatch finalized state telemetry adjustments to refresh frontend panels
+	if on_event.is_valid() and total_figures_rallied > 0:
+		on_event.call("ability_triggered", [card_id, "↳ 🎺 Unconditional Restoration: Rallied %d figures across the frontline!" % total_figures_rallied])
+		
+		var parent_state: Dictionary = side_data.get("parent_state", {})
+		if not parent_state.is_empty():
+			log_current_army_statuses(parent_state, on_event, "damage_step")
 #endregion
 
 #region Generic Card functions
@@ -1915,4 +2021,71 @@ static func _execute_additional_assess_damage_step_this_round(_fx: Array, _token
 		on_event.call("ability_triggered", [card_id, "↳ ⚔️ Armoured Advance! An additional Assess Damage step has been scheduled for this round."])
 
 
+## Unit Ability: Converts all Offence dice and any excess surplus Defence dice into Morale.
+## REVISED: Added strict temporal constraint—only triggers execution loop on Round 3.
+static func _execute_convert_safe_dice_to_morale(_fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	var card_db: Dictionary = parent_state.get("card_db", {})
+	if parent_state.is_empty() or card_db.is_empty():
+		return
+
+	var round_idx: int = parent_state.get("current_round_index", 0)
+
+	# Strict round checking restriction (0 = Round 1, 1 = Round 2, 2 = Round 3)
+	if round_idx != 2:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ ⚡ Conversion skipped: Strategic reallocation is restricted to Round 3."])
+		return
+
+	var is_attacker := (role == "Attacker")
+	var enemy_side_id := Side.DEFENDER if is_attacker else Side.ATTACKER
+	var enemy_data: Dictionary = parent_state[enemy_side_id]
+	var enemy_role := "Defender" if is_attacker else "Attacker"
+
+	# 1. Calculate our current Total Defence baseline (including temporary modifiers/tokens)
+	var our_card_icons: Array = _get_live_card_icons(side_data, card_db, round_idx)
+	var our_ex: Array = side_data.get("extra_icons", [0, 0, 0])
+	var our_def_token_idx := _get_token_index(role, CardData.DicePoolType.DEFENSE, false)
+	
+	var total_defence: int = side_data[Stat.DEFENCE] + our_card_icons[1] + token_pools[our_def_token_idx] + our_ex[1]
+
+	# 2. Calculate enemy's Total Offence baseline
+	var enemy_card_icons := [0, 0, 0]
+	if is_attacker:
+		# Fog of War: Attacker cannot see the defender's card choice for this round yet!
+		if round_idx > 0:
+			enemy_card_icons = _get_live_card_icons(enemy_data, card_db, round_idx - 1)
+	else:
+		# Defender acts second and has full visibility of the attacker's round card layout
+		enemy_card_icons = _get_live_card_icons(enemy_data, card_db, round_idx)
+
+	var enemy_ex: Array = enemy_data.get("extra_icons", [0, 0, 0])
+	var enemy_atk_token_idx := _get_token_index(enemy_role, CardData.DicePoolType.OFFENSE, false)
+	
+	var enemy_total_offence: int = enemy_data[Stat.OFFENCE] + enemy_card_icons[0] + token_pools[enemy_atk_token_idx] + enemy_ex[0]
+
+	# 3. Determine safe conversion limits without falling into the damage window
+	var safe_defence_to_spend := 0
+	if total_defence > enemy_total_offence:
+		var defensive_surplus := total_defence - enemy_total_offence
+		# We can only convert physical dice we hold in our hand wallet, not passive icons
+		safe_defence_to_spend = min(side_data[Stat.DEFENCE], defensive_surplus)
+
+	# Offence dice never prevent incoming damage, making them 100% safe to trade away
+	var offence_to_spend: int = side_data[Stat.OFFENCE]
+	var total_converted_yield := safe_defence_to_spend + offence_to_spend
+
+	if total_converted_yield <= 0:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ ⚡ Conversion skipped: No surplus dice available to safely swap."])
+		return
+
+	# 4. Mutate core dice state parameters inside the player's profile data
+	side_data[Stat.OFFENCE] -= offence_to_spend
+	side_data[Stat.DEFENCE] -= safe_defence_to_spend
+	side_data[Stat.MORALE] += total_converted_yield
+
+	# 5. Broadcast generic frameworks logs out to the UI layout panel
+	if on_event.is_valid():
+		on_event.call("ability_triggered", [card_id, "↳ ⚡ Strategic Reallocation: Converted %d safe dice into +%d Morale dice!" % [total_converted_yield, total_converted_yield]])
 #endregion

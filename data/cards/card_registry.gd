@@ -3,18 +3,20 @@ extends RefCounted
 
 enum CardID {
 	# --- SPACE MARINES (SM) ---
-	SM_AMBUSH								= 1001,
-	SM_RECONNAISSANCE						= 1002,
-	SM_FURY_OF_THE_ULTRAMAR					= 1003,
-	SM_BLESSED_POWER_ARMOUR					= 1004,
-	SM_COMBAT_FAITH_IN_EMPEROR				= 1005,
-	SM_HOLD_THE_LINE						= 1006,
-	SM_GLORY_AND_DEATH						= 1007,
-	SM_DROP_POD_ASSAULT						= 1008,
-	SM_VETERAN_SCOUTS						= 1009,
-	SM_SHOW_NO_FEAR							= 1010,
-	SM_BREAK_THE_LINE						= 1011,
-	SM_ARMOURED_ADVANCE						= 1012, 
+	SM_AMBUSH									= 1001,
+	SM_RECONNAISSANCE							= 1002,
+	SM_FURY_OF_THE_ULTRAMAR						= 1003,
+	SM_BLESSED_POWER_ARMOUR						= 1004,
+	SM_COMBAT_FAITH_IN_EMPEROR					= 1005,
+	SM_HOLD_THE_LINE							= 1006,
+	SM_GLORY_AND_DEATH							= 1007,
+	SM_DROP_POD_ASSAULT							= 1008,
+	SM_VETERAN_SCOUTS							= 1009,
+	SM_SHOW_NO_FEAR								= 1010,
+	SM_BREAK_THE_LINE							= 1011,
+	SM_ARMOURED_ADVANCE							= 1012,
+	SM_EMPERORS_MIGHT							= 1013,
+	SM_EMPERORS_GLORY							= 1014,
 
 	# --- ORKS (ORKS) ---
 	ORKS_GRETCHIN						= 3001,
@@ -421,7 +423,7 @@ static func get_database() -> Dictionary:
 	
 	db[card.card_id] = card
 	
-# ==========================================================================
+	# ==========================================================================
 	# --- CARD 1012: Armoured Advance ---
 	# ==========================================================================
 	card = CardData.new()
@@ -444,6 +446,65 @@ static func get_database() -> Dictionary:
 	sm_armoured_unit.effect_type = CardData.EffectType.ADDITIONAL_ASSESS_DAMAGE_STEP_THIS_ROUND
 	sm_armoured_unit.target_type = CardData.TargetType.SELF
 	card.unit_ability.append(sm_armoured_unit)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 1013: Emperor's Might ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.SM_EMPERORS_MIGHT
+	card.card_name = "Emperor's Might"
+	card.card_tier = CardData.CardTier.TIER_3
+	card.offence_icons = 3
+	card.required_unit_types = [CardData.UnitType.WARLORD_TITANS, CardData.UnitType.BATTLE_BARGES]
+	
+	# General ability: Gain 2 dice
+	var sm_emperor_gen := CardEffect.new()
+	sm_emperor_gen.effect_type = CardData.EffectType.GAIN_DICE
+	sm_emperor_gen.target_type = CardData.TargetType.SELF
+	sm_emperor_gen.value = 2
+	card.general_ability.append(sm_emperor_gen)
+	
+	# Unit ability: Spend any number of Offence dice. For each spent, gain 2 offence tokens.
+	var sm_emperor_unit := CardEffect.new()
+	sm_emperor_unit.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_SPECIFIC_TOKEN
+	sm_emperor_unit.target_type = CardData.TargetType.SELF
+	sm_emperor_unit.value = 2 # Multiplier: Tokens gained per single die consumed
+	sm_emperor_unit.pool_type = CardData.DicePoolType.OFFENSE
+	card.unit_ability.append(sm_emperor_unit)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 1014: Emperor's Glory ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = 1014 # CardID.SM_EMPERORS_GLORY
+	card.card_name = "Emperor's Glory"
+	card.card_tier = CardData.CardTier.TIER_3
+	card.offence_icons = 2
+	card.defence_icons = 2
+	card.required_unit_types = [CardData.UnitType.WARLORD_TITANS, CardData.UnitType.BATTLE_BARGES]
+	
+	# General ability: Gain 2 dice
+	var sm_glory_gen := CardEffect.new()
+	sm_glory_gen.effect_type = CardData.EffectType.GAIN_DICE
+	sm_glory_gen.target_type = CardData.TargetType.SELF
+	sm_glory_gen.value = 2
+	card.general_ability.append(sm_glory_gen)
+	
+	# Unit ability 1: Rally all units
+	var sm_glory_unit_1 := CardEffect.new()
+	sm_glory_unit_1.effect_type = CardData.EffectType.RALLY_ALL_OF_YOUR_UNITS
+	sm_glory_unit_1.target_type = CardData.TargetType.SELF
+	card.unit_ability.append(sm_glory_unit_1)
+	
+	# Unit ability 2: Strategic Morale Conversion
+	var sm_glory_unit_2 := CardEffect.new()
+	sm_glory_unit_2.effect_type = CardData.EffectType.CONVERT_SAFE_DICE_TO_MORALE
+	sm_glory_unit_2.target_type = CardData.TargetType.SELF
+	card.unit_ability.append(sm_glory_unit_2)
 	
 	db[card.card_id] = card
 	
