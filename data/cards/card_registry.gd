@@ -19,11 +19,13 @@ enum CardID {
 	SM_EMPERORS_GLORY							= 1014,
 
 	# --- ORKS (ORKS) ---
-	ORKS_GRETCHIN						= 3001,
-	ORKS_MEK_BOYZ						= 3002,
-	ORKS_ARD_BOYZ						= 3003,
-	ORKS_SHOOTA_BOYZ					= 3004,
-	ORKS_SLUGGA_BOYZ					= 3005,
+	ORKS_GRETCHIN								= 3001,
+	ORKS_MEK_BOYZ								= 3002,
+	ORKS_ARD_BOYZ								= 3003,
+	ORKS_SHOOTA_BOYZ							= 3004,
+	ORKS_SLUGGA_BOYZ							= 3005,
+	ORKS_WAAAGH									= 3006,
+	ORKS_SEA_OF_GREEN							= 3007,
 }
 
 static func get_database() -> Dictionary:
@@ -661,5 +663,63 @@ static func get_database() -> Dictionary:
 	
 	db[card.card_id] = card
 	
+	# ==========================================================================
+	# --- CARD 3006: Waaagh ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ORKS_WAAAGH
+	card.card_name = "Waaagh"
+	card.card_tier = CardData.CardTier.TIER_0
+	card.morale_icons = 3
+	card.required_unit_types = [CardData.UnitType.ORK_BOYZ, CardData.UnitType.ONSLAUGHTS]
+	
+	# --- GENERAL ABILITY ---
+	# Rally 1 of your units
+	var ork_waaagh_gen := CardEffect.new()
+	ork_waaagh_gen.effect_type = CardData.EffectType.RALLY
+	ork_waaagh_gen.target_type = CardData.TargetType.SELF
+	ork_waaagh_gen.value = 1
+	card.general_ability.append(ork_waaagh_gen)
+	
+	# --- UNIT ABILITY ---
+	# Gain 1 offence token for each of your unrouted Ork Boyz or Onslaughts
+	var ork_waaagh_unit := CardEffect.new()
+	ork_waaagh_unit.effect_type = CardData.EffectType.GAIN_SPECIFIC_TOKEN_PER_UNIT
+	ork_waaagh_unit.target_type = CardData.TargetType.SELF
+	ork_waaagh_unit.value = 1
+	ork_waaagh_unit.pool_type = CardData.DicePoolType.OFFENSE
+	card.unit_ability.append(ork_waaagh_unit)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 3007: Sea of Green ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ORKS_SEA_OF_GREEN
+	card.card_name = "Sea of Green"
+	card.card_tier = CardData.CardTier.TIER_0
+	card.offence_icons = 1
+	card.defence_icons = 1
+	card.required_unit_types = []
+	
+	# --- GENERAL ABILITY 1 ---
+	var ork_sea_gen := CardEffect.new()
+	ork_sea_gen.effect_type = CardData.EffectType.SPAWN_REINFORCEMENT_TOKEN
+	ork_sea_gen.target_type = CardData.TargetType.SELF
+	card.general_ability.append(ork_sea_gen)
+	
+	# --- GENERAL ABILITY 2 ---
+	# Outnumber check: forces opponent to drop 1 Morale die or rout 1 unit
+	var ork_sea_gen_2 := CardEffect.new()
+	ork_sea_gen_2.effect_type = CardData.EffectType.ROUT_OR_SPEND_DICE_CONDITIONAL
+	ork_sea_gen_2.target_type = CardData.TargetType.OPPONENT
+	ork_sea_gen_2.value = 1
+	ork_sea_gen_2.pool_type = CardData.DicePoolType.MORALE
+	card.general_ability.append(ork_sea_gen_2)
+	
+	db[card.card_id] = card
+	
+	return db
 	
 	return db

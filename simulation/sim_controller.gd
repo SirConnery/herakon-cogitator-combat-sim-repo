@@ -4,7 +4,7 @@ class_name SimController
 @export var is_combat_debugger_used: bool = true
 @export var total_iterations: int = 1000000
 
-@export var current_stage: GameStageGenerator.Stage = GameStageGenerator.Stage.LATE
+@export var current_stage: GameStageGenerator.Stage = GameStageGenerator.Stage.EARLY
 #@export var current_stage: GameStageGenerator.Stage = randi_range(0, 2) # change to this for random stages
 
 @export var attacker_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.SPACE_MARINES
@@ -60,8 +60,12 @@ func run_single_logged_battle() -> void:
 	
 	var match_state: Dictionary = _instantiate_match_state(attacker_blueprint, defender_blueprint)
 	
-	# Inject the flat card database directly into the state container context
+	# Inject environmental variables and faction references directly into the state container context
 	match_state["card_db"] = flat_card_db
+	match_state["is_ground_combat"] = is_ground_combat
+	
+	match_state[SimCombatEngine.Side.ATTACKER]["faction_id"] = attacker_faction
+	match_state[SimCombatEngine.Side.DEFENDER]["faction_id"] = defender_faction
 	
 	var atk_profile = raw_factions.get(attacker_faction)
 	var def_profile = raw_factions.get(defender_faction)

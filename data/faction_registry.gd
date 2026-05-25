@@ -31,7 +31,7 @@ static func get_database() -> Dictionary:
 	# --- ORKS ---
 	db[FactionID.ORKS] = {
 		"name": "Orks",
-		"debug_deck": [3002],
+		"debug_deck": [3007],
 		"upgrade_deck": [3001,3002,3003,],
 		"combat_deck": [],
 		"units": [
