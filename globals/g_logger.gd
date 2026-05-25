@@ -180,7 +180,7 @@ func engine_callback(event_type: String, data: Array) -> void:
 				if discarded_fetched != null and str(discarded_fetched) != "":
 					discarded_card_name = str(discarded_fetched)
 			
-			var msg := "	[*] %s: ↳ 📇 Discard forced! %s chose and recycled '%s' from slot index %d back into their combat deck." % [
+			var msg := "	[*] %s: ↳ 📇 Discard forced! %s chose and recycled '%s' from card slot %d back into their combat deck." % [
 				active_card_name, data[1], discarded_card_name, data[3]
 			]
 			print(msg)

@@ -2,6 +2,7 @@ class_name CardRegistry
 extends RefCounted
 
 enum CardID {
+	
 	# --- SPACE MARINES (SM) ---
 	SM_AMBUSH									= 1001,
 	SM_RECONNAISSANCE							= 1002,
@@ -26,6 +27,15 @@ enum CardID {
 	ORKS_SLUGGA_BOYZ							= 3005,
 	ORKS_WAAAGH									= 3006,
 	ORKS_SEA_OF_GREEN							= 3007,
+	ORKS_MEGA_NOBZ								= 3008,
+	ORKS_BIKER_NOBZ								= 3009,
+	ORKS_WEIRDBOYZ								= 3010,
+	ORKS_PARTY_WAGON							= 3011,
+	ORKS_ROKKIT_WAGON							= 3012,
+	ORKS_SNAPPER_GARGANT						= 3013,
+	ORKS_SMASHER_GARGANT						= 3014,
+	 
+	
 }
 
 static func get_database() -> Dictionary:
@@ -81,7 +91,6 @@ static func get_database() -> Dictionary:
 	card.card_name = "Reconnaissance"
 	card.card_tier = CardData.CardTier.STARTER
 	card.defence_icons = 1
-	# CHANGED: Emptied array signifies no active constraints needed
 	card.required_unit_types = []
 	
 	# General Ability: Choice between 2 Offence Tokens or 2 Defence Tokens
@@ -418,7 +427,7 @@ static func get_database() -> Dictionary:
 	# --- UNIT ABILITY ---
 	# The opponent discards 1 of his faceup combat cards
 	var sm_break_unit := CardEffect.new()
-	sm_break_unit.effect_type = CardData.EffectType.OPPONENT_DISCARDS_FACEUP_CARD
+	sm_break_unit.effect_type = CardData.EffectType.OPPONENT_DISCARDS_WORST_FACEUP_CARD
 	sm_break_unit.target_type = CardData.TargetType.OPPONENT
 	sm_break_unit.value = 1
 	card.unit_ability.append(sm_break_unit)
@@ -720,6 +729,198 @@ static func get_database() -> Dictionary:
 	
 	db[card.card_id] = card
 	
-	return db
+	# ==========================================================================
+	# --- CARD 3008: Mega Nobz ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ORKS_MEGA_NOBZ
+	card.card_name = "Mega Nobz"
+	card.card_tier = CardData.CardTier.TIER_0
+	card.offence_icons = 1
+	card.defence_icons = 2
+	card.required_unit_types = [CardData.UnitType.NOBZ, CardData.UnitType.ONSLAUGHTS]
+	
+	# --- GENERAL ABILITY ---
+	# Opponent must reroll all of their Shield dice
+	var ork_mega_gen := CardEffect.new()
+	ork_mega_gen.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
+	ork_mega_gen.target_type = CardData.TargetType.OPPONENT
+	ork_mega_gen.pool_type = CardData.DicePoolType.DEFENSE
+	card.general_ability.append(ork_mega_gen)
+	
+	# --- UNIT ABILITY ---
+	# Gain 1 shield token
+	var ork_mega_unit := CardEffect.new()
+	ork_mega_unit.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
+	ork_mega_unit.target_type = CardData.TargetType.SELF
+	ork_mega_unit.value = 1
+	ork_mega_unit.pool_type = CardData.DicePoolType.DEFENSE
+	card.unit_ability.append(ork_mega_unit)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 3009: Biker Nobz ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ORKS_BIKER_NOBZ
+	card.card_name = "Biker Nobz"
+	card.card_tier = CardData.CardTier.TIER_0
+	card.offence_icons = 2
+	card.defence_icons = 1
+	card.required_unit_types = [CardData.UnitType.NOBZ, CardData.UnitType.ONSLAUGHTS]
+	
+	# --- GENERAL ABILITY ---
+	# Opponent must reroll all of their Offence dice
+	var ork_biker_gen := CardEffect.new()
+	ork_biker_gen.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
+	ork_biker_gen.target_type = CardData.TargetType.OPPONENT
+	ork_biker_gen.pool_type = CardData.DicePoolType.OFFENSE
+	card.general_ability.append(ork_biker_gen)
+	
+	# --- UNIT ABILITY ---
+	# Gain 1 offence token
+	var ork_biker_unit := CardEffect.new()
+	ork_biker_unit.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
+	ork_biker_unit.target_type = CardData.TargetType.SELF
+	ork_biker_unit.value = 1
+	ork_biker_unit.pool_type = CardData.DicePoolType.OFFENSE
+	card.unit_ability.append(ork_biker_unit)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 3010: Weirdboyz ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ORKS_WEIRDBOYZ
+	card.card_name = "Weirdboyz"
+	card.card_tier = CardData.CardTier.TIER_2
+	card.offence_icons = 1
+	card.defence_icons = 1
+	card.morale_icons = 1
+	card.required_unit_types = [CardData.UnitType.ORK_BOYZ, CardData.UnitType.ONSLAUGHTS]
+	
+	# --- GENERAL ABILITY ---
+	# Both players reroll all dice
+	var ork_weird_self := CardEffect.new()
+	ork_weird_self.effect_type = CardData.EffectType.REROLL
+	ork_weird_self.target_type = CardData.TargetType.SELF
+	ork_weird_self.value = 8
+	card.general_ability.append(ork_weird_self)
+	
+	var ork_weird_opp := CardEffect.new()
+	ork_weird_opp.effect_type = CardData.EffectType.REROLL
+	ork_weird_opp.target_type = CardData.TargetType.OPPONENT
+	ork_weird_opp.value = 8
+	card.general_ability.append(ork_weird_opp)
+	
+	# --- UNIT ABILITY ---
+	# Each time your opponent gains a token, gain the same token
+	var ork_weird_unit := CardEffect.new()
+	ork_weird_unit.effect_type = CardData.EffectType.MIRROR_OPPONENT_TOKEN_GAINS
+	ork_weird_unit.target_type = CardData.TargetType.SELF
+	card.unit_ability.append(ork_weird_unit)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 3011: Party Wagon ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ORKS_PARTY_WAGON
+	card.card_name = "Party Wagon"
+	card.card_tier = CardData.CardTier.TIER_2
+	card.offence_icons = 1
+	card.defence_icons = 2
+	card.required_unit_types = [CardData.UnitType.BATTLE_WAGONS, CardData.UnitType.KILL_KROOZERS]
+	
+	# --- GENERAL ABILITY ---
+	# Gain 1 reinforcement token
+	var ork_party_gen := CardEffect.new()
+	ork_party_gen.effect_type = CardData.EffectType.SPAWN_REINFORCEMENT_TOKEN
+	ork_party_gen.target_type = CardData.TargetType.SELF
+	card.general_ability.append(ork_party_gen)
+	
+	# --- UNIT ABILITY ---
+	# If you have more unrouted units than your opponent, gain 2 offence tokens and 2 defence tokens
+	var ork_party_unit := CardEffect.new()
+	ork_party_unit.effect_type = CardData.EffectType.GAIN_TOKENS_IF_MORE_UNITS_THAN_OPPONENT
+	ork_party_unit.target_type = CardData.TargetType.SELF
+	ork_party_unit.value = 2 # Specifies the amount awarded to BOTH pools
+	card.unit_ability.append(ork_party_unit)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 3012: Rokkit Wagon ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ORKS_ROKKIT_WAGON
+	card.card_name = "Rokkit Wagon"
+	card.card_tier = CardData.CardTier.TIER_2
+	card.offence_icons = 3
+	card.required_unit_types = [CardData.UnitType.BATTLE_WAGONS, CardData.UnitType.KILL_KROOZERS]
+	
+	# --- GENERAL ABILITY ---
+	# None
+	
+	# --- UNIT ABILITY ---
+	# Gain 3 offence tokens
+	var ork_rokkit_unit := CardEffect.new()
+	ork_rokkit_unit.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
+	ork_rokkit_unit.target_type = CardData.TargetType.SELF
+	ork_rokkit_unit.value = 3
+	ork_rokkit_unit.pool_type = CardData.DicePoolType.OFFENSE
+	card.unit_ability.append(ork_rokkit_unit)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 3013: Snapper Gargant ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ORKS_SNAPPER_GARGANT
+	card.card_name = "Snapper Gargant"
+	card.card_tier = CardData.CardTier.TIER_3
+	card.offence_icons = 4
+	card.defence_icons = 1
+	card.required_unit_types = [CardData.UnitType.GARGANTS, CardData.UnitType.KILL_KROOZERS]
+	
+	# --- GENERAL ABILITY ---
+	# None
+	
+	# --- UNIT ABILITY ---
+	# Discard 1 of your opponents faceup combat cards (Highest icon counts targeted first)
+	var ork_snapper_unit := CardEffect.new()
+	ork_snapper_unit.effect_type = CardData.EffectType.OPPONENT_DISCARDS_BEST_FACEUP_CARD
+	ork_snapper_unit.target_type = CardData.TargetType.OPPONENT
+	ork_snapper_unit.value = 1
+	card.unit_ability.append(ork_snapper_unit)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 3014: Smasher Gargant ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ORKS_SMASHER_GARGANT
+	card.card_name = "Smasher Gargant"
+	card.card_tier = CardData.CardTier.TIER_3
+	card.offence_icons = 2
+	card.defence_icons = 3
+	card.required_unit_types = [CardData.UnitType.GARGANTS, CardData.UnitType.KILL_KROOZERS]
+	
+	# --- GENERAL ABILITY ---
+	# None
+	
+	# --- UNIT ABILITY ---
+	# Target highest tier unrouted unit (or routed fallback). Destroy it unless tax is paid in dice.
+	var ork_smasher_unit := CardEffect.new()
+	ork_smasher_unit.effect_type = CardData.EffectType.DESTROY_OR_SPEND_DICE_BASED_ON_TIER
+	ork_smasher_unit.target_type = CardData.TargetType.OPPONENT
+	card.unit_ability.append(ork_smasher_unit)
+	
+	db[card.card_id] = card
 	
 	return db
