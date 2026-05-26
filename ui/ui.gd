@@ -27,6 +27,9 @@ func start_single_logged_combat() -> void:
 	
 	update_headers()
 
+func start_mass_combat_sim() -> void:
+	sim_controller.run_mass_battles()
+
 func _initialize_logger_session() -> void:
 	G_Logger.clear_session()
 

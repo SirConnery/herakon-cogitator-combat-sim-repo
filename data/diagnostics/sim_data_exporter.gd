@@ -8,18 +8,20 @@ var file_path_binary := "user://simulation_raw_data.dat"
 
 func clear_previous_data() -> void:
 	# Wipe old logs before starting a fresh generation loop
-	var file = FileAccess.open(file_path_binary, FileAccess.WRITE)
+	var _file = FileAccess.open(file_path_binary, FileAccess.WRITE)
 	_buffer.clear()
 
 
-## Buffers individual match details as compact primitive arrays
-func log_match(match_index: int, stage: int, attacker_won: bool, atk_hand: Array, def_hand: Array) -> void:
+## Buffers individual match details as compact primitive arrays containing faction identifiers
+func log_match(match_index: int, stage: int, attacker_id: int, defender_id: int, attacker_won: bool, atk_hand: Array, def_hand: Array) -> void:
 	var match_record = [
-		match_index,
-		stage,
-		1 if attacker_won else 0,
-		atk_hand,
-		def_hand
+		match_index,               # Index 0
+		stage,                     # Index 1
+		attacker_id,               # Index 2
+		defender_id,               # Index 3
+		1 if attacker_won else 0,  # Index 4
+		atk_hand,                  # Index 5
+		def_hand                   # Index 6
 	]
 	_buffer.append(match_record)
 	
@@ -45,7 +47,7 @@ func flush_to_disk() -> void:
 		_buffer.clear()
 
 
-## Optional pass: Translates the binary log cleanly into a massive tabular CSV spreadsheet
+## Translates the multi-faction binary log cleanly into a massive tabular CSV spreadsheet
 func export_current_to_csv(csv_destination_path: String) -> void:
 	flush_to_disk() # Pull down outstanding cache blocks first
 	
@@ -59,15 +61,25 @@ func export_current_to_csv(csv_destination_path: String) -> void:
 	if not read_file or not write_file:
 		return
 		
-	# Write CSV Header line
-	write_file.store_line("MatchIndex,Stage,AttackerWon,AttackerHand,DefenderHand")
+	# Write updated CSV Header line with new identity columns
+	write_file.store_line("MatchIndex,Stage,AttackerID,DefenderID,AttackerWon,AttackerHand,DefenderHand")
 	
 	while read_file.get_position() < read_file.get_length():
 		var data = read_file.get_var()
 		if data is Array:
-			var atk_hand_str = ";".join(data[3]) # Semi-colons keep arrays safe inside individual CSV cells
-			var def_hand_str = ";".join(data[4])
-			var line := "%d,%d,%d,%s,%s" % [data[0], data[1], data[2], atk_hand_str, def_hand_str]
+			# Shift index mapping over to align with updated record architecture
+			var atk_hand_str = ";".join(data[5]) # Semi-colons keep arrays safe inside individual cells
+			var def_hand_str = ";".join(data[6])
+			
+			var line := "%d,%d,%d,%d,%d,%s,%s" % [
+				data[0], # MatchIndex
+				data[1], # Stage
+				data[2], # AttackerID
+				data[3], # DefenderID
+				data[4], # AttackerWon
+				atk_hand_str, 
+				def_hand_str
+			]
 			write_file.store_line(line)
 			
-	print("CSV Export Successful: Target file saved to -> " + csv_destination_path)
+	print("CSV Export Successful: Target matrix file saved to -> " + csv_destination_path)

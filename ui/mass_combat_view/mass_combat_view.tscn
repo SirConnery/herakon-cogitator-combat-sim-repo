@@ -21,3 +21,4 @@ grow_vertical = 2
 
 [node name="SimulateMassCombatBtn" type="Button" parent="HBoxContainer" unique_id=1246354003]
 layout_mode = 2
+text = "Run Mass Combat Simulation"

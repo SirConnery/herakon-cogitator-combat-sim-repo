@@ -93,3 +93,70 @@ func generate_final_report(controller_ref: Node) -> void:
 		
 		print("%-26s | %-9d | %-6d | %.1f%%" % [name_string, seen_count, wins_count, win_rate])
 	print("===============================================================\n")
+
+
+## Reads the raw binary file dumped by the exporter and parses it into analytics memory
+func load_and_parse_binary(file_path: String) -> bool:
+	if not FileAccess.file_exists(file_path):
+		push_error("Analytics Error: Target binary data file not found.")
+		return false
+		
+	var file = FileAccess.open(file_path, FileAccess.READ)
+	if not file:
+		return false
+		
+	# Reset states safely
+	attacker_wins = 0
+	defender_wins = 0
+	total_matches_targeted = 0
+	card_stats.clear()
+	
+	# Pre-populate card dictionary keys from the master database
+	var raw_cards: Dictionary = CardRegistry.get_database()
+	for card_id in raw_cards.keys():
+		if card_id > 0:
+			card_stats[card_id] = {"seen": 0, "wins": 0}
+			
+	# Parse binary records sequentially
+	while file.get_position() < file.get_length():
+		var data = file.get_var()
+		if data is Array:
+			total_matches_targeted += 1
+			var attacker_won: bool = (data[2] == 1)
+			var atk_hand: Array = data[3]
+			var def_hand: Array = data[4]
+			
+			# Process analytics logic silently (skipping console prints for speed)
+			_collate_match_metrics(attacker_won, atk_hand, def_hand)
+			
+	return true
+
+
+## Internal helper to handle the card performance dictionary arithmetic
+func _collate_match_metrics(attacker_won: bool, atk_initial_hand: Array, def_initial_hand: Array) -> void:
+	if attacker_won:
+		attacker_wins += 1
+	else:
+		defender_wins += 1
+		
+	var atk_unique := []
+	for card_id in atk_initial_hand:
+		if card_id > 0 and not card_id in atk_unique:
+			atk_unique.append(card_id)
+			
+	var def_unique := []
+	for card_id in def_initial_hand:
+		if card_id > 0 and not card_id in def_unique:
+			def_unique.append(card_id)
+			
+	for card_id in atk_unique:
+		if card_stats.has(card_id):
+			card_stats[card_id]["seen"] += 1
+			if attacker_won:
+				card_stats[card_id]["wins"] += 1
+				
+	for card_id in def_unique:
+		if card_stats.has(card_id):
+			card_stats[card_id]["seen"] += 1
+			if not attacker_won:
+				card_stats[card_id]["wins"] += 1

@@ -1061,8 +1061,10 @@ static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, t
 		if EFFECT_RESOLVERS.has(effect_type):
 			EFFECT_RESOLVERS[effect_type].call(fx, token_pools, side_data, role_label, active_card_id, has_valid_units, on_event)
 		else:
-			if effect_type != CardData.EffectType.DESTROY_ON_ROUT_OR_SPEND:
+			if effect_type != CardData.EffectType.DESTROY_ON_ROUT_OR_SPEND \
+			and effect_type != CardData.EffectType.MIRROR_OPPONENT_TOKEN_GAINS:
 				print("    -> ⚠️ Engine skipped non-instant or unresolved effect archetype: %d" % effect_type)
+				
 
 # ==============================================================================
 # ATOMIC MECHANIC RESOLVERS

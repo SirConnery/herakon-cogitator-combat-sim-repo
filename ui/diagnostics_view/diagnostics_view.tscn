@@ -1,0 +1,63 @@
+[gd_scene format=3 uid="uid://xsql61jfesrb"]
+
+[node name="DiagnosticsView" type="Control" unique_id=1986078317]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="PageScroll" type="ScrollContainer" parent="." unique_id=1346583329]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="CenterConstraint" type="MarginContainer" parent="PageScroll" unique_id=431182522]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 30
+
+[node name="ContentContainer" type="VBoxContainer" parent="PageScroll/CenterConstraint" unique_id=940198644]
+layout_mode = 2
+
+[node name="HeaderBlock" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer" unique_id=1915267507]
+layout_mode = 2
+
+[node name="TextTitleBlock" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/HeaderBlock" unique_id=1232309747]
+layout_mode = 2
+
+[node name="PageTitle" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/HeaderBlock/TextTitleBlock" unique_id=2146977445]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 1
+text = "Diagnostics View"
+
+[node name="FactionWinrates" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer" unique_id=279367287]
+layout_mode = 2
+
+[node name="HLayout" type="HBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinrates" unique_id=378324087]
+layout_mode = 2
+
+[node name="AttackerWinRatesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinrates/HLayout" unique_id=1772637384]
+layout_mode = 2
+
+[node name="AttackerWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinrates/HLayout/AttackerWinRatesPanel" unique_id=457255534]
+layout_mode = 2
+
+[node name="DefenderWinratesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinrates/HLayout" unique_id=516939458]
+layout_mode = 2
+
+[node name="DefenderWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinrates/HLayout/DefenderWinratesPanel" unique_id=473657268]
+layout_mode = 2
