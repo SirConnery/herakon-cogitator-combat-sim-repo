@@ -15,7 +15,7 @@ static func get_database() -> Dictionary:
 	db[FactionID.SPACE_MARINES] = {
 		"name": "Space Marines",
 		"debug_deck": [1002], # used instead of combat_deck when game_stage_generator.use_debug_deck_for_testing == true
-		"upgrade_deck": [1001,1002,1003,1004,1005],
+		"upgrade_deck": [1001,1002,1003,1004,1005,1006,1007,1008,1010,1011,1012,1013,1014],
 		"combat_deck": [],
 		"units": [
 			{"unit_type": CardData.UnitType.SCOUTS, "unit_name": "Scouts", "tier": 0, "is_ship": false, "unit_count": 6, "combat_value": 1, "health_value": 2, "morale_value": 2},
@@ -32,7 +32,7 @@ static func get_database() -> Dictionary:
 	db[FactionID.ORKS] = {
 		"name": "Orks",
 		"debug_deck": [3014],
-		"upgrade_deck": [3001,3002,3003,],
+		"upgrade_deck": [3001,3002,3003,3004,3005,3006,3007,3008,3009,3010,3011,3012,3013,3014],
 		"combat_deck": [],
 		"units": [
 			{"unit_type": CardData.UnitType.ORK_BOYZ, "unit_name": "Ork Boyz", "tier": 0, "is_ship": false, "unit_count": 9, "combat_value": 2, "health_value": 2, "morale_value": 1},

@@ -1,11 +1,11 @@
 extends Node
 class_name SimController
 
-@export var is_combat_debugger_used: bool = true
-@export var total_iterations: int = 1000000
+@export var is_single_combat_mode: bool = true
+@export var total_iterations: int = 100
 
-@export var current_stage: GameStageGenerator.Stage = GameStageGenerator.Stage.LATE
-#@export var current_stage: GameStageGenerator.Stage = randi_range(0, 2) # change to this for random stages
+#@export var current_stage: GameStageGenerator.Stage = GameStageGenerator.Stage.LATE
+@export var current_stage: GameStageGenerator.Stage = randi_range(0, 2) as GameStageGenerator.Stage # change to this for random stages
 
 @export var attacker_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.ORKS
 @export var defender_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.SPACE_MARINES
@@ -25,16 +25,75 @@ var defender_faction_name := ""
 #endregion
 
 func _ready() -> void:
-	if is_combat_debugger_used:
+	if is_single_combat_mode:
 		print("--- COUPLING SINGLE MATCH OBSERVER SANDBOX ---")
 		run_single_logged_battle()
 	else:
 		print("--- DISPATCHING PRODUCTION MASS RUNS ---")
-		# Pure high-speed loop logic goes here when ready...
+		run_mass_battles(total_iterations)
 
 
 func show_ui() -> void:
 	pass
+
+
+## High-speed clean production loop delegating optimized binary file-logging to the exporter module
+func run_mass_battles(count: int) -> void:
+	var raw_cards: Dictionary = CardRegistry.get_database()
+	var raw_factions: Dictionary = FactionRegistry.get_database()
+	var flat_card_db: Dictionary = _flatten_card_database(raw_cards)
+	
+	var atk_profile = raw_factions.get(attacker_faction)
+	var def_profile = raw_factions.get(defender_faction)
+
+	var atk_name_string: String = atk_profile.get("name", FactionRegistry.FactionID.keys()[attacker_faction])
+	var def_name_string: String = def_profile.get("name", FactionRegistry.FactionID.keys()[defender_faction])
+
+	# Instantiate the decoupled high-speed file data exporter system
+	var exporter := SimDataExporter.new()
+	exporter.clear_previous_data()
+
+	print("Starting Mass Simulation: %s vs %s (%d matches)" % [atk_name_string, def_name_string, count])
+	print("Streaming raw record ticks directly to buffered disk stream...")
+
+	for i in range(count):
+		var att_count := randi_range(1, 5)
+		var def_count := randi_range(1, 5)
+		
+		var attacker_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(attacker_faction, current_stage, att_count, is_ground_combat, raw_factions)
+		var defender_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(defender_faction, current_stage, def_count, is_ground_combat, raw_factions)
+		
+		# Freeze-cache historical copies of the true initial hands before engine mutations occur
+		var atk_initial_hand: Array = attacker_blueprint["cards_in_hand"].duplicate()
+		var def_initial_hand: Array = defender_blueprint["cards_in_hand"].duplicate()
+		
+		var match_state: Dictionary = _instantiate_match_state(attacker_blueprint, defender_blueprint)
+		
+		match_state["card_db"] = flat_card_db
+		match_state["is_ground_combat"] = is_ground_combat
+		match_state[SimCombatEngine.Side.ATTACKER]["faction_id"] = attacker_faction
+		match_state[SimCombatEngine.Side.DEFENDER]["faction_id"] = defender_faction
+		match_state[SimCombatEngine.Side.ATTACKER]["name"] = atk_name_string
+		match_state[SimCombatEngine.Side.DEFENDER]["name"] = def_name_string
+		
+		# Execute hot loop pass with completely suppressed telemetry logging overhead
+		var attacker_won: bool = SimCombatEngine.run_full_match(match_state, flat_card_db, Callable())
+		
+		# Stream raw metrics straight down to the disk tracking manager
+		exporter.log_match(
+			i, 
+			int(current_stage), 
+			attacker_won, 
+			atk_initial_hand, 
+			def_initial_hand
+		)
+			
+	# Flush out remaining trailing buffer segments from memory onto disk payload
+	exporter.flush_to_disk()
+	print("Simulation execution complete. Raw binary dataset written to file space safely.")
+	
+	# OPTIONAL: Uncomment the code line below if you want an automated tabular CSV dump generated every run
+	# exporter.export_current_to_csv("user://simulation_output_dump.csv")
 
 
 func run_single_logged_battle() -> void:
@@ -43,15 +102,12 @@ func run_single_logged_battle() -> void:
 	
 	var flat_card_db: Dictionary = _flatten_card_database(raw_cards)
 	
-	# 1. Randomize battle scale boundaries (1-2 Small, 3 Med, 4-5 Large)
 	var att_count := randi_range(1, 5)
 	var def_count := randi_range(1, 5)
 	
-	# 2. Directly compile faction packages via centralized Scenario Director Generator
 	var attacker_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(attacker_faction, current_stage, att_count, is_ground_combat, raw_factions)
 	var defender_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(defender_faction, current_stage, def_count, is_ground_combat, raw_factions)
 	
-	# Capture and store frozen copies of starting hands for decoupled UI pulling passes
 	attacker_starting_hand = attacker_blueprint["cards_in_hand"].duplicate()
 	defender_starting_hand = defender_blueprint["cards_in_hand"].duplicate()
 	
@@ -60,7 +116,6 @@ func run_single_logged_battle() -> void:
 	
 	var match_state: Dictionary = _instantiate_match_state(attacker_blueprint, defender_blueprint)
 	
-	# Inject environmental variables and faction references directly into the state container context
 	match_state["card_db"] = flat_card_db
 	match_state["is_ground_combat"] = is_ground_combat
 	
@@ -70,18 +125,15 @@ func run_single_logged_battle() -> void:
 	var atk_profile = raw_factions.get(attacker_faction)
 	var def_profile = raw_factions.get(defender_faction)
 
-	# Extracting via your active "name" property key, fallback to stringified enum on missing entry
 	var atk_name_string: String = atk_profile.get("name", FactionRegistry.FactionID.keys()[attacker_faction])
 	var def_name_string: String = def_profile.get("name", FactionRegistry.FactionID.keys()[defender_faction])
 
-	# UPDATED: Cache resolved faction name strings for dynamic UI pulling passes
 	attacker_faction_name = atk_name_string
 	defender_faction_name = def_name_string
 
 	match_state[SimCombatEngine.Side.ATTACKER]["name"] = atk_name_string
 	match_state[SimCombatEngine.Side.DEFENDER]["name"] = def_name_string
 	
-	# Package dynamic helper metadata into a context block for G_Logger to consume asynchronously
 	var logging_context := {
 		"game_stage_string": GameStageGenerator.Stage.keys()[current_stage].capitalize(),
 		"matchup_scale": _get_weighted_matchup_string(attacker_power, defender_power),
@@ -90,22 +142,18 @@ func run_single_logged_battle() -> void:
 		"controller_ref": self
 	}
 	
-	# Initialize our logging channel with references to the active engine calculations
 	G_Logger.initialize_battle_logger(logging_context)
 	
-	# Broadcast open-hand draw configuration metrics to UI hook arrays manually 
 	G_Logger.engine_callback("cards_drawn_to_hand", [
 		match_state[SimCombatEngine.Side.ATTACKER]["cards_in_hand"],
 		match_state[SimCombatEngine.Side.DEFENDER]["cards_in_hand"]
 	])
 	
-	# Run the high-speed crucible engine loop using the centralized direct singleton router
 	var attacker_won: bool = SimCombatEngine.run_full_match(match_state, flat_card_db, G_Logger.engine_callback)
 	
 	G_Logger.finalize_battle_logger(attacker_won)
 
 
-## Calculates the total structural combat weight of a generated squad list
 func _calculate_squads_weight(selected_units: Array) -> int:
 	var total_weight := 0
 	for unit in selected_units:
@@ -113,14 +161,12 @@ func _calculate_squads_weight(selected_units: Array) -> int:
 	return total_weight
 
 
-## Compares the total calculated power weights to classify the matchup thresholds
 func _get_weighted_matchup_string(atk_weight: int, def_weight: int) -> String:
 	var max_weight := float(max(atk_weight, def_weight))
 	if max_weight == 0: return "Equal Matchup"
 	
 	var difference_pct = abs(atk_weight - def_weight) / max_weight
 	
-	# Define a tolerance threshold (e.g., within 25% of each other is considered an "Equal" fight)    
 	if difference_pct <= 0.25:
 		return "Equal Matchup (Power: %d vs %d)" % [atk_weight, def_weight]
 	elif atk_weight > def_weight:
@@ -141,7 +187,6 @@ func _flatten_card_database(raw_db: Dictionary) -> Dictionary:
 		
 		var effects_list: Array = []
 		
-		# Always treat abilities as clean sequential loops
 		for fx in card.general_ability:
 			effects_list.append(_flatten_single_effect(fx, true, []))
 			
@@ -186,7 +231,7 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_t
 		value_slot,              # Index 2
 		fx.pool_type,            # Index 3
 		ability_block_type_id,  # Index 4
-		req_unit_types          # Index 5 - Stores the flat requirement Array directly
+		req_unit_types          # Index 5
 	]
 
 
@@ -221,7 +266,6 @@ func _build_match_units(selected_units: Array) -> Array[Dictionary]:
 		var alive_figures: Array[int] = []
 		var figures_routed: Array[bool] = []
 		
-		# Each instance block rolled by the generator translates into 1 tracked combat squad item.
 		alive_figures.append(b["health_value"])
 		figures_routed.append(false)
 		
@@ -241,7 +285,6 @@ func _build_match_units(selected_units: Array) -> Array[Dictionary]:
 
 #region Helper functions
 
-## Helper function to dynamically count duplicates and pretty-print composition rosters
 func _format_squad_composition_string(squads: Array) -> String:
 	if squads.is_empty():
 		return "None"

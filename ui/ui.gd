@@ -5,15 +5,15 @@ class_name UI
 @onready var round_panel_scene: PackedScene = preload("res://ui/combat_round_panel.tscn")
 
 # --- UI ELEMENT NODES ---
-@onready var game_stage_label: Label = $MainLayout/HeaderPanel/HeaderContainer/HLayout/GameStage
-@onready var combat_participants_value: Label = $MainLayout/HeaderPanel/HeaderContainer/HLayout/CombatParticipantsValue
+@onready var game_stage_label: Label = $SingleCombatView/HeaderPanel/HeaderContainer/HLayout/GameStage
+@onready var combat_participants_value: Label = $SingleCombatView/HeaderPanel/HeaderContainer/HLayout/CombatParticipantsValue
 
-@onready var attacker_drawn_cards_value: Label = $MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart/AttackerDrawnCardsValue
-@onready var defender_drawn_cards_value: Label = $MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart/DefenderDrawnCardsValue
+@onready var attacker_drawn_cards_value: Label = $SingleCombatView/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart/AttackerDrawnCardsValue
+@onready var defender_drawn_cards_value: Label = $SingleCombatView/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart/DefenderDrawnCardsValue
 
-@onready var round_1_container: VBoxContainer = $MainLayout/CentralCombatView/RoundsContainer/Round1
-@onready var round_2_container: VBoxContainer = $MainLayout/CentralCombatView/RoundsContainer/Round2
-@onready var round_3_container: VBoxContainer = $MainLayout/CentralCombatView/RoundsContainer/Round3
+@onready var round_1_container: VBoxContainer = $SingleCombatView/CentralCombatView/RoundsContainer/Round1
+@onready var round_2_container: VBoxContainer = $SingleCombatView/CentralCombatView/RoundsContainer/Round2
+@onready var round_3_container: VBoxContainer = $SingleCombatView/CentralCombatView/RoundsContainer/Round3
 
 
 func _ready() -> void:

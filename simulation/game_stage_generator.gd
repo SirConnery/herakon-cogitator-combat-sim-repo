@@ -3,7 +3,7 @@ class_name GameStageGenerator
 enum Stage { EARLY, MID, LATE }
 
 ## Master testing toggle: When true, forces blueprints to bypass dynamic generation and use debug pools
-static var use_debug_deck_for_testing := true
+static var use_debug_deck_for_testing := false
 static var debug_deck_uses_1_card := true
 
 
