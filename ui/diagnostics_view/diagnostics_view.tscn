@@ -47,20 +47,263 @@ size_flags_horizontal = 4
 size_flags_vertical = 1
 text = "Diagnostics View"
 
-[node name="FactionWinrates" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer" unique_id=279367287]
+[node name="FactionWinratesBlock" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer" unique_id=279367287]
 layout_mode = 2
 
-[node name="HLayout" type="HBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinrates" unique_id=378324087]
+[node name="VLayout" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock" unique_id=1478557114]
 layout_mode = 2
 
-[node name="AttackerWinRatesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinrates/HLayout" unique_id=1772637384]
+[node name="WinratesByFaction" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout" unique_id=1338727155]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Win Rates by Faction"
+horizontal_alignment = 1
+
+[node name="WinratesOverall" type="HBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout" unique_id=1238076774]
 layout_mode = 2
 
-[node name="AttackerWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinrates/HLayout/AttackerWinRatesPanel" unique_id=652281035]
+[node name="OverallFactionWinratesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesOverall" unique_id=267288409]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VLayout" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesOverall/OverallFactionWinratesPanel" unique_id=1550000228]
 layout_mode = 2
 
-[node name="DefenderWinratesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinrates/HLayout" unique_id=516939458]
+[node name="WinRateTitle" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesOverall/OverallFactionWinratesPanel/VLayout" unique_id=732989748]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Overall Win Rate"
+horizontal_alignment = 1
+
+[node name="OverallWinrates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesOverall/OverallFactionWinratesPanel/VLayout" unique_id=1502811269]
+unique_name_in_owner = true
 layout_mode = 2
 
-[node name="DefenderWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinrates/HLayout/DefenderWinratesPanel" unique_id=54719957]
+[node name="WinratesByRole" type="HBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout" unique_id=1736278604]
+layout_mode = 2
+
+[node name="AttackerWinRatesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByRole" unique_id=1772637384]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VLayout" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByRole/AttackerWinRatesPanel" unique_id=609341507]
+layout_mode = 2
+
+[node name="WinRateTitle" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByRole/AttackerWinRatesPanel/VLayout" unique_id=2093153051]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Attacker Win Rate"
+horizontal_alignment = 1
+
+[node name="AttackerWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByRole/AttackerWinRatesPanel/VLayout" unique_id=652281035]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="DefenderWinratesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByRole" unique_id=516939458]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VLayout" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByRole/DefenderWinratesPanel" unique_id=797021829]
+layout_mode = 2
+
+[node name="WinRateTitle" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByRole/DefenderWinratesPanel/VLayout" unique_id=11526225]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Defender Win Rate"
+horizontal_alignment = 1
+
+[node name="DefenderWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByRole/DefenderWinratesPanel/VLayout" unique_id=54719957]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="WinratesByStage" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout" unique_id=1152954687]
+layout_mode = 2
+
+[node name="VLayout" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage" unique_id=448568323]
+layout_mode = 2
+
+[node name="WinratesByStageTitle" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/VLayout" unique_id=1033775311]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Win Rates by Stage"
+horizontal_alignment = 1
+
+[node name="EarlyStageWinRatesTitle" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/VLayout" unique_id=1091835938]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Early Stage Win Rate"
+horizontal_alignment = 1
+
+[node name="EarlyStage" type="HBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage" unique_id=1381466607]
+layout_mode = 2
+
+[node name="OverallStageWinratesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/EarlyStage" unique_id=309946944]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VLayout" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/EarlyStage/OverallStageWinratesPanel" unique_id=856699515]
+layout_mode = 2
+
+[node name="WinRateTitle" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/EarlyStage/OverallStageWinratesPanel/VLayout" unique_id=1100932508]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Overall Win Rate"
+horizontal_alignment = 1
+
+[node name="OverallEarlyStageWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/EarlyStage/OverallStageWinratesPanel/VLayout" unique_id=257595532]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="AttackerWinRatesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/EarlyStage" unique_id=673208120]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VLayout" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/EarlyStage/AttackerWinRatesPanel" unique_id=1392915606]
+layout_mode = 2
+
+[node name="WinRateTitle" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/EarlyStage/AttackerWinRatesPanel/VLayout" unique_id=6064422]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Attacker Win Rate"
+horizontal_alignment = 1
+
+[node name="AttackerEarlyStageWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/EarlyStage/AttackerWinRatesPanel/VLayout" unique_id=2046363640]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="DefenderWinratesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/EarlyStage" unique_id=500901158]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VLayout" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/EarlyStage/DefenderWinratesPanel" unique_id=1731175352]
+layout_mode = 2
+
+[node name="WinRateTitle" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/EarlyStage/DefenderWinratesPanel/VLayout" unique_id=1099993389]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Defender Win Rate"
+horizontal_alignment = 1
+
+[node name="DefenderEarlyStageWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/EarlyStage/DefenderWinratesPanel/VLayout" unique_id=680254471]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="MiddleStageWinRatesTitle" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage" unique_id=1661806968]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Middle Stage Win Rate"
+horizontal_alignment = 1
+
+[node name="MiddleStage" type="HBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage" unique_id=1405748325]
+layout_mode = 2
+
+[node name="OverallStageWinratesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/MiddleStage" unique_id=514573274]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VLayout" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/MiddleStage/OverallStageWinratesPanel" unique_id=2065219240]
+layout_mode = 2
+
+[node name="WinRateTitle" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/MiddleStage/OverallStageWinratesPanel/VLayout" unique_id=1804766726]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Overall Win Rate"
+horizontal_alignment = 1
+
+[node name="OverallMiddleStageWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/MiddleStage/OverallStageWinratesPanel/VLayout" unique_id=1344666884]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="AttackerWinRatesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/MiddleStage" unique_id=890181829]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VLayout" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/MiddleStage/AttackerWinRatesPanel" unique_id=1885958647]
+layout_mode = 2
+
+[node name="WinRateTitle" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/MiddleStage/AttackerWinRatesPanel/VLayout" unique_id=1014013654]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Attacker Win Rate"
+horizontal_alignment = 1
+
+[node name="AttackerMiddleStageWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/MiddleStage/AttackerWinRatesPanel/VLayout" unique_id=461944282]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="DefenderWinratesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/MiddleStage" unique_id=1080354642]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VLayout" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/MiddleStage/DefenderWinratesPanel" unique_id=2137002772]
+layout_mode = 2
+
+[node name="WinRateTitle" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/MiddleStage/DefenderWinratesPanel/VLayout" unique_id=1708912742]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Defender Win Rate"
+horizontal_alignment = 1
+
+[node name="DefenderMiddleStageWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/MiddleStage/DefenderWinratesPanel/VLayout" unique_id=2029280720]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="LateStageWinRatesTitle" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage" unique_id=361796233]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Late Stage Win Rate"
+horizontal_alignment = 1
+
+[node name="LateStage" type="HBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage" unique_id=921719360]
+layout_mode = 2
+
+[node name="OverallStageWinratesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/LateStage" unique_id=1877256581]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VLayout" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/LateStage/OverallStageWinratesPanel" unique_id=515197746]
+layout_mode = 2
+
+[node name="WinRateTitle" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/LateStage/OverallStageWinratesPanel/VLayout" unique_id=80531238]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Overall Win Rate"
+horizontal_alignment = 1
+
+[node name="OverallLateStageWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/LateStage/OverallStageWinratesPanel/VLayout" unique_id=889243300]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="AttackerWinRatesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/LateStage" unique_id=547370264]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VLayout" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/LateStage/AttackerWinRatesPanel" unique_id=2070310972]
+layout_mode = 2
+
+[node name="WinRateTitle" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/LateStage/AttackerWinRatesPanel/VLayout" unique_id=1989546341]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Attacker Win Rate"
+horizontal_alignment = 1
+
+[node name="AttackerLateStageWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/LateStage/AttackerWinRatesPanel/VLayout" unique_id=1996181453]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="DefenderWinratesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/LateStage" unique_id=648723956]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VLayout" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/LateStage/DefenderWinratesPanel" unique_id=859890793]
+layout_mode = 2
+
+[node name="WinRateTitle" type="Label" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/LateStage/DefenderWinratesPanel/VLayout" unique_id=1956234492]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Defender Win Rate"
+horizontal_alignment = 1
+
+[node name="DefenderLateStageWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout/WinratesByStage/LateStage/DefenderWinratesPanel/VLayout" unique_id=1559291970]
+unique_name_in_owner = true
 layout_mode = 2

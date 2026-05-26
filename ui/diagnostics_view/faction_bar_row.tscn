@@ -13,16 +13,21 @@ size_flags_vertical = 3
 script = ExtResource("1_1ryk1")
 
 [node name="FactionName" type="Label" parent="." unique_id=1829653705]
+custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
+size_flags_horizontal = 0
 size_flags_vertical = 0
 text = "Faction"
+horizontal_alignment = 1
 
 [node name="WinRateBar" type="ProgressBar" parent="." unique_id=556548683]
+custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="WinCountLabel" type="Label" parent="." unique_id=1223467467]
 layout_mode = 2
+size_flags_horizontal = 8
 size_flags_vertical = 0
 text = "Winrate"
 horizontal_alignment = 2

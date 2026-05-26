@@ -21,13 +21,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="UserControls" type="HBoxContainer" parent="MainLayout" unique_id=1971477260]
-layout_mode = 2
-
-[node name="StartNewCombatBtn" type="Button" parent="MainLayout/UserControls" unique_id=1688779065]
-layout_mode = 2
-text = "Start New Combat"
-
 [node name="HeaderPanel" type="PanelContainer" parent="MainLayout" unique_id=668278624]
 layout_mode = 2
 size_flags_stretch_ratio = 0.1
@@ -102,3 +95,11 @@ size_flags_vertical = 3
 [node name="Round3" type="VBoxContainer" parent="MainLayout/CentralCombatView/RoundsContainer" unique_id=390256035]
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="UserControls" type="HBoxContainer" parent="MainLayout" unique_id=1971477260]
+layout_mode = 2
+
+[node name="StartNewCombatBtn" type="Button" parent="MainLayout/UserControls" unique_id=1688779065]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Start New Combat"
