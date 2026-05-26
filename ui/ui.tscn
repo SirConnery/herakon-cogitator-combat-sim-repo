@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://dc7rarbc4m0je" path="res://ui/ui.gd" id="1_nb4k0"]
 [ext_resource type="PackedScene" uid="uid://dt8u6hm6e5iq1" path="res://ui/single_combat_view/single_combat_view.tscn" id="2_ks8t7"]
 [ext_resource type="PackedScene" uid="uid://4yl6nw2apdti" path="res://ui/mass_combat_view/mass_combat_view.tscn" id="3_wl5ax"]
+[ext_resource type="PackedScene" uid="uid://xsql61jfesrb" path="res://ui/diagnostics_view/diagnostics_view.tscn" id="4_tf0e0"]
 [ext_resource type="PackedScene" uid="uid://blegqx44cm1q1" path="res://simulation/SimController.tscn" id="4_vkava"]
 
 [node name="Ui" type="Control" unique_id=868425142]
@@ -31,5 +32,10 @@ metadata/_tab_index = 0
 visible = false
 layout_mode = 2
 metadata/_tab_index = 1
+
+[node name="DiagnosticsView" parent="MainTabs" unique_id=1986078317 instance=ExtResource("4_tf0e0")]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
 
 [node name="SimController" parent="." unique_id=390564033 instance=ExtResource("4_vkava")]

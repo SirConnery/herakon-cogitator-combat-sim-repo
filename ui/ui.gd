@@ -17,6 +17,9 @@ class_name UI
 
 @onready var sim_controller: SimController = $SimController
 
+@onready var diagnostics_view: DiagnosticsView = $MainTabs/DiagnosticsView
+
+
 func _ready() -> void:
 	pass
 
@@ -46,8 +49,7 @@ func _build_and_register_combat_panels() -> void:
 	for i in range(3):
 		var target_container = round_containers[i]
 		
-		for child in target_container.get_children():
-			child.queue_free()
+		UI_Utils.clear_children(target_container)
 		
 		var panel_instance = round_panel_scene.instantiate() as CombatRoundPanel
 

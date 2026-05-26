@@ -36,10 +36,6 @@ func _ready() -> void:
 	pass
 
 
-func show_ui() -> void:
-	pass
-
-
 ## High-speed round-robin matrix simulation. 
 ## Pairs every faction against every other opponent as both attacker and defender.
 func run_mass_battles() -> void:
@@ -122,7 +118,7 @@ func run_mass_battles() -> void:
 
 func run_single_logged_battle() -> void:
 	current_stage = get_current_stage()
-	print("🚨 SANDBOX DEBUG RUN: run_single_logged_battle() is executing!")
+	print("🚨 run_single_logged_battle() is executing!")
 	
 	# Guard clause: Ensure there are at least two factions to pick from
 	if factions_to_sim.size() < 2:

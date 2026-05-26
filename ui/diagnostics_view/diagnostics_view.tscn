@@ -1,5 +1,7 @@
 [gd_scene format=3 uid="uid://xsql61jfesrb"]
 
+[ext_resource type="Script" uid="uid://dkuohb61xabhw" path="res://ui/diagnostics_view/diagnostics_view.gd" id="1_aepig"]
+
 [node name="DiagnosticsView" type="Control" unique_id=1986078317]
 layout_mode = 3
 anchors_preset = 15
@@ -9,6 +11,7 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+script = ExtResource("1_aepig")
 
 [node name="PageScroll" type="ScrollContainer" parent="." unique_id=1346583329]
 layout_mode = 1
@@ -53,11 +56,11 @@ layout_mode = 2
 [node name="AttackerWinRatesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinrates/HLayout" unique_id=1772637384]
 layout_mode = 2
 
-[node name="AttackerWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinrates/HLayout/AttackerWinRatesPanel" unique_id=457255534]
+[node name="AttackerWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinrates/HLayout/AttackerWinRatesPanel" unique_id=652281035]
 layout_mode = 2
 
 [node name="DefenderWinratesPanel" type="PanelContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinrates/HLayout" unique_id=516939458]
 layout_mode = 2
 
-[node name="DefenderWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinrates/HLayout/DefenderWinratesPanel" unique_id=473657268]
+[node name="DefenderWinRates" type="VBoxContainer" parent="PageScroll/CenterConstraint/ContentContainer/FactionWinrates/HLayout/DefenderWinratesPanel" unique_id=54719957]
 layout_mode = 2
