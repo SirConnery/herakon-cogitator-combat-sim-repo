@@ -1,6 +1,9 @@
 [gd_scene format=3 uid="uid://yy3vdqul34p0"]
 
 [ext_resource type="Script" uid="uid://dc7rarbc4m0je" path="res://ui/ui.gd" id="1_nb4k0"]
+[ext_resource type="PackedScene" uid="uid://dt8u6hm6e5iq1" path="res://ui/single_combat_view/single_combat_view.tscn" id="2_ks8t7"]
+[ext_resource type="PackedScene" uid="uid://4yl6nw2apdti" path="res://ui/mass_combat_view/mass_combat_view.tscn" id="3_wl5ax"]
+[ext_resource type="PackedScene" uid="uid://blegqx44cm1q1" path="res://simulation/SimController.tscn" id="4_vkava"]
 
 [node name="Ui" type="Control" unique_id=868425142]
 layout_mode = 3
@@ -11,91 +14,22 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_nb4k0")
 
-[node name="SingleCombatView" type="VBoxContainer" parent="." unique_id=689636465]
+[node name="MainTabs" type="TabContainer" parent="." unique_id=725016407]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+current_tab = 0
 
-[node name="HeaderPanel" type="PanelContainer" parent="SingleCombatView" unique_id=656035512]
+[node name="SingleCombatView" parent="MainTabs" unique_id=1865234252 instance=ExtResource("2_ks8t7")]
 layout_mode = 2
-size_flags_stretch_ratio = 0.1
+metadata/_tab_index = 0
 
-[node name="HeaderContainer" type="VBoxContainer" parent="SingleCombatView/HeaderPanel" unique_id=2111505853]
+[node name="MassCombatView" parent="MainTabs" unique_id=1641760004 instance=ExtResource("3_wl5ax")]
+visible = false
 layout_mode = 2
-theme_override_constants/separation = 4
+metadata/_tab_index = 1
 
-[node name="HLayout" type="HBoxContainer" parent="SingleCombatView/HeaderPanel/HeaderContainer" unique_id=1391932092]
-layout_mode = 2
-
-[node name="WorldLabel" type="Label" parent="SingleCombatView/HeaderPanel/HeaderContainer/HLayout" unique_id=1618826840]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 1
-text = "Combat Area: World"
-horizontal_alignment = 1
-
-[node name="CombatParticipantsValue" type="Label" parent="SingleCombatView/HeaderPanel/HeaderContainer/HLayout" unique_id=555820473]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 1
-text = "Space Marines vs Orks"
-horizontal_alignment = 1
-
-[node name="GameStage" type="Label" parent="SingleCombatView/HeaderPanel/HeaderContainer/HLayout" unique_id=1296891725]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 1
-text = "Game Stage: "
-horizontal_alignment = 1
-
-[node name="CardsDrawnToHandAtStart" type="HBoxContainer" parent="SingleCombatView/HeaderPanel/HeaderContainer" unique_id=1562848058]
-layout_mode = 2
-
-[node name="AttackerDrawnCardsTitle" type="Label" parent="SingleCombatView/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=303084573]
-layout_mode = 2
-size_flags_vertical = 0
-text = "Attacker Cards drawn at start: "
-
-[node name="AttackerDrawnCardsValue" type="Label" parent="SingleCombatView/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=100102169]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 0
-
-[node name="DefenderDrawnCardsTitle" type="Label" parent="SingleCombatView/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=1126116701]
-layout_mode = 2
-size_flags_vertical = 0
-text = "Defender Cards drawn at start;"
-
-[node name="DefenderDrawnCardsValue" type="Label" parent="SingleCombatView/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=1164117888]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 0
-
-[node name="CentralCombatView" type="HBoxContainer" parent="SingleCombatView" unique_id=136736628]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="RoundsContainer" type="VBoxContainer" parent="SingleCombatView/CentralCombatView" unique_id=96328724]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="Round1" type="VBoxContainer" parent="SingleCombatView/CentralCombatView/RoundsContainer" unique_id=1769493508]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="Round2" type="VBoxContainer" parent="SingleCombatView/CentralCombatView/RoundsContainer" unique_id=775068910]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="Round3" type="VBoxContainer" parent="SingleCombatView/CentralCombatView/RoundsContainer" unique_id=1399120096]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="UserControls" type="HBoxContainer" parent="SingleCombatView" unique_id=158005874]
-layout_mode = 2
-
-[node name="StartNewCombat" type="Button" parent="SingleCombatView/UserControls" unique_id=1329526875]
-layout_mode = 2
+[node name="SimController" parent="." unique_id=390564033 instance=ExtResource("4_vkava")]

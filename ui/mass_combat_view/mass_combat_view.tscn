@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://4yl6nw2apdti"]
+
+[ext_resource type="Script" uid="uid://l7avdeyrupok" path="res://ui/mass_combat_view/mass_combat_view.gd" id="1_2xt5l"]
+
+[node name="MassCombatView" type="Control" unique_id=1641760004]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_2xt5l")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=274249610]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SimulateMassCombatBtn" type="Button" parent="HBoxContainer" unique_id=1246354003]
+layout_mode = 2

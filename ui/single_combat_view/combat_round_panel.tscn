@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cxk130wfvphau"]
 
-[ext_resource type="Script" uid="uid://dudn6wdbmjlcl" path="res://ui/combat_round_panel.gd" id="1_st8rj"]
+[ext_resource type="Script" uid="uid://dudn6wdbmjlcl" path="res://ui/single_combat_view/combat_round_panel.gd" id="1_st8rj"]
 
 [node name="CombatRoundPanel" type="PanelContainer" unique_id=167201415]
 anchors_preset = 15

@@ -2,25 +2,30 @@ extends Control
 class_name UI
 
 # --- SCENE REFERENCES ---
-@onready var round_panel_scene: PackedScene = preload("res://ui/combat_round_panel.tscn")
+@onready var round_panel_scene: PackedScene = preload("res://ui/single_combat_view/combat_round_panel.tscn")
 
 # --- UI ELEMENT NODES ---
-@onready var game_stage_label: Label = $SingleCombatView/HeaderPanel/HeaderContainer/HLayout/GameStage
-@onready var combat_participants_value: Label = $SingleCombatView/HeaderPanel/HeaderContainer/HLayout/CombatParticipantsValue
+@onready var game_stage_label: Label = $MainTabs/SingleCombatView/MainLayout/HeaderPanel/HeaderContainer/HLayout/GameStage
+@onready var combat_participants_value: Label = $MainTabs/SingleCombatView/MainLayout/HeaderPanel/HeaderContainer/HLayout/CombatParticipantsValue
 
-@onready var attacker_drawn_cards_value: Label = $SingleCombatView/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart/AttackerDrawnCardsValue
-@onready var defender_drawn_cards_value: Label = $SingleCombatView/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart/DefenderDrawnCardsValue
+@onready var attacker_drawn_cards_value: Label = $MainTabs/SingleCombatView/MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart/AttackerDrawnCardsValue
+@onready var defender_drawn_cards_value: Label = $MainTabs/SingleCombatView/MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart/DefenderDrawnCardsValue
 
-@onready var round_1_container: VBoxContainer = $SingleCombatView/CentralCombatView/RoundsContainer/Round1
-@onready var round_2_container: VBoxContainer = $SingleCombatView/CentralCombatView/RoundsContainer/Round2
-@onready var round_3_container: VBoxContainer = $SingleCombatView/CentralCombatView/RoundsContainer/Round3
+@onready var round_1_container: VBoxContainer = $MainTabs/SingleCombatView/MainLayout/CentralCombatView/RoundsContainer/Round1
+@onready var round_2_container: VBoxContainer = $MainTabs/SingleCombatView/MainLayout/CentralCombatView/RoundsContainer/Round2
+@onready var round_3_container: VBoxContainer = $MainTabs/SingleCombatView/MainLayout/CentralCombatView/RoundsContainer/Round3
 
+@onready var sim_controller: SimController = $SimController
 
 func _ready() -> void:
+	pass
+
+func start_single_logged_combat() -> void:
 	_initialize_logger_session()
 	_build_and_register_combat_panels()
-	_start_simulation_subsystem()
-
+	sim_controller.run_single_logged_battle()
+	
+	update_headers()
 
 func _initialize_logger_session() -> void:
 	G_Logger.clear_session()
@@ -36,10 +41,15 @@ func _build_and_register_combat_panels() -> void:
 
 	# Build exactly one tracking module layer per active conflict step
 	for i in range(3):
+		var target_container = round_containers[i]
+		
+		for child in target_container.get_children():
+			child.queue_free()
+		
 		var panel_instance = round_panel_scene.instantiate() as CombatRoundPanel
 
 		# Bind to its parent structural anchor node layout
-		round_containers[i].add_child(panel_instance)
+		target_container.add_child(panel_instance)
 
 		# Configure the localized text string layout values
 		panel_instance.set_round_header_labels(i + 1)
@@ -48,14 +58,10 @@ func _build_and_register_combat_panels() -> void:
 		G_Logger.active_round_panels.append(panel_instance)
 
 
-## Spawns the decoupled execution controller and updates structural visual header labels
-func _start_simulation_subsystem() -> void:
-	var sim = SimController.new()
-	add_child(sim)
-	
-	update_game_stage_header(sim.current_stage)
-	update_starting_cards_header(sim)
-	update_combat_participants_header(sim)
+func update_headers() -> void:
+	update_game_stage_header(sim_controller.current_stage)
+	update_starting_cards_header(sim_controller)
+	update_combat_participants_header(sim_controller)
 
 ## Queries the sim instance to parse and display the match participants
 func update_combat_participants_header(sim: SimController) -> void:

@@ -1,0 +1,96 @@
+[gd_scene format=3 uid="uid://bhv0tyayhavth"]
+
+[ext_resource type="Script" uid="uid://bcpktui0yfxph" path="res://ui/single_combat_view/single_combat_view.gd" id="1_vahmo"]
+
+[node name="SingleCombatView" type="VBoxContainer" unique_id=1865234252]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_vahmo")
+
+[node name="UserControls" type="HBoxContainer" parent="." unique_id=1971477260]
+layout_mode = 2
+
+[node name="StartNewCombatBtn" type="Button" parent="UserControls" unique_id=1688779065]
+layout_mode = 2
+text = "Start New Combat"
+
+[node name="HeaderPanel" type="PanelContainer" parent="." unique_id=668278624]
+layout_mode = 2
+size_flags_stretch_ratio = 0.1
+
+[node name="HeaderContainer" type="VBoxContainer" parent="HeaderPanel" unique_id=1160828375]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="HLayout" type="HBoxContainer" parent="HeaderPanel/HeaderContainer" unique_id=533786021]
+layout_mode = 2
+
+[node name="WorldLabel" type="Label" parent="HeaderPanel/HeaderContainer/HLayout" unique_id=2064207568]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+text = "Combat Area: World"
+horizontal_alignment = 1
+
+[node name="CombatParticipantsValue" type="Label" parent="HeaderPanel/HeaderContainer/HLayout" unique_id=1921772805]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+text = "Space Marines vs Orks"
+horizontal_alignment = 1
+
+[node name="GameStage" type="Label" parent="HeaderPanel/HeaderContainer/HLayout" unique_id=1604020925]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+text = "Game Stage: "
+horizontal_alignment = 1
+
+[node name="CardsDrawnToHandAtStart" type="HBoxContainer" parent="HeaderPanel/HeaderContainer" unique_id=860265540]
+layout_mode = 2
+
+[node name="AttackerDrawnCardsTitle" type="Label" parent="HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=899910493]
+layout_mode = 2
+size_flags_vertical = 0
+text = "Attacker Cards drawn at start: "
+
+[node name="AttackerDrawnCardsValue" type="Label" parent="HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=2032794372]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="DefenderDrawnCardsTitle" type="Label" parent="HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=1795880344]
+layout_mode = 2
+size_flags_vertical = 0
+text = "Defender Cards drawn at start;"
+
+[node name="DefenderDrawnCardsValue" type="Label" parent="HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=831402059]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="CentralCombatView" type="HBoxContainer" parent="." unique_id=117080739]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RoundsContainer" type="VBoxContainer" parent="CentralCombatView" unique_id=100639815]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Round1" type="VBoxContainer" parent="CentralCombatView/RoundsContainer" unique_id=889694720]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Round2" type="VBoxContainer" parent="CentralCombatView/RoundsContainer" unique_id=1402751053]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Round3" type="VBoxContainer" parent="CentralCombatView/RoundsContainer" unique_id=390256035]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Control" type="Control" parent="." unique_id=466081623]
+layout_mode = 2

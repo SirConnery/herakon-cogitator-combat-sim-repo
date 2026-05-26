@@ -4,16 +4,18 @@ class_name SimController
 @export var is_single_combat_mode: bool = true
 @export var total_iterations: int = 100
 
-#@export var current_stage: GameStageGenerator.Stage = GameStageGenerator.Stage.LATE
-@export var current_stage: GameStageGenerator.Stage = randi_range(0, 2) as GameStageGenerator.Stage # change to this for random stages
-
 @export var attacker_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.ORKS
 @export var defender_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.SPACE_MARINES
 
-var is_ground_combat := true
-
 @onready var card_db: Dictionary = CardRegistry.get_database()
 
+var max_stage_index: int = GameStageGenerator.Stage.keys().size() - 1
+var debug_stage: GameStageGenerator.Stage = GameStageGenerator.Stage.LATE
+
+var is_random_stage := true
+var is_ground_combat := true
+
+var current_stage: GameStageGenerator.Stage
 
 #region Variables for UI
 
@@ -39,6 +41,8 @@ func show_ui() -> void:
 
 ## High-speed clean production loop delegating optimized binary file-logging to the exporter module
 func run_mass_battles(count: int) -> void:
+	current_stage = get_current_stage()
+	
 	var raw_cards: Dictionary = CardRegistry.get_database()
 	var raw_factions: Dictionary = FactionRegistry.get_database()
 	var flat_card_db: Dictionary = _flatten_card_database(raw_cards)
@@ -97,6 +101,8 @@ func run_mass_battles(count: int) -> void:
 
 
 func run_single_logged_battle() -> void:
+	current_stage = get_current_stage()
+	
 	var raw_cards: Dictionary = CardRegistry.get_database()
 	var raw_factions: Dictionary = FactionRegistry.get_database()
 	
@@ -341,4 +347,14 @@ func get_card_metadata(card_id: int, property_name: String) -> Variant:
 		return CardData.UnitType.keys()[value].capitalize()
 		
 	return value
+
+
+## Dynamically resolves the correct combat stage based on randomization flags
+func get_current_stage() -> GameStageGenerator.Stage:
+	if is_random_stage:
+		return randi_range(0, max_stage_index) as GameStageGenerator.Stage
+	
+	return debug_stage
+
+
 #endregion
