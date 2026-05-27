@@ -4,39 +4,39 @@ extends RefCounted
 enum CardID {
 	
 	# --- SPACE MARINES (SM) ---
-	SM_AMBUSH									= 1001,
-	SM_RECONNAISSANCE							= 1002,
-	SM_FURY_OF_THE_ULTRAMAR						= 1003,
-	SM_BLESSED_POWER_ARMOUR						= 1004,
-	SM_COMBAT_FAITH_IN_EMPEROR					= 1005,
-	SM_HOLD_THE_LINE								= 1006,
-	SM_GLORY_AND_DEATH							= 1007,
-	SM_DROP_POD_ASSAULT							= 1008,
-	SM_VETERAN_SCOUTS							= 1009,
-	SM_SHOW_NO_FEAR								= 1010,
-	SM_BREAK_THE_LINE							= 1011,
-	SM_ARMOURED_ADVANCE							= 1012,
-	SM_EMPERORS_MIGHT							= 1013,
-	SM_EMPERORS_GLORY							= 1014,
+	SM_AMBUSH                                    = 1001,
+	SM_RECONNAISSANCE                            = 1002,
+	SM_FURY_OF_THE_ULTRAMAR                        = 1003,
+	SM_BLESSED_POWER_ARMOUR                        = 1004,
+	SM_COMBAT_FAITH_IN_EMPEROR                    = 1005,
+	SM_HOLD_THE_LINE                                = 1006,
+	SM_GLORY_AND_DEATH                            = 1007,
+	SM_DROP_POD_ASSAULT                            = 1008,
+	SM_VETERAN_SCOUTS                            = 1009,
+	SM_SHOW_NO_FEAR                                = 1010,
+	SM_BREAK_THE_LINE                            = 1011,
+	SM_ARMOURED_ADVANCE                            = 1012,
+	SM_EMPERORS_MIGHT                            = 1013,
+	SM_EMPERORS_GLORY                            = 1014,
 
 	# --- CHAOS SPACE MARINES (CSM) ---
-	CSM_KHORNES_RAGE								= 2001,
+	CSM_KHORNES_RAGE                                = 2001,
 
 	# --- ORKS (ORKS) ---
-	ORKS_GRETCHIN								= 3001,
-	ORKS_MEK_BOYZ								= 3002,
-	ORKS_ARD_BOYZ								= 3003,
-	ORKS_SHOOTA_BOYZ								= 3004,
-	ORKS_SLUGGA_BOYZ								= 3005,
-	ORKS_WAAAGH									= 3006,
-	ORKS_SEA_OF_GREEN							= 3007,
-	ORKS_MEGA_NOBZ								= 3008,
-	ORKS_BIKER_NOBZ								= 3009,
-	ORKS_WEIRDBOYZ								= 3010,
-	ORKS_PARTY_WAGON								= 3011,
-	ORKS_ROKKIT_WAGON							= 3012,
-	ORKS_SNAPPER_GARGANT							= 3013,
-	ORKS_SMASHER_GARGANT							= 3014,
+	ORKS_GRETCHIN                                = 3001,
+	ORKS_MEK_BOYZ                                = 3002,
+	ORKS_ARD_BOYZ                                = 3003,
+	ORKS_SHOOTA_BOYZ                                = 3004,
+	ORKS_SLUGGA_BOYZ                                = 3005,
+	ORKS_WAAAGH                                    = 3006,
+	ORKS_SEA_OF_GREEN                            = 3007,
+	ORKS_MEGA_NOBZ                                = 3008,
+	ORKS_BIKER_NOBZ                                = 3009,
+	ORKS_WEIRDBOYZ                                = 3010,
+	ORKS_PARTY_WAGON                                = 3011,
+	ORKS_ROKKIT_WAGON                            = 3012,
+	ORKS_SNAPPER_GARGANT                            = 3013,
+	ORKS_SMASHER_GARGANT                            = 3014,
 	 
 	
 }
@@ -45,19 +45,23 @@ static func get_database() -> Dictionary:
 	var db := {}
 	var card: CardData
 	
+	var fx: CardEffect
+	var node: CardEffect
+	var opt_a: CardEffect
+	var opt_b: CardEffect
+	var opt_c: CardEffect
 	
 	# ==========================================================================
 	# --- CARD 0000: Dummy Card ---
 	# ==========================================================================
-	# Instantiate a dummy object context to safely catch discarded (0) slots
-	var empty_card := CardData.new()
-	empty_card.card_id = 0
-	empty_card.card_name = "Discarded Slot"
-	empty_card.card_tier = CardData.CardTier.STARTER
-	empty_card.offence_icons = 0
-	empty_card.defence_icons = 0
-	empty_card.morale_icons = 0
-	db[0] = empty_card
+	card = CardData.new()
+	card.card_id = 0
+	card.card_name = "Discarded Slot"
+	card.card_tier = CardData.CardTier.STARTER
+	card.offence_icons = 0
+	card.defence_icons = 0
+	card.morale_icons = 0
+	db[0] = card
 	
 	# ==========================================================================
 	# --- CARD 1001: Ambush ---
@@ -69,20 +73,20 @@ static func get_database() -> Dictionary:
 	card.offence_icons = 1
 	card.required_unit_types = [CardData.UnitType.SCOUTS, CardData.UnitType.STRIKE_CRUISERS]
 	
-	# General ability: Gain 2 offence tokens
-	var sm_ambush_gen := CardEffect.new()
-	sm_ambush_gen.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
-	sm_ambush_gen.target_type = CardData.TargetType.SELF
-	sm_ambush_gen.value = 2
-	sm_ambush_gen.pool_type = CardData.DicePoolType.OFFENSE
-	card.general_ability.append(sm_ambush_gen)
+	# --- GENERAL ABILITY ---
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_COMBAT_TOKEN
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 2
+	fx.pool_type = CardData.DicePoolType.OFFENSE
+	card.general_ability.append(fx)
 	
-	# Unit ability: When an enemy unit is routed it is destroyed unless opponent spends 1 Morale dice
-	var sm_ambush_unit := CardEffect.new()
-	sm_ambush_unit.effect_type = CardData.EffectType.DESTROY_ON_ROUT_OR_SPEND
-	sm_ambush_unit.target_type = CardData.TargetType.OPPONENT
-	sm_ambush_unit.value = 1 # Number of Morale dice penalty cost to tax the enemy
-	card.unit_ability.append(sm_ambush_unit)
+	# --- UNIT ABILITY ---
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.DESTROY_ON_ROUT_OR_SPEND
+	fx.target_type = CardData.TargetType.OPPONENT
+	fx.value = 1 
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -97,30 +101,30 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = []
 	
 	# General Ability: Choice between 2 Offence Tokens or 2 Defence Tokens
-	var sm_recon_choice := CardEffect.new()
-	sm_recon_choice.effect_type = CardData.EffectType.CHOICE
-	sm_recon_choice.target_type = CardData.TargetType.SELF
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.CHOICE
+	fx.target_type = CardData.TargetType.SELF
 	
 	# Option A: Gain 2 Offence Tokens
-	var recon_opt_a := CardEffect.new()
-	recon_opt_a.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
-	recon_opt_a.target_type = CardData.TargetType.SELF
-	recon_opt_a.value = 2
-	recon_opt_a.pool_type = CardData.DicePoolType.OFFENSE
+	opt_a = CardEffect.new()
+	opt_a.effect_type = CardData.EffectType.GAIN_COMBAT_TOKEN
+	opt_a.target_type = CardData.TargetType.SELF
+	opt_a.value = 2
+	opt_a.pool_type = CardData.DicePoolType.OFFENSE
 	
 	# Option B: Gain 2 Defence Tokens
-	var recon_opt_b := CardEffect.new()
-	recon_opt_b.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
-	recon_opt_b.target_type = CardData.TargetType.SELF
-	recon_opt_b.value = 2
-	recon_opt_b.pool_type = CardData.DicePoolType.DEFENSE
+	opt_b = CardEffect.new()
+	opt_b.effect_type = CardData.EffectType.GAIN_COMBAT_TOKEN
+	opt_b.target_type = CardData.TargetType.SELF
+	opt_b.value = 2
+	opt_b.pool_type = CardData.DicePoolType.DEFENSE
 	
-	sm_recon_choice.choices = [recon_opt_a, recon_opt_b]
-	card.general_ability.append(sm_recon_choice)
+	fx.choices = [opt_a, opt_b]
+	card.general_ability.append(fx)
 	
 	db[card.card_id] = card
 	
-# ==========================================================================
+	# ==========================================================================
 	# --- CARD 1003: Fury of the Ultramar ---
 	# ==========================================================================
 	card = CardData.new()
@@ -132,41 +136,41 @@ static func get_database() -> Dictionary:
 	
 	# --- GENERAL ABILITY ---
 	# Rule 1: Opponent rerolls 1 specific Defence (Shield) die
-	var sm_fury_gen_opp := CardEffect.new()
-	sm_fury_gen_opp.effect_type = CardData.EffectType.REROLL
-	sm_fury_gen_opp.target_type = CardData.TargetType.OPPONENT
-	sm_fury_gen_opp.value = 1
-	sm_fury_gen_opp.pool_type = CardData.DicePoolType.DEFENSE
-	card.general_ability.append(sm_fury_gen_opp)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.REROLL
+	fx.target_type = CardData.TargetType.OPPONENT
+	fx.value = 1
+	fx.pool_type = CardData.DicePoolType.DEFENSE
+	card.general_ability.append(fx)
 	
 	# Rule 2: Synchronized Choice Node
-	var sm_fury_gen_self_choice := CardEffect.new()
-	sm_fury_gen_self_choice.effect_type = CardData.EffectType.CHOICE
-	sm_fury_gen_self_choice.target_type = CardData.TargetType.SELF
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.CHOICE
+	fx.target_type = CardData.TargetType.SELF
 	
 	# Option A: Execute the 1-die self-reroll sequence
-	var fury_self_reroll_opt := CardEffect.new()
-	fury_self_reroll_opt.effect_type = CardData.EffectType.REROLL
-	fury_self_reroll_opt.target_type = CardData.TargetType.SELF
-	fury_self_reroll_opt.value = 1
+	opt_a = CardEffect.new()
+	opt_a.effect_type = CardData.EffectType.REROLL
+	opt_a.target_type = CardData.TargetType.SELF
+	opt_a.value = 1
 	
 	# Option B: Decline the option and pass seamlessly
-	var fury_self_pass_opt := CardEffect.new()
-	fury_self_pass_opt.effect_type = CardData.EffectType.NONE
-	fury_self_pass_opt.target_type = CardData.TargetType.SELF
+	opt_b = CardEffect.new()
+	opt_b.effect_type = CardData.EffectType.NONE
+	opt_b.target_type = CardData.TargetType.SELF
 	
-	sm_fury_gen_self_choice.choices = [fury_self_reroll_opt, fury_self_pass_opt]
-	card.general_ability.append(sm_fury_gen_self_choice)
+	fx.choices = [opt_a, opt_b]
+	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
 	# Shield pressure: Strip 2 shield tokens; if opponent has 0 tokens, destroy 1 shield dice instead
-	var sm_fury_unit := CardEffect.new()
-	sm_fury_unit.effect_type = CardData.EffectType.LOSE_TOKENS_OR_DICE
-	sm_fury_unit.target_type = CardData.TargetType.OPPONENT
-	sm_fury_unit.value = 2        # Token tax amount
-	sm_fury_unit.max_spend = 1    # Fallback die tax amount if token pool is empty
-	sm_fury_unit.pool_type = CardData.DicePoolType.DEFENSE
-	card.unit_ability.append(sm_fury_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.LOSE_TOKENS_OR_DICE
+	fx.target_type = CardData.TargetType.OPPONENT
+	fx.value = 2        # Token tax amount
+	fx.max_spend = 1    # Fallback die tax amount if token pool is empty
+	fx.pool_type = CardData.DicePoolType.DEFENSE
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -181,20 +185,20 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.SPACE_MARINES, CardData.UnitType.STRIKE_CRUISERS]
 	
 	# --- GENERAL ABILITY ---
-	var sm_blessed_gen := CardEffect.new()
-	sm_blessed_gen.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
-	sm_blessed_gen.target_type = CardData.TargetType.SELF
-	sm_blessed_gen.value = 2
-	sm_blessed_gen.pool_type = CardData.DicePoolType.DEFENSE
-	card.general_ability.append(sm_blessed_gen)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_COMBAT_TOKEN
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 2
+	fx.pool_type = CardData.DicePoolType.DEFENSE
+	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
-	var sm_blessed_unit := CardEffect.new()
-	sm_blessed_unit.effect_type = CardData.EffectType.CONVERT_DICE_TO_SPECIFIC_DICE
-	sm_blessed_unit.target_type = CardData.TargetType.SELF
-	sm_blessed_unit.value = 2
-	sm_blessed_unit.pool_type = CardData.DicePoolType.DEFENSE
-	card.unit_ability.append(sm_blessed_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.CONVERT_DICE_TO_SPECIFIC_DICE
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 2
+	fx.pool_type = CardData.DicePoolType.DEFENSE
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -206,34 +210,33 @@ static func get_database() -> Dictionary:
 	card.card_name = "Faith In the Emperor"
 	card.card_tier = CardData.CardTier.STARTER
 	card.morale_icons = 1
-	# CHANGED: Single requirements are wrapped neatly in single-item arrays
 	card.required_unit_types = [CardData.UnitType.SCOUTS]
 	
 	# General effect
-	var sm_gen_1 := CardEffect.new()
-	sm_gen_1.effect_type = CardData.EffectType.GAIN_DICE
-	sm_gen_1.target_type = CardData.TargetType.SELF
-	sm_gen_1.value = 1
-	card.general_ability.append(sm_gen_1)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_DICE
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 1
+	card.general_ability.append(fx)
 	
 	# Unit Choice Effect
-	var sm_unit_choice := CardEffect.new()
-	sm_unit_choice.effect_type = CardData.EffectType.CHOICE
-	sm_unit_choice.target_type = CardData.TargetType.SELF
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.CHOICE
+	fx.target_type = CardData.TargetType.SELF
 	
-	var option_a := CardEffect.new()
-	option_a.effect_type = CardData.EffectType.RALLY
-	option_a.target_type = CardData.TargetType.SELF
-	option_a.value = 1
+	opt_a = CardEffect.new()
+	opt_a.effect_type = CardData.EffectType.RALLY
+	opt_a.target_type = CardData.TargetType.SELF
+	opt_a.value = 1
 	
-	var option_b := CardEffect.new()
-	option_b.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
-	option_b.target_type = CardData.TargetType.SELF
-	option_b.value = 1
-	option_b.pool_type = CardData.DicePoolType.MORALE
+	opt_b = CardEffect.new()
+	opt_b.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
+	opt_b.target_type = CardData.TargetType.SELF
+	opt_b.value = 1
+	opt_b.pool_type = CardData.DicePoolType.MORALE
 	
-	sm_unit_choice.choices = [option_a, option_b]
-	card.unit_ability.append(sm_unit_choice)
+	fx.choices = [opt_a, opt_b]
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -249,41 +252,47 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.SPACE_MARINES, CardData.UnitType.STRIKE_CRUISERS]
 	
 	# --- GENERAL ABILITY ---
-	# Part 1: Gain 2 shield tokens
-	var sm_hold_gen_tokens := CardEffect.new()
-	sm_hold_gen_tokens.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
-	sm_hold_gen_tokens.target_type = CardData.TargetType.SELF
-	sm_hold_gen_tokens.value = 2
-	sm_hold_gen_tokens.pool_type = CardData.DicePoolType.DEFENSE
-	card.general_ability.append(sm_hold_gen_tokens)
+	# Part 1: Gain 2 defence tokens
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_COMBAT_TOKEN
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 2
+	fx.pool_type = CardData.DicePoolType.DEFENSE
+	card.general_ability.append(fx)
 	
-	# Part 2: Conditional reactive recovery if caught on the defensive
-	var sm_hold_gen_rally := CardEffect.new()
-	sm_hold_gen_rally.effect_type = CardData.EffectType.RALLY_IF_DEFENDING
-	sm_hold_gen_rally.target_type = CardData.TargetType.SELF
-	sm_hold_gen_rally.value = 1
-	card.general_ability.append(sm_hold_gen_rally)
+	# Part 2: Rally if defending
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.CONDITIONAL
+	fx.condition_type = CardData.ConditionType.DEFENDING
+	
+	node = CardEffect.new()
+	node.effect_type = CardData.EffectType.RALLY
+	node.target_type = CardData.TargetType.SELF
+	node.value = 1
+	
+	fx.choices = [node]
+	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
-	# Gain 1 S or 1 M
-	var sm_hold_unit_choice := CardEffect.new()
-	sm_hold_unit_choice.effect_type = CardData.EffectType.CHOICE
-	sm_hold_unit_choice.target_type = CardData.TargetType.SELF
+	# Gain 1 Defence dice OR 1 Morale dice
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.CHOICE
+	fx.target_type = CardData.TargetType.SELF
 	
-	var hold_opt_a := CardEffect.new()
-	hold_opt_a.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
-	hold_opt_a.target_type = CardData.TargetType.SELF
-	hold_opt_a.value = 1
-	hold_opt_a.pool_type = CardData.DicePoolType.DEFENSE
+	opt_a = CardEffect.new()
+	opt_a.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
+	opt_a.target_type = CardData.TargetType.SELF
+	opt_a.value = 1
+	opt_a.pool_type = CardData.DicePoolType.DEFENSE
 	
-	var hold_opt_b := CardEffect.new()
-	hold_opt_b.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
-	hold_opt_b.target_type = CardData.TargetType.SELF
-	hold_opt_b.value = 1
-	hold_opt_b.pool_type = CardData.DicePoolType.MORALE
+	opt_b = CardEffect.new()
+	opt_b.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
+	opt_b.target_type = CardData.TargetType.SELF
+	opt_b.value = 1
+	opt_b.pool_type = CardData.DicePoolType.MORALE
 	
-	sm_hold_unit_choice.choices = [hold_opt_a, hold_opt_b]
-	card.unit_ability.append(sm_hold_unit_choice)
+	fx.choices = [opt_a, opt_b]
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -299,41 +308,47 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.SPACE_MARINES, CardData.UnitType.STRIKE_CRUISERS]
 	
 	# --- GENERAL ABILITY ---
-	# Part 1: Push frontline momentum by granting 2 immediate offense tokens
-	var sm_glory_gen_tokens := CardEffect.new()
-	sm_glory_gen_tokens.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
-	sm_glory_gen_tokens.target_type = CardData.TargetType.SELF
-	sm_glory_gen_tokens.value = 2
-	sm_glory_gen_tokens.pool_type = CardData.DicePoolType.OFFENSE
-	card.general_ability.append(sm_glory_gen_tokens)
+	# Part 1: Gain 2 offence tokens
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_COMBAT_TOKEN
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 2
+	fx.pool_type = CardData.DicePoolType.OFFENSE
+	card.general_ability.append(fx)
 	
-	# Part 2: Capitalize on tactical pressure to rally an unrouted unit when attacking
-	var sm_glory_gen_rally := CardEffect.new()
-	sm_glory_gen_rally.effect_type = CardData.EffectType.RALLY_IF_ATTACKING
-	sm_glory_gen_rally.target_type = CardData.TargetType.SELF
-	sm_glory_gen_rally.value = 1
-	card.general_ability.append(sm_glory_gen_rally)
+	# Part 2: Rally if attacking
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.CONDITIONAL
+	fx.condition_type = CardData.ConditionType.ATTACKING
+	
+	node = CardEffect.new()
+	node.effect_type = CardData.EffectType.RALLY
+	node.target_type = CardData.TargetType.SELF
+	node.value = 1
+	
+	fx.choices = [node]
+	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
-	# Enemy loses 1 Shield or Morale dice
-	var sm_glory_unit_choice := CardEffect.new()
-	sm_glory_unit_choice.effect_type = CardData.EffectType.CHOICE
-	sm_glory_unit_choice.target_type = CardData.TargetType.OPPONENT
+	# Tactical choice block
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.CHOICE
+	fx.target_type = CardData.TargetType.OPPONENT
 	
-	var glory_opt_a := CardEffect.new()
-	glory_opt_a.effect_type = CardData.EffectType.LOSE_SPECIFIC_DICE
-	glory_opt_a.target_type = CardData.TargetType.OPPONENT
-	glory_opt_a.value = 1
-	glory_opt_a.pool_type = CardData.DicePoolType.DEFENSE
+	opt_a = CardEffect.new()
+	opt_a.effect_type = CardData.EffectType.LOSE_SPECIFIC_DICE
+	opt_a.target_type = CardData.TargetType.OPPONENT
+	opt_a.value = 1
+	opt_a.pool_type = CardData.DicePoolType.DEFENSE
 	
-	var glory_opt_b := CardEffect.new()
-	glory_opt_b.effect_type = CardData.EffectType.LOSE_SPECIFIC_DICE
-	glory_opt_b.target_type = CardData.TargetType.OPPONENT
-	glory_opt_b.value = 1
-	glory_opt_b.pool_type = CardData.DicePoolType.MORALE
+	opt_b = CardEffect.new()
+	opt_b.effect_type = CardData.EffectType.LOSE_SPECIFIC_DICE
+	opt_b.target_type = CardData.TargetType.OPPONENT
+	opt_b.value = 1
+	opt_b.pool_type = CardData.DicePoolType.MORALE
 	
-	sm_glory_unit_choice.choices = [glory_opt_a, glory_opt_b]
-	card.unit_ability.append(sm_glory_unit_choice)
+	fx.choices = [opt_a, opt_b]
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -349,17 +364,34 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.SPACE_MARINES]
 	
 	# --- GENERAL ABILITY ---
-	var sm_drop_gen := CardEffect.new()
-	sm_drop_gen.effect_type = CardData.EffectType.GAIN_DICE
-	sm_drop_gen.target_type = CardData.TargetType.SELF
-	sm_drop_gen.value = 1
-	card.general_ability.append(sm_drop_gen)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_DICE
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 1
+	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
-	var sm_drop_unit := CardEffect.new()
-	sm_drop_unit.effect_type = CardData.EffectType.SPEND_MORALE_TO_SPAWN_UNIT
-	sm_drop_unit.target_type = CardData.TargetType.SELF
-	card.unit_ability.append(sm_drop_unit)
+	# Spend 1 morale dice to place Space Marine
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.CONDITIONAL
+	fx.condition_type = CardData.ConditionType.HAS_MORALE_DICE
+	
+	# Step 1: Pay the cost automatically
+	opt_a = CardEffect.new()
+	opt_a.effect_type = CardData.EffectType.LOSE_SPECIFIC_DICE
+	opt_a.target_type = CardData.TargetType.SELF
+	opt_a.value = 1
+	opt_a.pool_type = CardData.DicePoolType.MORALE
+	
+	# Step 2: Spawn the unit automatically
+	opt_b = CardEffect.new()
+	opt_b.effect_type = CardData.EffectType.SPAWN_UNIT
+	opt_b.target_type = CardData.TargetType.SELF
+	opt_b.value = 1
+	opt_b.pool_type = CardData.UnitType.SPACE_MARINES as CardData.DicePoolType
+	
+	fx.choices = [opt_a, opt_b]
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -376,12 +408,14 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.SCOUTS, CardData.UnitType.STRIKE_CRUISERS]
 	
 	# --- GENERAL ABILITY ---
-	var sm_vet_gen := CardEffect.new()
-	sm_vet_gen.effect_type = CardData.EffectType.GAIN_TOKEN_PER_MORALE_DICE
-	sm_vet_gen.target_type = CardData.TargetType.SELF
-	sm_vet_gen.value = 1								# Multiplier: 1 token per die
-	sm_vet_gen.pool_type = CardData.DicePoolType.RANDOM	# Funnels all allocations into one random token category
-	card.general_ability.append(sm_vet_gen)
+	# Gain tokens for each morale you have
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_TOKEN_PER_SPECIFIC_DICE
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 1                                 # Multiplier: 1 token per die
+	fx.pool_type = CardData.DicePoolType.MORALE   # The source dice pool to count (fx[3])
+	fx.max_spend = CardData.DicePoolType.RANDOM   # The target token category to reward (fx[6])
+	card.general_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -397,16 +431,31 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.SPACE_MARINES, CardData.UnitType.STRIKE_CRUISERS]
 	
 	# --- GENERAL ABILITY ---
-	var sm_fear_gen := CardEffect.new()
-	sm_fear_gen.effect_type = CardData.EffectType.PREVENT_ROUTING_THIS_ROUND
-	sm_fear_gen.target_type = CardData.TargetType.SELF
-	card.general_ability.append(sm_fear_gen)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.PREVENT_ROUTING_THIS_ROUND
+	fx.target_type = CardData.TargetType.SELF
+	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
-	var sm_fear_unit := CardEffect.new()
-	sm_fear_unit.effect_type = CardData.EffectType.RALLY_ALL_FRIENDLY_UNITS
-	sm_fear_unit.target_type = CardData.TargetType.SELF
-	card.unit_ability.append(sm_fear_unit)
+	# Spend 1 morale to rally all units
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.CONDITIONAL
+	fx.condition_type = CardData.ConditionType.HAS_MORALE_DICE
+	
+	# Step 1: Pay 1 Morale die cost
+	opt_a = CardEffect.new()
+	opt_a.effect_type = CardData.EffectType.LOSE_SPECIFIC_DICE
+	opt_a.target_type = CardData.TargetType.SELF
+	opt_a.value = 1
+	opt_a.pool_type = CardData.DicePoolType.MORALE
+	
+	# Step 2: Execute the global squad rally
+	opt_b = CardEffect.new()
+	opt_b.effect_type = CardData.EffectType.RALLY_ALL_FRIENDLY_UNITS
+	opt_b.target_type = CardData.TargetType.SELF
+	
+	fx.choices = [opt_a, opt_b]
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -423,20 +472,20 @@ static func get_database() -> Dictionary:
 	
 	# --- GENERAL ABILITY ---
 	# Spend 3 Morale to gain that many B or S
-	var sm_break_gen := CardEffect.new()
-	sm_break_gen.effect_type = CardData.EffectType.SPEND_MORALE_TO_GAIN_SPECIFIC_DICE
-	sm_break_gen.target_type = CardData.TargetType.SELF
-	sm_break_gen.value = 3
-	sm_break_gen.pool_type = CardData.DicePoolType.RANDOM
-	card.general_ability.append(sm_break_gen)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.SPEND_MORALE_TO_GAIN_SPECIFIC_DICE
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 3
+	fx.pool_type = CardData.DicePoolType.RANDOM
+	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
 	# The opponent discards 1 of his faceup combat cards
-	var sm_break_unit := CardEffect.new()
-	sm_break_unit.effect_type = CardData.EffectType.OPPONENT_DISCARDS_WORST_FACEUP_CARD
-	sm_break_unit.target_type = CardData.TargetType.OPPONENT
-	sm_break_unit.value = 1
-	card.unit_ability.append(sm_break_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.OPPONENT_DISCARDS_WORST_FACEUP_CARD
+	fx.target_type = CardData.TargetType.OPPONENT
+	fx.value = 1
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -452,17 +501,17 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.LAND_RAIDERS, CardData.UnitType.BATTLE_BARGES]
 	
 	# General ability: Gain 1 dice (Executed unconditionally)
-	var sm_armoured_gen := CardEffect.new()
-	sm_armoured_gen.effect_type = CardData.EffectType.GAIN_DICE
-	sm_armoured_gen.target_type = CardData.TargetType.SELF
-	sm_armoured_gen.value = 1
-	card.general_ability.append(sm_armoured_gen)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_DICE
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 1
+	card.general_ability.append(fx)
 	
 	# Unit ability: Resolve an additional assess damage step this round
-	var sm_armoured_unit := CardEffect.new()
-	sm_armoured_unit.effect_type = CardData.EffectType.ADDITIONAL_ASSESS_DAMAGE_STEP_THIS_ROUND
-	sm_armoured_unit.target_type = CardData.TargetType.SELF
-	card.unit_ability.append(sm_armoured_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.ADDITIONAL_ASSESS_DAMAGE_STEP_THIS_ROUND
+	fx.target_type = CardData.TargetType.SELF
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -477,19 +526,19 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.WARLORD_TITANS, CardData.UnitType.BATTLE_BARGES]
 	
 	# General ability: Gain 2 dice
-	var sm_emperor_gen := CardEffect.new()
-	sm_emperor_gen.effect_type = CardData.EffectType.GAIN_DICE
-	sm_emperor_gen.target_type = CardData.TargetType.SELF
-	sm_emperor_gen.value = 2
-	card.general_ability.append(sm_emperor_gen)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_DICE
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 2
+	card.general_ability.append(fx)
 	
 	# Unit ability: Spend any number of Offence dice. For each spent, gain 2 offence tokens.
-	var sm_emperor_unit := CardEffect.new()
-	sm_emperor_unit.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_SPECIFIC_TOKEN
-	sm_emperor_unit.target_type = CardData.TargetType.SELF
-	sm_emperor_unit.value = 2 # Multiplier: Tokens gained per single die consumed
-	sm_emperor_unit.pool_type = CardData.DicePoolType.OFFENSE
-	card.unit_ability.append(sm_emperor_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKEN
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 2 # Multiplier: Tokens gained per single die consumed
+	fx.pool_type = CardData.DicePoolType.OFFENSE
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -505,23 +554,23 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.WARLORD_TITANS, CardData.UnitType.BATTLE_BARGES]
 	
 	# General ability: Gain 2 dice
-	var sm_glory_gen := CardEffect.new()
-	sm_glory_gen.effect_type = CardData.EffectType.GAIN_DICE
-	sm_glory_gen.target_type = CardData.TargetType.SELF
-	sm_glory_gen.value = 2
-	card.general_ability.append(sm_glory_gen)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_DICE
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 2
+	card.general_ability.append(fx)
 	
 	# Unit ability 1: Rally all units
-	var sm_glory_unit_1 := CardEffect.new()
-	sm_glory_unit_1.effect_type = CardData.EffectType.RALLY_ALL_OF_YOUR_UNITS
-	sm_glory_unit_1.target_type = CardData.TargetType.SELF
-	card.unit_ability.append(sm_glory_unit_1)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.RALLY_ALL_FRIENDLY_UNITS
+	fx.target_type = CardData.TargetType.SELF
+	card.unit_ability.append(fx)
 	
 	# Unit ability 2: Strategic Morale Conversion
-	var sm_glory_unit_2 := CardEffect.new()
-	sm_glory_unit_2.effect_type = CardData.EffectType.CONVERT_SAFE_DICE_TO_MORALE
-	sm_glory_unit_2.target_type = CardData.TargetType.SELF
-	card.unit_ability.append(sm_glory_unit_2)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.CONVERT_SAFE_DICE_TO_MORALE
+	fx.target_type = CardData.TargetType.SELF
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -536,21 +585,21 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.CHAOS_SPACE_MARINES, CardData.UnitType.ICONOCLAST_DESTROYERS]
 	
 	# General ability: Spend 1 offence dice to gain 3 offence tokens
-	var csm_rage_gen := CardEffect.new()
-	csm_rage_gen.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_SPECIFIC_TOKEN
-	csm_rage_gen.target_type = CardData.TargetType.SELF
-	csm_rage_gen.value = 3
-	csm_rage_gen.max_spend = 1
-	csm_rage_gen.pool_type = CardData.DicePoolType.OFFENSE
-	card.general_ability.append(csm_rage_gen)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKEN
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 3
+	fx.max_spend = 1
+	fx.pool_type = CardData.DicePoolType.OFFENSE
+	card.general_ability.append(fx)
 	
 	# Unit ability: Opponent chooses and routs 1 unit unless they spend 1 Defence die
-	var csm_rage_unit := CardEffect.new()
-	csm_rage_unit.effect_type = CardData.EffectType.ROUT_OR_SPEND_DICE
-	csm_rage_unit.target_type = CardData.TargetType.OPPONENT
-	csm_rage_unit.value = 1
-	csm_rage_unit.pool_type = CardData.DicePoolType.DEFENSE
-	card.unit_ability.append(csm_rage_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.ROUT_OR_SPEND_DICE
+	fx.target_type = CardData.TargetType.OPPONENT
+	fx.value = 1
+	fx.pool_type = CardData.DicePoolType.DEFENSE
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -563,31 +612,31 @@ static func get_database() -> Dictionary:
 	card.card_tier = CardData.CardTier.STARTER
 	card.required_unit_types = [CardData.UnitType.ONSLAUGHTS]
 	
-	var ork_gen_1 := CardEffect.new()
-	ork_gen_1.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
-	ork_gen_1.target_type = CardData.TargetType.SELF
-	ork_gen_1.value = 1
-	ork_gen_1.pool_type = CardData.DicePoolType.OFFENSE
-	card.general_ability.append(ork_gen_1)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_COMBAT_TOKEN
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 1
+	fx.pool_type = CardData.DicePoolType.OFFENSE
+	card.general_ability.append(fx)
 	
-	var ork_gen_2 := CardEffect.new()
-	ork_gen_2.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
-	ork_gen_2.target_type = CardData.TargetType.SELF
-	ork_gen_2.value = 1
-	ork_gen_2.pool_type = CardData.DicePoolType.DEFENSE
-	card.general_ability.append(ork_gen_2)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_COMBAT_TOKEN
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 1
+	fx.pool_type = CardData.DicePoolType.DEFENSE
+	card.general_ability.append(fx)
 	
-	var ork_gen_3 := CardEffect.new()
-	ork_gen_3.effect_type = CardData.EffectType.REROLL
-	ork_gen_3.target_type = CardData.TargetType.OPPONENT
-	ork_gen_3.value = 1
-	card.general_ability.append(ork_gen_3)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.REROLL
+	fx.target_type = CardData.TargetType.OPPONENT
+	fx.value = 1
+	card.general_ability.append(fx)
 	
-	var ork_unit_1 := CardEffect.new()
-	ork_unit_1.effect_type = CardData.EffectType.DESTROY_FOR_DESTROY
-	ork_unit_1.target_type = CardData.TargetType.OPPONENT
-	ork_unit_1.value = 1
-	card.unit_ability.append(ork_unit_1)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.DESTROY_FOR_DESTROY
+	fx.target_type = CardData.TargetType.OPPONENT
+	fx.value = 1
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -602,17 +651,17 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.ORK_BOYZ, CardData.UnitType.ONSLAUGHTS]
 	
 	# --- GENERAL ABILITY ---
-	var ork_mek_gen := CardEffect.new()
-	ork_mek_gen.effect_type = CardData.EffectType.GAIN_DICE
-	ork_mek_gen.target_type = CardData.TargetType.SELF
-	ork_mek_gen.value = 1
-	card.general_ability.append(ork_mek_gen)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_DICE
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 1
+	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
-	var ork_mek_unit := CardEffect.new()
-	ork_mek_unit.effect_type = CardData.EffectType.DISCARD_STEAL_ICONS
-	ork_mek_unit.target_type = CardData.TargetType.OPPONENT
-	card.unit_ability.append(ork_mek_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.DISCARD_STEAL_ICONS
+	fx.target_type = CardData.TargetType.OPPONENT
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -627,19 +676,19 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.ORK_BOYZ]
 	
 	# --- GENERAL ABILITY ---
-	var ork_ard_gen := CardEffect.new()
-	ork_ard_gen.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
-	ork_ard_gen.target_type = CardData.TargetType.SELF
-	ork_ard_gen.pool_type = CardData.DicePoolType.OFFENSE
-	card.general_ability.append(ork_ard_gen)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
+	fx.target_type = CardData.TargetType.SELF
+	fx.pool_type = CardData.DicePoolType.OFFENSE
+	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
-	var ork_ard_unit := CardEffect.new()
-	ork_ard_unit.effect_type = CardData.EffectType.REROLL_SPECIFIC_DICE_FOR_EACH_UNIT
-	ork_ard_unit.target_type = CardData.TargetType.OPPONENT
-	ork_ard_unit.value = CardData.UnitType.ORK_BOYZ # Unit type enum to look up and count
-	ork_ard_unit.pool_type = CardData.DicePoolType.OFFENSE # Target pool to disrupt
-	card.unit_ability.append(ork_ard_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.REROLL_SPECIFIC_DICE_FOR_EACH_UNIT
+	fx.target_type = CardData.TargetType.OPPONENT
+	fx.value = CardData.UnitType.ORK_BOYZ
+	fx.pool_type = CardData.DicePoolType.OFFENSE
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -654,21 +703,19 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.ORK_BOYZ]
 	
 	# --- GENERAL ABILITY ---
-	# Forced detriment/trade-off: Must reroll all own defense (Shield) dice
-	var ork_shoota_gen := CardEffect.new()
-	ork_shoota_gen.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
-	ork_shoota_gen.target_type = CardData.TargetType.SELF
-	ork_shoota_gen.pool_type = CardData.DicePoolType.DEFENSE
-	card.general_ability.append(ork_shoota_gen)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
+	fx.target_type = CardData.TargetType.SELF
+	fx.pool_type = CardData.DicePoolType.DEFENSE
+	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
-	# Disruptive pressure: Forces opponent to reroll shields based on living Boyz count
-	var ork_shoota_unit := CardEffect.new()
-	ork_shoota_unit.effect_type = CardData.EffectType.REROLL_SPECIFIC_DICE_FOR_EACH_UNIT
-	ork_shoota_unit.target_type = CardData.TargetType.OPPONENT
-	ork_shoota_unit.value = CardData.UnitType.ORK_BOYZ
-	ork_shoota_unit.pool_type = CardData.DicePoolType.DEFENSE
-	card.unit_ability.append(ork_shoota_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.REROLL_SPECIFIC_DICE_FOR_EACH_UNIT
+	fx.target_type = CardData.TargetType.OPPONENT
+	fx.value = CardData.UnitType.ORK_BOYZ
+	fx.pool_type = CardData.DicePoolType.DEFENSE
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -684,26 +731,24 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.ORK_BOYZ, CardData.UnitType.ONSLAUGHTS]
 	
 	# --- GENERAL ABILITY ---
-	# Complete psychological reset: Forces BOTH players to flush and reroll their Morale pools
-	var ork_slugga_gen_self := CardEffect.new()
-	ork_slugga_gen_self.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
-	ork_slugga_gen_self.target_type = CardData.TargetType.SELF
-	ork_slugga_gen_self.pool_type = CardData.DicePoolType.MORALE
-	card.general_ability.append(ork_slugga_gen_self)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
+	fx.target_type = CardData.TargetType.SELF
+	fx.pool_type = CardData.DicePoolType.MORALE
+	card.general_ability.append(fx)
 	
-	var ork_slugga_gen_opp := CardEffect.new()
-	ork_slugga_gen_opp.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
-	ork_slugga_gen_opp.target_type = CardData.TargetType.OPPONENT
-	ork_slugga_gen_opp.pool_type = CardData.DicePoolType.MORALE
-	card.general_ability.append(ork_slugga_gen_opp)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
+	fx.target_type = CardData.TargetType.OPPONENT
+	fx.pool_type = CardData.DicePoolType.MORALE
+	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
-	# Rallies 1 of your units
-	var ork_slugga_unit := CardEffect.new()
-	ork_slugga_unit.effect_type = CardData.EffectType.RALLY
-	ork_slugga_unit.target_type = CardData.TargetType.SELF
-	ork_slugga_unit.value = 1
-	card.unit_ability.append(ork_slugga_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.RALLY
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 1
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -718,21 +763,19 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.ORK_BOYZ, CardData.UnitType.ONSLAUGHTS]
 	
 	# --- GENERAL ABILITY ---
-	# Rally 1 of your units
-	var ork_waaagh_gen := CardEffect.new()
-	ork_waaagh_gen.effect_type = CardData.EffectType.RALLY
-	ork_waaagh_gen.target_type = CardData.TargetType.SELF
-	ork_waaagh_gen.value = 1
-	card.general_ability.append(ork_waaagh_gen)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.RALLY
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 1
+	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
-	# Gain 1 offence token for each of your unrouted Ork Boyz or Onslaughts
-	var ork_waaagh_unit := CardEffect.new()
-	ork_waaagh_unit.effect_type = CardData.EffectType.GAIN_SPECIFIC_TOKEN_PER_UNIT
-	ork_waaagh_unit.target_type = CardData.TargetType.SELF
-	ork_waaagh_unit.value = 1
-	ork_waaagh_unit.pool_type = CardData.DicePoolType.OFFENSE
-	card.unit_ability.append(ork_waaagh_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_TOKEN_PER_UNIT
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 1
+	fx.pool_type = CardData.DicePoolType.OFFENSE
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -748,19 +791,18 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = []
 	
 	# --- GENERAL ABILITY 1 ---
-	var ork_sea_gen := CardEffect.new()
-	ork_sea_gen.effect_type = CardData.EffectType.SPAWN_REINFORCEMENT_TOKEN
-	ork_sea_gen.target_type = CardData.TargetType.SELF
-	card.general_ability.append(ork_sea_gen)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.SPAWN_REINFORCEMENT_TOKEN
+	fx.target_type = CardData.TargetType.SELF
+	card.general_ability.append(fx)
 	
 	# --- GENERAL ABILITY 2 ---
-	# Outnumber check: forces opponent to drop 1 Morale die or rout 1 unit
-	var ork_sea_gen_2 := CardEffect.new()
-	ork_sea_gen_2.effect_type = CardData.EffectType.IF_OUTNUMBER_ROUT_OR_SPEND_DICE_CONDITIONAL
-	ork_sea_gen_2.target_type = CardData.TargetType.OPPONENT
-	ork_sea_gen_2.value = 1
-	ork_sea_gen_2.pool_type = CardData.DicePoolType.MORALE
-	card.general_ability.append(ork_sea_gen_2)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.IF_OUTNUMBER_ROUT_OR_SPEND_DICE_CONDITIONAL
+	fx.target_type = CardData.TargetType.OPPONENT
+	fx.value = 1
+	fx.pool_type = CardData.DicePoolType.MORALE
+	card.general_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -776,21 +818,19 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.NOBZ, CardData.UnitType.ONSLAUGHTS]
 	
 	# --- GENERAL ABILITY ---
-	# Opponent must reroll all of their Shield dice
-	var ork_mega_gen := CardEffect.new()
-	ork_mega_gen.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
-	ork_mega_gen.target_type = CardData.TargetType.OPPONENT
-	ork_mega_gen.pool_type = CardData.DicePoolType.DEFENSE
-	card.general_ability.append(ork_mega_gen)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
+	fx.target_type = CardData.TargetType.OPPONENT
+	fx.pool_type = CardData.DicePoolType.DEFENSE
+	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
-	# Gain 1 shield token
-	var ork_mega_unit := CardEffect.new()
-	ork_mega_unit.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
-	ork_mega_unit.target_type = CardData.TargetType.SELF
-	ork_mega_unit.value = 1
-	ork_mega_unit.pool_type = CardData.DicePoolType.DEFENSE
-	card.unit_ability.append(ork_mega_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_COMBAT_TOKEN
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 1
+	fx.pool_type = CardData.DicePoolType.DEFENSE
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -806,21 +846,19 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.NOBZ, CardData.UnitType.ONSLAUGHTS]
 	
 	# --- GENERAL ABILITY ---
-	# Opponent must reroll all of their Offence dice
-	var ork_biker_gen := CardEffect.new()
-	ork_biker_gen.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
-	ork_biker_gen.target_type = CardData.TargetType.OPPONENT
-	ork_biker_gen.pool_type = CardData.DicePoolType.OFFENSE
-	card.general_ability.append(ork_biker_gen)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.REROLL_ALL_SPECIFIC_DICE
+	fx.target_type = CardData.TargetType.OPPONENT
+	fx.pool_type = CardData.DicePoolType.OFFENSE
+	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
-	# Gain 1 offence token
-	var ork_biker_unit := CardEffect.new()
-	ork_biker_unit.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
-	ork_biker_unit.target_type = CardData.TargetType.SELF
-	ork_biker_unit.value = 1
-	ork_biker_unit.pool_type = CardData.DicePoolType.OFFENSE
-	card.unit_ability.append(ork_biker_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_COMBAT_TOKEN
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 1
+	fx.pool_type = CardData.DicePoolType.OFFENSE
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -837,25 +875,23 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.ORK_BOYZ, CardData.UnitType.ONSLAUGHTS]
 	
 	# --- GENERAL ABILITY ---
-	# Both players reroll all dice
-	var ork_weird_self := CardEffect.new()
-	ork_weird_self.effect_type = CardData.EffectType.REROLL
-	ork_weird_self.target_type = CardData.TargetType.SELF
-	ork_weird_self.value = 8
-	card.general_ability.append(ork_weird_self)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.REROLL
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 8
+	card.general_ability.append(fx)
 	
-	var ork_weird_opp := CardEffect.new()
-	ork_weird_opp.effect_type = CardData.EffectType.REROLL
-	ork_weird_opp.target_type = CardData.TargetType.OPPONENT
-	ork_weird_opp.value = 8
-	card.general_ability.append(ork_weird_opp)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.REROLL
+	fx.target_type = CardData.TargetType.OPPONENT
+	fx.value = 8
+	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
-	# Each time your opponent gains a token, gain the same token
-	var ork_weird_unit := CardEffect.new()
-	ork_weird_unit.effect_type = CardData.EffectType.MIRROR_OPPONENT_TOKEN_GAINS
-	ork_weird_unit.target_type = CardData.TargetType.SELF
-	card.unit_ability.append(ork_weird_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.MIRROR_OPPONENT_TOKEN_GAINS
+	fx.target_type = CardData.TargetType.SELF
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -871,19 +907,17 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.BATTLE_WAGONS, CardData.UnitType.KILL_KROOZERS]
 	
 	# --- GENERAL ABILITY ---
-	# Gain 1 reinforcement token
-	var ork_party_gen := CardEffect.new()
-	ork_party_gen.effect_type = CardData.EffectType.SPAWN_REINFORCEMENT_TOKEN
-	ork_party_gen.target_type = CardData.TargetType.SELF
-	card.general_ability.append(ork_party_gen)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.SPAWN_REINFORCEMENT_TOKEN
+	fx.target_type = CardData.TargetType.SELF
+	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
-	# If you have more unrouted units than your opponent, gain 2 offence tokens and 2 defence tokens
-	var ork_party_unit := CardEffect.new()
-	ork_party_unit.effect_type = CardData.EffectType.GAIN_TOKENS_IF_MORE_UNITS_THAN_OPPONENT
-	ork_party_unit.target_type = CardData.TargetType.SELF
-	ork_party_unit.value = 2 # Specifies the amount awarded to BOTH pools
-	card.unit_ability.append(ork_party_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_TOKENS_IF_MORE_UNITS_THAN_OPPONENT
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 2
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -901,13 +935,12 @@ static func get_database() -> Dictionary:
 	# None
 	
 	# --- UNIT ABILITY ---
-	# Gain 3 offence tokens
-	var ork_rokkit_unit := CardEffect.new()
-	ork_rokkit_unit.effect_type = CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN
-	ork_rokkit_unit.target_type = CardData.TargetType.SELF
-	ork_rokkit_unit.value = 3
-	ork_rokkit_unit.pool_type = CardData.DicePoolType.OFFENSE
-	card.unit_ability.append(ork_rokkit_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_COMBAT_TOKEN
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 3
+	fx.pool_type = CardData.DicePoolType.OFFENSE
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -926,12 +959,11 @@ static func get_database() -> Dictionary:
 	# None
 	
 	# --- UNIT ABILITY ---
-	# Discard 1 of your opponents faceup combat cards (Highest icon counts targeted first)
-	var ork_snapper_unit := CardEffect.new()
-	ork_snapper_unit.effect_type = CardData.EffectType.OPPONENT_DISCARDS_BEST_FACEUP_CARD
-	ork_snapper_unit.target_type = CardData.TargetType.OPPONENT
-	ork_snapper_unit.value = 1
-	card.unit_ability.append(ork_snapper_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.OPPONENT_DISCARDS_BEST_FACEUP_CARD
+	fx.target_type = CardData.TargetType.OPPONENT
+	fx.value = 1
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -950,11 +982,10 @@ static func get_database() -> Dictionary:
 	# None
 	
 	# --- UNIT ABILITY ---
-	# Target highest tier unrouted unit (or routed fallback). Destroy it unless tax is paid in dice.
-	var ork_smasher_unit := CardEffect.new()
-	ork_smasher_unit.effect_type = CardData.EffectType.DESTROY_OR_SPEND_DICE_BASED_ON_TIER
-	ork_smasher_unit.target_type = CardData.TargetType.OPPONENT
-	card.unit_ability.append(ork_smasher_unit)
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.DESTROY_OR_SPEND_DICE_BASED_ON_TIER
+	fx.target_type = CardData.TargetType.OPPONENT
+	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
 	

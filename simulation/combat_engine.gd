@@ -488,6 +488,18 @@ static func _log_current_token_pools(on_event: Callable, token_pools: Array, pha
 
 #region Helper Functions
 
+static func _has_specific_dice(side_data: Dictionary, pool_type: int, amount: int) -> bool:
+	if side_data.is_empty():
+		return false
+		
+	var target_stat := Stat.OFFENCE
+	match pool_type:
+		2: # CardData.DicePoolType.DEFENSE
+			target_stat = Stat.DEFENCE
+		3: # CardData.DicePoolType.MORALE
+			target_stat = Stat.MORALE
+			
+	return side_data.get(target_stat, 0) >= amount
 
 static func _is_attacker(side: int) -> bool:
 	return side == Side.ATTACKER
@@ -997,15 +1009,15 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.REROLL_ALL_SPECIFIC_DICE: _execute_reroll_all_specific_dice,
 	CardData.EffectType.REROLL_SPECIFIC_DICE_FOR_EACH_UNIT: _execute_reroll_specific_dice_for_each_unit,
 	CardData.EffectType.SPEND_MORALE_TO_GAIN_SPECIFIC_DICE: _execute_spend_morale_to_gain_specific_dice,
-	CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_SPECIFIC_TOKEN: _execute_spend_specific_dice_to_gain_specific_token,
+	CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKEN: _execute_spend_specific_dice_to_gain_token,
 	
-	CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN: _execute_gain_specific_combat_token,
-	CardData.EffectType.GAIN_TOKEN_PER_MORALE_DICE: _execute_gain_token_per_morale_dice,
-	CardData.EffectType.GAIN_SPECIFIC_TOKEN_PER_UNIT: _execute_gain_specific_token_per_unit,
+	CardData.EffectType.GAIN_COMBAT_TOKEN: _execute_gain_combat_token,
+	CardData.EffectType.GAIN_TOKEN_PER_SPECIFIC_DICE: _execute_gain_token_per_specific_dice,
+	CardData.EffectType.GAIN_TOKEN_PER_UNIT: _execute_gain_token_per_unit,
 	CardData.EffectType.LOSE_TOKENS_OR_DICE: _execute_lose_tokens_or_dice,
 	
 	CardData.EffectType.RALLY: _execute_rally, 
-	CardData.EffectType.RALLY_ALL_OF_YOUR_UNITS: _execute_rally_all_of_your_units,
+	CardData.EffectType.RALLY_ALL_FRIENDLY_UNITS: _execute_rally_all_friendly_units,
 	
 	CardData.EffectType.ROUT_OR_SPEND_DICE: _execute_rout_or_spend_dice_unconditional,
 	
@@ -1013,16 +1025,13 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.OPPONENT_DISCARDS_WORST_FACEUP_CARD: _execute_opponent_discards_worst_faceup_card,
 	CardData.EffectType.OPPONENT_DISCARDS_BEST_FACEUP_CARD: _execute_opponent_discards_best_faceup_card,
 	
+	CardData.EffectType.SPAWN_UNIT: _execute_spawn_unit,
 	CardData.EffectType.SPAWN_REINFORCEMENT_TOKEN: _execute_spawn_reinforcement_token,
 	
 	CardData.EffectType.GAIN_TOKENS_IF_MORE_UNITS_THAN_OPPONENT: _execute_gain_tokens_if_more_units_than_opponent,
 	
 	# SM
-	CardData.EffectType.RALLY_IF_DEFENDING: _execute_rally_if_defending, # Hold the Line
-	CardData.EffectType.RALLY_IF_ATTACKING: _execute_rally_if_attacking, # Glory and Death
-	CardData.EffectType.SPEND_MORALE_TO_SPAWN_UNIT: _execute_spend_morale_to_spawn_unit, # Drop Pod Assault
 	CardData.EffectType.PREVENT_ROUTING_THIS_ROUND: _execute_prevent_routing_this_round, # Show No Fear
-	CardData.EffectType.RALLY_ALL_FRIENDLY_UNITS: _execute_rally_all_friendly_units, # Show No Fear
 	CardData.EffectType.ADDITIONAL_ASSESS_DAMAGE_STEP_THIS_ROUND: _execute_additional_assess_damage_step_this_round, # Armoured Advance
 	CardData.EffectType.CONVERT_SAFE_DICE_TO_MORALE: _execute_convert_safe_dice_to_morale,
 	
@@ -1169,6 +1178,8 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 			condition_passed = is_attacker
 		CardData.ConditionType.DEFENDING:
 			condition_passed = not is_attacker
+		CardData.ConditionType.HAS_MORALE_DICE:
+			condition_passed = _has_specific_dice(side_data, 3, 1)
 		_:
 			condition_passed = true
 			
@@ -1682,7 +1693,7 @@ static func _execute_spend_morale_to_gain_specific_dice(fx: Array, _token_pools:
 
 #region Generic Token functions
 
-static func _execute_gain_specific_combat_token(fx: Array, token_pools: Array, _side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+static func _execute_gain_combat_token(fx: Array, token_pools: Array, _side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	if fx[2] is Array:
 		return
 		
@@ -1701,20 +1712,32 @@ static func _execute_gain_specific_combat_token(fx: Array, token_pools: Array, _
 	if on_event.is_valid():
 		on_event.call("tokens_updated", [role, token_pools[base_idx], token_pools[base_idx + 1]])
 
-static func _execute_gain_token_per_morale_dice(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
-	# 1. Get Morale dice amount
-	var current_morale_dice: int = side_data[Stat.MORALE]
-	
-	if current_morale_dice <= 0:
-		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 🪖 Scaling failed: 0 Morale dice in pool."])
-		return
-
-	# 2. Extract configuration arguments from the flat payload array
+static func _execute_gain_token_per_specific_dice(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	# 1. Extract configurations from the flat payload array
 	var multiplier: int = int(fx[2])
-	var target_token_type: int = int(fx[3])
+	var source_pool_type: int = int(fx[3])
+	var target_token_type: int = int(fx[6]) if fx.size() > 6 else 0 # Defaults to RANDOM (0) if omitted
 	
-	var total_allocations := current_morale_dice * multiplier
+	# 2. Map source pool type index to internal Stat keys
+	var source_stat := Stat.OFFENCE
+	var source_label := "Offence ⚔️"
+	
+	match source_pool_type:
+		2: # CardData.DicePoolType.DEFENSE
+			source_stat = Stat.DEFENCE
+			source_label = "Defence 🛡️"
+		3: # CardData.DicePoolType.MORALE
+			source_stat = Stat.MORALE
+			source_label = "Morale 🎖️"
+
+	# 3. Fetch specific source dice count safely
+	var current_dice: int = side_data.get(source_stat, 0)
+	if current_dice <= 0:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 🪖 Scaling failed: 0 %s dice in pool." % source_label])
+		return
+		
+	var total_allocations := current_dice * multiplier
 	if total_allocations <= 0:
 		return
 
@@ -1722,25 +1745,25 @@ static func _execute_gain_token_per_morale_dice(fx: Array, token_pools: Array, s
 	var off_tokens_harvested := 0
 	var def_tokens_harvested := 0
 
-	# 3. Process allocations dynamically based on the flat pool type assignment
+	# 4. Process token target routing dynamically
 	match target_token_type:
 		0: # CardData.DicePoolType.RANDOM -> Choose ONE token type globally for all allocations
 			if randi() % 2 == 0:
 				off_tokens_harvested = total_allocations
 			else:
 				def_tokens_harvested = total_allocations
-		1: # CardData.DicePoolType.OFFENSE -> Direct payload assignment
+		1: # CardData.DicePoolType.OFFENSE
 			off_tokens_harvested = total_allocations
-		2: # CardData.DicePoolType.DEFENSE -> Direct payload assignment
+		2: # CardData.DicePoolType.DEFENSE
 			def_tokens_harvested = total_allocations
 
-	# 4. Commit calculations directly into the scratchpad array structure in-place
+	# 5. Commit calculations directly into the token array structure
 	token_pools[base_idx] += off_tokens_harvested
 	token_pools[base_idx + 1] += def_tokens_harvested
 
-	# 5. Route state notifications through your decoupled logging lines
+	# 6. Route state notifications through your decoupled logging lines
 	if on_event.is_valid() and (off_tokens_harvested > 0 or def_tokens_harvested > 0):
-		on_event.call("ability_triggered", [card_id, "↳ 🛡️ Scanned %d Morale dice (x%d payout). Gained: +%d ⚔️ | +%d 🛡️ tokens." % [current_morale_dice, multiplier, off_tokens_harvested, def_tokens_harvested]])
+		on_event.call("ability_triggered", [card_id, "↳ 💠 Scanned %d %s dice (x%d payout). Gained: +%d ⚔️ | +%d 🛡️ tokens." % [current_dice, source_label, multiplier, off_tokens_harvested, def_tokens_harvested]])
 		on_event.call("tokens_updated", [role, token_pools[base_idx], token_pools[base_idx + 1]])
 
 static func _execute_lose_tokens_or_dice(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
@@ -1802,7 +1825,7 @@ static func _execute_lose_tokens_or_dice(fx: Array, token_pools: Array, side_dat
 
 ## Consumes all available dice of a specified type to generate tokens.
 ## Unit Ability: Consumes all available dice of a specified stat type to generate tokens.
-static func _execute_spend_specific_dice_to_gain_specific_token(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+static func _execute_spend_specific_dice_to_gain_token(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var token_multiplier: int = fx[2]
 	var pool_type: int = fx[3]
 	# Safely read max_spend from index 6 to avoid colliding with unit type arrays at index 4 and 5
@@ -1845,7 +1868,7 @@ static func _execute_spend_specific_dice_to_gain_specific_token(fx: Array, token
 		on_event.call("ability_triggered", [card_id, "↳ ⚡ Converted %d %s dice into +%d %s tokens!" % [spend_amount, stat_label, tokens_gained, stat_label]])
 
 
-static func _execute_gain_specific_token_per_unit(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+static func _execute_gain_token_per_unit(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var multiplier: int = int(fx[2])
 	var pool_type: int = int(fx[3])
 	var allowed_unit_types: Array = fx[5]
@@ -1921,7 +1944,7 @@ static func _execute_rally(fx: Array, _token_pools: Array, side_data: Dictionary
 			break
 
 
-static func _execute_rally_all_of_your_units(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+static func _execute_rally_all_friendly_units(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	# 1. Early escape bottleneck if the entire army frontline is already steady
 	if not _has_any_routed_units(side_data):
 		if on_event.is_valid():
@@ -2157,6 +2180,47 @@ static func _execute_opponent_discards_best_faceup_card(_fx: Array, _token_pools
 
 #region Generic Spawn unit functions
 
+static func _execute_spawn_unit(fx: Array, _token_pools: Array, side_data: Dictionary, _role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	if parent_state.is_empty():
+		return
+		
+	var unit_type: int = fx[3]
+	var spawn_count: int = fx[2] if fx[2] is int else 1
+	var faction_id: int = side_data.get("faction_id", 0)
+	
+	# 1. Grab the faction's unit list from your existing database
+	var faction_data: Dictionary = FactionRegistry.get_database().get(faction_id, {})
+	var units_list: Array = faction_data.get("units", [])
+	
+	# 2. Scan for the specific unit blueprint match
+	var blueprint: Dictionary = {}
+	for unit in units_list:
+		if unit.get("unit_type") == unit_type:
+			blueprint = unit
+			break
+			
+	if blueprint.is_empty():
+		return
+
+	# 3. Deploy the squads using the exact database values
+	if spawn_count > 0:
+		for i in range(spawn_count):
+			_spawn_unit(
+				side_data,
+				blueprint.get("unit_name", ""),
+				unit_type,
+				blueprint.get("tier", 0),
+				blueprint.get("combat_value", 1),
+				blueprint.get("health_value", 2),
+				blueprint.get("morale_value", 2),
+				blueprint.get("is_ship", false)
+			)
+			
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 🟢 Reinforcements Deployed: Added %d unrouted %s squad(s)." % [spawn_count, blueprint.get("unit_name", "")]])
+			log_current_army_statuses(parent_state, on_event, "damage_step")
+
 static func _execute_spawn_reinforcement_token(_fx: Array, _token_pools: Array, side_data: Dictionary, _role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var parent_state: Dictionary = side_data.get("parent_state", {})
 	if parent_state.is_empty():
@@ -2332,61 +2396,6 @@ static func _execute_rally_if_defending(fx: Array, token_pools: Array, side_data
 	_execute_rally(fx, token_pools, side_data, role, card_id, units_valid, on_event)
 
 
-static func _execute_rally_if_attacking(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
-	# Conditional check: If this side isn't the designated attacker, the effect skips
-	if role != "Attacker":
-		return
-		
-	# Conditions met -> Forward parameters straight into your core rally pipeline
-	_execute_rally(fx, token_pools, side_data, role, card_id, units_valid, on_event)
-
-
-static func _execute_spend_morale_to_spawn_unit(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
-	# 1. Pipeline the resource check through your flat modifier check hook
-	if not _spend_die_to_continue(side_data, Stat.MORALE, 1, role, on_event):
-		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 🪂 Spawning failed: Insufficient Morale dice pool."])
-		return
-
-	# 2. Hardcode the spawn pools strictly by card ID to maintain pure flat execution speed
-	var unit_name := ""
-	var unit_type: int = 0
-	var tier := 0
-	var combat_val := 0
-	var health_val := 0
-	var morale_val := 0
-
-	match card_id:
-		1008: # SM_DROP_POD_ASSAULT
-			var spawn_roll := randi() % 2
-			if spawn_roll == 0:
-				unit_name = "Scouts"
-				unit_type = CardData.UnitType.SCOUTS
-				tier = 0
-				combat_val = 1
-				health_val = 2
-				morale_val = 2
-			else:
-				unit_name = "Space Marines"
-				unit_type = CardData.UnitType.SPACE_MARINES
-				tier = 1
-				combat_val = 2
-				health_val = 3
-				morale_val = 3
-
-	# 3. Inject directly using your high-speed primitive ground unit helper
-	if not unit_name.is_empty():
-		_spawn_unit(side_data, unit_name, unit_type, tier, combat_val, health_val, morale_val, false)
-
-	# 4. Fire localized telemetry updates
-	if on_event.is_valid():
-		on_event.call("ability_triggered", [card_id, "↳ 🪂 Spent 1 Morale die! Deployed a fresh, unrouted %s squad." % unit_name])
-		
-		var parent_state: Dictionary = side_data.get("parent_state", {})
-		if not parent_state.is_empty():
-			log_current_army_statuses(parent_state, on_event, "damage_step")
-
-
 static func _execute_prevent_routing_this_round(fx: Array, _token_pools: Array, side_data: Dictionary, _role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var target_type: int = int(fx[1])
 	
@@ -2406,37 +2415,6 @@ static func _execute_prevent_routing_this_round(fx: Array, _token_pools: Array, 
 		side_data["cannot_route"] = true
 		if on_event.is_valid():
 			on_event.call("ability_triggered", [card_id, "↳ 🛡️ Status Activated: Friendly units cannot be routed this round."])
-
-
-static func _execute_rally_all_friendly_units(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
-	# 1. Directly invoke your existing high-speed helper
-	if not _has_any_routed_units(side_data):
-		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 🎺 Rally skipped: All squads are already steady."])
-		return
-
-	# 2. Pipeline the resource check through your flat modifier check hook
-	if not _spend_die_to_continue(side_data, Stat.MORALE, 1, role, on_event):
-		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 🎺 Rally failed: Insufficient Morale dice pool."])
-		return
-
-	# 3. Iterate through all squads and flip active routed states back to false
-	var squads: Array = side_data["squads"]
-	var total_figures_rallied := 0
-	for squad in squads:
-		for i in range(squad["figures_routed"].size()):
-			if squad["figures_routed"][i] and squad["alive_figures"][i] > 0:
-				squad["figures_routed"][i] = false
-				total_figures_rallied += 1
-
-	# 4. Fire telemetry updates to sync match visual layouts
-	if on_event.is_valid():
-		on_event.call("ability_triggered", [card_id, "↳ 🎺 Spent 1 Morale die! Rallied %d figures across all friendly squads." % total_figures_rallied])
-		
-		var parent_state: Dictionary = side_data.get("parent_state", {})
-		if not parent_state.is_empty():
-			log_current_army_statuses(parent_state, on_event, "damage_step")
 
 
 ## Unit Ability: Schedules an additional complete assess damage step to resolve this round.
