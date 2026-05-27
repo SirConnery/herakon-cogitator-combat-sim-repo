@@ -24,18 +24,23 @@ grow_horizontal = 2
 grow_vertical = 2
 current_tab = 0
 
-[node name="SingleCombatView" parent="MainTabs" unique_id=1865234252 instance=ExtResource("2_ks8t7")]
+[node name="Home" type="Control" parent="MainTabs" unique_id=174336675]
 layout_mode = 2
 metadata/_tab_index = 0
 
-[node name="MassCombatView" parent="MainTabs" unique_id=1641760004 instance=ExtResource("3_wl5ax")]
+[node name="SingleCombatView" parent="MainTabs" unique_id=1865234252 instance=ExtResource("2_ks8t7")]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
-[node name="DiagnosticsView" parent="MainTabs" unique_id=1986078317 instance=ExtResource("4_tf0e0")]
+[node name="MassCombatView" parent="MainTabs" unique_id=1641760004 instance=ExtResource("3_wl5ax")]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 2
+
+[node name="DiagnosticsView" parent="MainTabs" unique_id=1986078317 instance=ExtResource("4_tf0e0")]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 3
 
 [node name="SimController" parent="." unique_id=390564033 instance=ExtResource("4_vkava")]

@@ -4,8 +4,6 @@ extends RefCounted
 enum FactionID {
 	SPACE_MARINES,
 	ORKS,
-	CSM,
-	ELDAR
 }
 
 static func get_database() -> Dictionary:

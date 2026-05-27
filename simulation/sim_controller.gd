@@ -1,49 +1,66 @@
 extends Node
 class_name SimController
 
-@export var is_single_combat_mode: bool = true
-@export var iterations_per_matchup: int = 1000
 
-@export var factions_to_sim: Array[FactionRegistry.FactionID] = [
+#region Mass Combat Sim variables
+# ─── RUN MODE CONFIGURATION ───
+var iterations_per_matchup: int = 1000
+
+# ─── MATRIX BATCH CONFIGURATION ───
+var factions_to_sim: Array[FactionRegistry.FactionID] = [
 	FactionRegistry.FactionID.ORKS,
 	FactionRegistry.FactionID.SPACE_MARINES
 ]
 
-# Kept for running and isolating specific matchups inside the single-logged battle sandbox mode
-@export var attacker_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.ORKS
-@export var defender_faction: FactionRegistry.FactionID = FactionRegistry.FactionID.SPACE_MARINES
+#endregion
 
-@onready var card_db: Dictionary = CardRegistry.get_database()
+#region Single Combat variables
+# ─── SINGLE SANBOX CONFIGURATION ───
+var random_factions_in_single_combat: bool = false
+var attacker_faction_in_single_combat: FactionRegistry.FactionID = FactionRegistry.FactionID.ORKS
+var defender_faction_in_single_combat: FactionRegistry.FactionID = FactionRegistry.FactionID.SPACE_MARINES
 
-var max_stage_index: int = GameStageGenerator.Stage.keys().size() - 1
-var debug_stage: GameStageGenerator.Stage = GameStageGenerator.Stage.LATE
 
+# ─── ENVIRONMENT & FORMATS ───
 var is_random_stage := true
+var debug_stage: GameStageGenerator.Stage = GameStageGenerator.Stage.LATE
+var random_combat_type: bool = false
 var is_ground_combat := true
 
+# ─── CUSTOM DECK OVERRIDES ───
+var use_custom_combat_decks: bool = false
+var custom_attacker_combat_deck: Array[int] = []
+var custom_defender_combat_deck: Array[int] = []
+
+# ─── ENGINE CORE REGISTRIES ───
+@onready var card_db: Dictionary = CardRegistry.get_database()
+var max_stage_index: int = GameStageGenerator.Stage.keys().size() - 1
 var current_stage: GameStageGenerator.Stage
 
-#region Variables for UI
+#endregion
 
+#region Variables for UI
 var attacker_starting_hand := []
 var defender_starting_hand := []
 var attacker_faction_name := ""
 var defender_faction_name := ""
-
 #endregion
+
+#region Ready function
 
 func _ready() -> void:
 	pass
 
+#endregion
+
+#region Mass Combat Simulation
 
 ## High-speed round-robin matrix simulation. 
-## Pairs every faction against every other opponent as both attacker and defender.
-func run_mass_battles() -> void:
+func run_mass_combat_simulation() -> void:
 	var raw_cards: Dictionary = CardRegistry.get_database()
 	var raw_factions: Dictionary = FactionRegistry.get_database()
 	var flat_card_db: Dictionary = _flatten_card_database(raw_cards)
 
-	# Instantiate the decoupled high-speed file data exporter system
 	var exporter := SimDataExporter.new()
 	exporter.clear_previous_data()
 
@@ -53,12 +70,8 @@ func run_mass_battles() -> void:
 	print("Pool Size: %d factions  |  Matches per pairing: %d" % [factions_to_sim.size(), iterations_per_matchup])
 	print("Streaming raw records to disk stream...")
 
-	# OUTER MATRIX PASSTHROUGH: Pick the active Attacking Identity
 	for atk_id in factions_to_sim:
-		# INNER MATRIX PASSTHROUGH: Pick the active Defending Identity
 		for def_id in factions_to_sim:
-			
-			# Skip mirror matches (e.g., Orks vs Orks)
 			if atk_id == def_id:
 				continue
 				
@@ -69,7 +82,6 @@ func run_mass_battles() -> void:
 
 			print(" -> Simulating Pairing Matrix Block: [Atk] %s vs [Def] %s..." % [atk_name_string, def_name_string])
 
-			# EXECUTION HOT LOOP: Process the exact batch scale specified for this matchup pair
 			for i in range(iterations_per_matchup):
 				current_stage = get_current_stage()
 				
@@ -79,7 +91,6 @@ func run_mass_battles() -> void:
 				var attacker_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(atk_id, current_stage, att_count, is_ground_combat, raw_factions)
 				var defender_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(def_id, current_stage, def_count, is_ground_combat, raw_factions)
 				
-				# Freeze-cache historical copies of the true initial hands before engine mutations occur
 				var atk_initial_hand: Array = attacker_blueprint["cards_in_hand"].duplicate()
 				var def_initial_hand: Array = defender_blueprint["cards_in_hand"].duplicate()
 				
@@ -93,10 +104,8 @@ func run_mass_battles() -> void:
 				match_state[SimCombatEngine.Side.ATTACKER]["name"] = atk_name_string
 				match_state[SimCombatEngine.Side.DEFENDER]["name"] = def_name_string
 				
-				# Execute simulation with completely suppressed telemetry callback overhead
 				var attacker_won: bool = SimCombatEngine.run_full_match(match_state, flat_card_db, Callable())
 				
-				# Write binary row containing distinct attacker, defender, and status results
 				exporter.log_match(
 					global_match_index, 
 					int(current_stage), 
@@ -109,35 +118,45 @@ func run_mass_battles() -> void:
 				
 				global_match_index += 1
 					
-	# Flush out remaining trailing buffer segments from memory onto disk payload
 	exporter.flush_to_disk()
 	print("============ MATRIX SIMULATION COMPLETE ============")
 	print("Total Global Matches Run across All Matrices: %d" % global_match_index)
-	print("Raw binary matrix dataset committed to user filespace.")
 
+#endregion
 
-func run_single_logged_battle() -> void:
-	current_stage = get_current_stage()
+#region Single Combat simulation
+
+## Runs a single, highly configurable battle sandbox with full step-by-step logging telemetry
+func run_single_logged_combat() -> void:
 	print("🚨 run_single_logged_battle() is executing!")
 	
-	# Guard clause: Ensure there are at least two factions to pick from
-	if factions_to_sim.size() < 2:
-		push_error("Single Combat Error: factions_to_sim must contain at least 2 unique factions.")
-		return
+	# 1. RESOLVE CONFIGURABLE ENVIRONMENT RULES
+	current_stage = get_current_stage()
+	
+	var active_ground_combat := is_ground_combat
+	if random_combat_type:
+		active_ground_combat = (randi() % 2 == 0)
 		
-	# 1. RANDOM MATCHUP GENERATION
-	var available_factions = factions_to_sim.duplicate()
+	# 2. RESOLVE CONFIGURABLE MATCHUP IDENTITIES
+	var current_atk_id: FactionRegistry.FactionID
+	var current_def_id: FactionRegistry.FactionID
 	
-	# Pick a random attacker, then remove them to prevent a mirror match
-	var atk_index := randi_range(0, available_factions.size() - 1)
-	var current_atk_id: FactionRegistry.FactionID = available_factions[atk_index]
-	available_factions.remove_at(atk_index)
-	
-	# Pick a random defender from the remaining options
-	var def_index := randi_range(0, available_factions.size() - 1)
-	var current_def_id: FactionRegistry.FactionID = available_factions[def_index]
-	
-	# 2. DATA EXTRACTION
+	if random_factions_in_single_combat:
+		if factions_to_sim.size() < 2:
+			push_error("Single Combat Error: factions_to_sim must contain at least 2 unique factions for random generation.")
+			return
+		var available_factions = factions_to_sim.duplicate()
+		var atk_index := randi_range(0, available_factions.size() - 1)
+		current_atk_id = available_factions[atk_index]
+		available_factions.remove_at(atk_index)
+		
+		var def_index := randi_range(0, available_factions.size() - 1)
+		current_def_id = available_factions[def_index]
+	else:
+		current_atk_id = attacker_faction_in_single_combat
+		current_def_id = defender_faction_in_single_combat
+		
+	# 3. EXTRACT DATABASES & BLUEPRINTS
 	var raw_cards: Dictionary = CardRegistry.get_database()
 	var raw_factions: Dictionary = FactionRegistry.get_database()
 	var flat_card_db: Dictionary = _flatten_card_database(raw_cards)
@@ -145,38 +164,44 @@ func run_single_logged_battle() -> void:
 	var att_count := randi_range(1, 5)
 	var def_count := randi_range(1, 5)
 	
-	# Generate blueprints using our dynamically rolled IDs
-	var attacker_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(current_atk_id, current_stage, att_count, is_ground_combat, raw_factions)
-	var defender_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(current_def_id, current_stage, def_count, is_ground_combat, raw_factions)
+	var attacker_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(current_atk_id, current_stage, att_count, active_ground_combat, raw_factions)
+	var defender_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(current_def_id, current_stage, def_count, active_ground_combat, raw_factions)
 	
+	# 4. OVERRIDE CUSTOM TESTING DECKS IF SPECIFIED
+	if use_custom_combat_decks:
+		if not custom_attacker_combat_deck.is_empty():
+			attacker_blueprint["combat_deck"] = custom_attacker_combat_deck.duplicate()
+		if not custom_defender_combat_deck.is_empty():
+			defender_blueprint["combat_deck"] = custom_defender_combat_deck.duplicate()
+			
+	# Save historical hand states safely for UI visualization references
 	attacker_starting_hand = attacker_blueprint["cards_in_hand"].duplicate()
 	defender_starting_hand = defender_blueprint["cards_in_hand"].duplicate()
 	
 	var attacker_power: int = _calculate_squads_weight(attacker_blueprint["selected_units"])
 	var defender_power: int = _calculate_squads_weight(defender_blueprint["selected_units"])
 	
+	# 5. INSTANTIATE SIMULATION STATE FRAME
 	var match_state: Dictionary = _instantiate_match_state(attacker_blueprint, defender_blueprint)
 	
 	match_state["card_db"] = flat_card_db
-	match_state["is_ground_combat"] = is_ground_combat
+	match_state["is_ground_combat"] = active_ground_combat
 	
 	match_state[SimCombatEngine.Side.ATTACKER]["faction_id"] = current_atk_id
 	match_state[SimCombatEngine.Side.DEFENDER]["faction_id"] = current_def_id
 	
 	var atk_profile = raw_factions.get(current_atk_id)
 	var def_profile = raw_factions.get(current_def_id)
-
 	var atk_name_string: String = atk_profile.get("name", FactionRegistry.FactionID.keys()[current_atk_id])
 	var def_name_string: String = def_profile.get("name", FactionRegistry.FactionID.keys()[current_def_id])
 
-	# Assign to the UI variables so the headers update correctly
 	attacker_faction_name = atk_name_string
 	defender_faction_name = def_name_string
 
 	match_state[SimCombatEngine.Side.ATTACKER]["name"] = atk_name_string
 	match_state[SimCombatEngine.Side.DEFENDER]["name"] = def_name_string
 	
-	# 3. TELEMETRY LOGGING & EXECUTION
+	# 6. INITIALIZE TELEMETRY LOGGER & RUN MATCH
 	var logging_context := {
 		"game_stage_string": GameStageGenerator.Stage.keys()[current_stage].capitalize(),
 		"matchup_scale": _get_weighted_matchup_string(attacker_power, defender_power),
@@ -193,30 +218,11 @@ func run_single_logged_battle() -> void:
 	])
 	
 	var attacker_won: bool = SimCombatEngine.run_full_match(match_state, flat_card_db, G_Logger.engine_callback)
-	
 	G_Logger.finalize_battle_logger(attacker_won)
 
+#endregion
 
-func _calculate_squads_weight(selected_units: Array) -> int:
-	var total_weight := 0
-	for unit in selected_units:
-		total_weight += unit["combat_value"] + unit["health_value"] + unit["morale_value"]
-	return total_weight
-
-
-func _get_weighted_matchup_string(atk_weight: int, def_weight: int) -> String:
-	var max_weight := float(max(atk_weight, def_weight))
-	if max_weight == 0: return "Equal Matchup"
-	
-	var difference_pct = abs(atk_weight - def_weight) / max_weight
-	
-	if difference_pct <= 0.25:
-		return "Equal Matchup (Power: %d vs %d)" % [atk_weight, def_weight]
-	elif atk_weight > def_weight:
-		return "AttLarger (Power: %d vs %d)" % [atk_weight, def_weight]
-	else:
-		return "AttSmaller (Power: %d vs %d)" % [atk_weight, def_weight]
-
+#region Database Flattening
 
 # --- Data Flattening Infrastructure Utilities ---
 
@@ -257,7 +263,6 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_t
 			for sub_fx in raw_choices:
 				if sub_fx != null:
 					var flat_sub = _flatten_single_effect(sub_fx, is_general_ability, req_unit_types)
-					# FIXED TYPO HERE: changed flatten_choices to flattened_choices
 					flattened_choices.append(flat_sub)
 					
 		value_slot = flattened_choices
@@ -278,6 +283,10 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_t
 		req_unit_types          # Index 5
 	]
 
+#endregion
+
+
+#region Match State Helpers
 
 func _instantiate_match_state(atk_blueprint: Dictionary, def_blueprint: Dictionary) -> Dictionary:
 	var atk_squads = _build_match_units(atk_blueprint["selected_units"])
@@ -326,9 +335,33 @@ func _build_match_units(selected_units: Array) -> Array[Dictionary]:
 		})
 	return runtime_squads
 
+#endregion
 
-#region Helper functions
+#region Matchup Helpers
 
+func _calculate_squads_weight(selected_units: Array) -> int:
+	var total_weight := 0
+	for unit in selected_units:
+		total_weight += unit["combat_value"] + unit["health_value"] + unit["morale_value"]
+	return total_weight
+
+
+func _get_weighted_matchup_string(atk_weight: int, def_weight: int) -> String:
+	var max_weight := float(max(atk_weight, def_weight))
+	if max_weight == 0: return "Equal Matchup"
+	
+	var difference_pct = abs(atk_weight - def_weight) / max_weight
+	
+	if difference_pct <= 0.25:
+		return "Equal Matchup (Power: %d vs %d)" % [atk_weight, def_weight]
+	elif atk_weight > def_weight:
+		return "AttLarger (Power: %d vs %d)" % [atk_weight, def_weight]
+	else:
+		return "AttSmaller (Power: %d vs %d)" % [atk_weight, def_weight]
+
+#endregion
+
+#region Basic Helper functions
 func _format_squad_composition_string(squads: Array) -> String:
 	if squads.is_empty():
 		return "None"
@@ -350,7 +383,6 @@ func _format_squad_composition_string(squads: Array) -> String:
 
 func _print_cards_drawn(atk_drawn_ids: Array, def_drawn_ids: Array) -> void:
 	print("\n=== PHASE 1.5: DRAWING COMBAT HANDS ===")
-	
 	print("Attacker Draws:")
 	for card_id in atk_drawn_ids:
 		var card: CardData = card_db.get(card_id)
@@ -364,7 +396,6 @@ func _print_cards_drawn(atk_drawn_ids: Array, def_drawn_ids: Array) -> void:
 		var card: CardData = card_db.get(card_id)
 		var card_name: String = card.card_name if card != null else "Card #" + str(card_id)
 		print("  - " + card_name)
-		
 	print("=======================================")
 
 
@@ -374,13 +405,11 @@ func get_card_metadata(card_id: int, property_name: String) -> Variant:
 		return null
 		
 	var card: CardData = card_db[card_id]
-	
 	if not property_name in card:
 		push_error("Metadata Error: Property '%s' does not exist on CardData." % property_name)
 		return null
 		
 	var value: Variant = card.get(property_name)
-	
 	if property_name == "required_unit_types" and value is int:
 		return CardData.UnitType.keys()[value].capitalize()
 		

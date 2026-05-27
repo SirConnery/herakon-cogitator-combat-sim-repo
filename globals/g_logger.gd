@@ -79,8 +79,8 @@ func engine_callback(event_type: String, data: Array) -> void:
 				var controller = context.get("controller_ref")
 				if controller != null:
 					var raw_factions = FactionRegistry.get_database()
-					var atk_profile = raw_factions.get(controller.attacker_faction)
-					active_attacker_name = atk_profile.get("name", FactionRegistry.FactionID.keys()[controller.attacker_faction])
+					var atk_profile = raw_factions.get(controller.attacker_faction_in_single_combat)
+					active_attacker_name = atk_profile.get("name", FactionRegistry.FactionID.keys()[controller.attacker_faction_in_single_combat])
 				
 				var is_attacker :bool = (data[0] == active_attacker_name)
 				

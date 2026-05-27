@@ -26,12 +26,12 @@ func _ready() -> void:
 func start_single_logged_combat() -> void:
 	_initialize_logger_session()
 	_build_and_register_combat_panels()
-	sim_controller.run_single_logged_battle()
+	sim_controller.run_single_logged_combat()
 	
 	update_headers()
 
 func start_mass_combat_sim() -> void:
-	sim_controller.run_mass_battles()
+	sim_controller.run_mass_combat_simulation()
 
 func _initialize_logger_session() -> void:
 	G_Logger.clear_session()
