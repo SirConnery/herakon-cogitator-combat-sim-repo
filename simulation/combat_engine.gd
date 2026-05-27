@@ -506,6 +506,25 @@ static func _get_live_card_icons(side_data: Dictionary, card_db: Dictionary, up_
 			
 	return totals
 
+static func _perform_rout_or_spend_tax(opp_side_data: Dictionary, opp_role: String, target_stat: int, target_label: String, penalty_amount: int, card_id: int, parent_state: Dictionary, on_event: Callable) -> void:
+	if opp_side_data[target_stat] >= penalty_amount:
+		opp_side_data[target_stat] -= penalty_amount
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 🤝 %s spent %d %s die/dice to not rout his units." % [opp_role, penalty_amount, target_label]])
+			on_event.call("dice_updated", [opp_role, opp_side_data[Stat.OFFENCE], opp_side_data[Stat.DEFENCE], opp_side_data[Stat.MORALE]])
+	else:
+		var target_unit := _find_lowest_tier_unrouted_unit(opp_side_data["squads"])
+		if not target_unit.is_empty():
+			var squad: Dictionary = target_unit["squad"]
+			var idx: int = target_unit["index"]
+			squad["figures_routed"][idx] = true
+			
+			if on_event.is_valid():
+				on_event.call("ability_triggered", [card_id, "↳ 🪓 Insufficient dice pool! Forced routing resolved on %s." % squad["name"]])
+				on_event.call("unit_routed", [opp_role, squad["name"], 0])
+			
+			log_current_army_statuses(parent_state, on_event, "damage_step")
+
 static func _spend_die_to_continue(side_data: Dictionary, stat_key: int, amount: int, role: String, on_event: Callable) -> bool:
 	if side_data[stat_key] < amount:
 		return false
@@ -968,6 +987,8 @@ static func _execute_timing_hook(window: int, state: Dictionary, context: Array,
 # Resolvers for instant effects
 static var EFFECT_RESOLVERS = {
 	CardData.EffectType.CHOICE: _execute_choice_selection,
+	CardData.EffectType.CONDITIONAL: _execute_generic_conditional,
+	
 	CardData.EffectType.GAIN_DICE: _execute_gain_dice,
 	CardData.EffectType.GAIN_SPECIFIC_DICE: _execute_gain_specific_dice,
 	CardData.EffectType.LOSE_SPECIFIC_DICE: _execute_lose_specific_dice,
@@ -981,11 +1002,13 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN: _execute_gain_specific_combat_token,
 	CardData.EffectType.GAIN_TOKEN_PER_MORALE_DICE: _execute_gain_token_per_morale_dice,
 	CardData.EffectType.GAIN_SPECIFIC_TOKEN_PER_UNIT: _execute_gain_specific_token_per_unit,
+	CardData.EffectType.LOSE_TOKENS_OR_DICE: _execute_lose_tokens_or_dice,
 	
 	CardData.EffectType.RALLY: _execute_rally, 
 	CardData.EffectType.RALLY_ALL_OF_YOUR_UNITS: _execute_rally_all_of_your_units,
 	
-	CardData.EffectType.ROUT_OR_SPEND_DICE_CONDITIONAL: _execute_rout_or_spend_dice_conditional,
+	CardData.EffectType.ROUT_OR_SPEND_DICE: _execute_rout_or_spend_dice_unconditional,
+	
 	
 	CardData.EffectType.OPPONENT_DISCARDS_WORST_FACEUP_CARD: _execute_opponent_discards_worst_faceup_card,
 	CardData.EffectType.OPPONENT_DISCARDS_BEST_FACEUP_CARD: _execute_opponent_discards_best_faceup_card,
@@ -995,7 +1018,6 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.GAIN_TOKENS_IF_MORE_UNITS_THAN_OPPONENT: _execute_gain_tokens_if_more_units_than_opponent,
 	
 	# SM
-	CardData.EffectType.SHIELD_DEBUFF_CONDITIONAL: _execute_shield_debuff_conditional, # Faith In the Emperor
 	CardData.EffectType.RALLY_IF_DEFENDING: _execute_rally_if_defending, # Hold the Line
 	CardData.EffectType.RALLY_IF_ATTACKING: _execute_rally_if_attacking, # Glory and Death
 	CardData.EffectType.SPEND_MORALE_TO_SPAWN_UNIT: _execute_spend_morale_to_spawn_unit, # Drop Pod Assault
@@ -1007,6 +1029,7 @@ static var EFFECT_RESOLVERS = {
 	# ORK
 	CardData.EffectType.DESTROY_FOR_DESTROY: _execute_destroy_for_destroy, # Gretchin
 	CardData.EffectType.DISCARD_STEAL_ICONS: _execute_discard_steal_icons, # Mek Boyz
+	CardData.EffectType.IF_OUTNUMBER_ROUT_OR_SPEND_DICE_CONDITIONAL: _execute_if_outnumber_rout_or_spend_dice_conditional,
 	CardData.EffectType.DESTROY_OR_SPEND_DICE_BASED_ON_TIER: _execute_destroy_or_spend_dice_based_on_tier, # Smasher Gargant
 }
 
@@ -1066,6 +1089,7 @@ static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, t
 				print("    -> ⚠️ Engine skipped non-instant or unresolved effect archetype: %d" % effect_type)
 				
 
+
 # ==============================================================================
 # ATOMIC MECHANIC RESOLVERS
 # ==============================================================================
@@ -1116,11 +1140,52 @@ static func _execute_choice_selection(fx: Array, token_pools: Array, side_data: 
 	# Handles optional choice passes cleanly without throwing an unresolved error
 	if sub_effect_type == CardData.EffectType.NONE:
 		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 🎲 Tactical Choice: %s elected to pass on their optional self-reroll action." % role])
+			on_event.call("ability_triggered", [card_id, "↳ 🧠 Tactical Choice: %s elected to pass on their optional action." % role])
 		return
 
 	if EFFECT_RESOLVERS.has(sub_effect_type):
 		EFFECT_RESOLVERS[sub_effect_type].call(chosen_sub_fx, token_pools, side_data, role, card_id, units_valid, on_event)
+
+
+static func _execute_generic_conditional(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
+	var sub_effects: Array = fx[2]
+	var condition_rule: int = fx[7] if fx.size() > 7 else 0
+	
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	if parent_state.is_empty():
+		return
+		
+	# Identify the local side integer by checking references within parent_state, then process via helper
+	var side_id := Side.ATTACKER if parent_state.get(Side.ATTACKER) == side_data else Side.DEFENDER
+	var is_attacker := _is_attacker(side_id)
+	var opp_side_data: Dictionary = parent_state.get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
+	
+	# Evaluate Rule Conditions safely
+	var condition_passed := false
+	match condition_rule:
+		CardData.ConditionType.OUTNUMBERING:
+			condition_passed = _has_more_unrouted_units_than_opponent(side_data, opp_side_data)
+		CardData.ConditionType.ATTACKING:
+			condition_passed = is_attacker
+		CardData.ConditionType.DEFENDING:
+			condition_passed = not is_attacker
+		_:
+			condition_passed = true
+			
+	# Execution branching path
+	if condition_passed:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 📈 Tactical Rule Passed: Executing inner composite abilities."])
+		
+		# Execute nested actions sequentially
+		for sub_fx in sub_effects:
+			var sub_effect_type: int = sub_fx[0]
+			if EFFECT_RESOLVERS.has(sub_effect_type):
+				EFFECT_RESOLVERS[sub_effect_type].call(sub_fx, token_pools, side_data, role, card_id, units_valid, on_event)
+	else:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 🌊 Tactical Rule Bypassed: Requirements not matched."])
+
 
 #endregion
 
@@ -1359,6 +1424,7 @@ static func _execute_reroll(fx: Array, _token_pools: Array, side_data: Dictionar
 		
 	var val: int = fx[2]
 	var target_type: int = fx[1]
+	var pool_type: int = fx[3] if fx.size() > 3 else 0
 	
 	var is_attacker := (role == "Attacker")
 	var targets_self := (target_type == 0)
@@ -1375,36 +1441,59 @@ static func _execute_reroll(fx: Array, _token_pools: Array, side_data: Dictionar
 	var current_o: int = target_side_data[Stat.OFFENCE]
 	var current_d: int = target_side_data[Stat.DEFENCE]
 	var current_m: int = target_side_data[Stat.MORALE]
-	var total_dice := current_o + current_d + current_m
 	
-	var actual_reroll_count: int = min(val, total_dice)
-	if actual_reroll_count <= 0:
-		return
-
+	# Sentinel configuration: if value is -1, we clear out the entire target criteria footprint
+	var is_all_flush := (val == -1)
+	var actual_reroll_count := 0
 	var removed_o := 0
 	var removed_d := 0
 	var removed_m := 0
+	var pool_label := "random"
 	
-	# 1. Generate an index array tracking the frozen state of the pool
-	var flat_pool: Array[int] = []
-	for i in range(current_o): flat_pool.append(0)
-	for i in range(current_d): flat_pool.append(1)
-	for i in range(current_m): flat_pool.append(2)
-	
-	# 2. Extract targeted categories safely without mutation loops
-	for iteration in range(actual_reroll_count):
-		var picked_idx := randi() % flat_pool.size()
-		match flat_pool.pop_at(picked_idx):
-			0: removed_o += 1
-			1: removed_d += 1
-			2: removed_m += 1
+	# 1. Evaluate target parameters to calculate targeted extraction counts
+	if pool_type == 0: # CardData.DicePoolType.RANDOM
+		var total_dice := current_o + current_d + current_m
+		actual_reroll_count = total_dice if is_all_flush else min(val, total_dice)
+		if actual_reroll_count <= 0:
+			return
+			
+		var flat_pool: Array[int] = []
+		for i in range(current_o): flat_pool.append(0)
+		for i in range(current_d): flat_pool.append(1)
+		for i in range(current_m): flat_pool.append(2)
+		
+		for iteration in range(actual_reroll_count):
+			var picked_idx := randi() % flat_pool.size()
+			match flat_pool.pop_at(picked_idx):
+				0: removed_o += 1
+				1: removed_d += 1
+				2: removed_m += 1
+	else: # Specific Target Pools (1 = Offense, 2 = Defense, 3 = Morale)
+		match pool_type:
+			1: # CardData.DicePoolType.OFFENSE
+				actual_reroll_count = current_o if is_all_flush else min(val, current_o)
+				removed_o = actual_reroll_count
+				pool_label = "Offence ⚔️"
+			2: # CardData.DicePoolType.DEFENSE
+				actual_reroll_count = current_d if is_all_flush else min(val, current_d)
+				removed_d = actual_reroll_count
+				pool_label = "Defence 🛡️"
+			3: # CardData.DicePoolType.MORALE
+				actual_reroll_count = current_m if is_all_flush else min(val, current_m)
+				removed_m = actual_reroll_count
+				pool_label = "Morale 🎖️"
+				
+		if actual_reroll_count <= 0:
+			if is_all_flush and on_event.is_valid():
+				on_event.call("ability_triggered", [card_id, "↳ 🔄 Reroll All skipped: %s has 0 %s dice." % [target_role, pool_label]])
+			return
 
-	# 3. Apply the combined removal batch instantly
+	# 2. Apply the combined removal batch instantly
 	target_side_data[Stat.OFFENCE] -= removed_o
 	target_side_data[Stat.DEFENCE] -= removed_d
 	target_side_data[Stat.MORALE] -= removed_m
 	
-	# 4. Roll fresh replacement metrics into an insertion tracker
+	# 3. Roll fresh replacement metrics into an insertion tracker
 	var added_o := 0
 	var added_d := 0
 	var added_m := 0
@@ -1416,18 +1505,20 @@ static func _execute_reroll(fx: Array, _token_pools: Array, side_data: Dictionar
 			1: added_d += 1
 			2: added_m += 1
 			
-	# 5. Inject newly rolled faces back into play systems all at once
+	# 4. Inject newly rolled faces back into play systems all at once
 	target_side_data[Stat.OFFENCE] += added_o
 	target_side_data[Stat.DEFENCE] += added_d
 	target_side_data[Stat.MORALE] += added_m
 
-	# 6. Print clean unified summary
+	# 5. Print clean unified summary
 	if on_event.is_valid():
-		var summary_msg := "↳ 🎲 Tactical Reroll: Selected %d random dice (-%d⚔️, -%d🛡️, -%d🎖️). Simultaneous results -> +%d ⚔️ | +%d 🛡️ | +%d 🎖️" % [
-			actual_reroll_count, removed_o, removed_d, removed_m, added_o, added_d, added_m
+		var log_prefix := "↳ 🎲 Batch Roll Resolved %s:" % target_role if is_all_flush else "↳ 🎲 Tactical Reroll:"
+		var summary_msg := "%s Selected %d %s dice (-%d⚔️, -%d🛡️, -%d🎖️). New results -> +%d ⚔️ | +%d 🛡️ | +%d 🎖️" % [
+			log_prefix, actual_reroll_count, pool_label, removed_o, removed_d, removed_m, added_o, added_d, added_m
 		]
 		on_event.call("ability_triggered", [card_id, summary_msg])
 		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
+
 
 static func _execute_reroll_all_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var pool_type: int = fx[3]
@@ -1652,11 +1743,70 @@ static func _execute_gain_token_per_morale_dice(fx: Array, token_pools: Array, s
 		on_event.call("ability_triggered", [card_id, "↳ 🛡️ Scanned %d Morale dice (x%d payout). Gained: +%d ⚔️ | +%d 🛡️ tokens." % [current_morale_dice, multiplier, off_tokens_harvested, def_tokens_harvested]])
 		on_event.call("tokens_updated", [role, token_pools[base_idx], token_pools[base_idx + 1]])
 
+static func _execute_lose_tokens_or_dice(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var token_tax: int = fx[2]
+	var pool_type: int = fx[3]
+	var die_fallback: int = fx[6] if fx.size() > 6 else 1
+	
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	if parent_state.is_empty():
+		return
+		
+	# 1. Resolve side identifiers and target datasets dynamically
+	var current_side_id := Side.ATTACKER if parent_state.get(Side.ATTACKER) == side_data else Side.DEFENDER
+	var targets_self :int = (fx[1] == 0)
+	
+	var target_side_id := current_side_id if targets_self else (Side.DEFENDER if current_side_id == Side.ATTACKER else Side.ATTACKER)
+	var target_role := "Attacker" if target_side_id == Side.ATTACKER else "Defender"
+	var target_side_data: Dictionary = parent_state.get(target_side_id, {})
+	
+	if target_side_data.is_empty():
+		return
+
+	# 2. Map pool type indexes to engine constants
+	var target_stat := Stat.OFFENCE
+	var stat_label := "Offence ⚔️"
+	
+	match pool_type:
+		2: # CardData.DicePoolType.DEFENSE
+			target_stat = Stat.DEFENCE
+			stat_label = "Defence 🛡️"
+		3: # CardData.DicePoolType.MORALE
+			target_stat = Stat.MORALE
+			stat_label = "Morale 🎖️"
+
+	# 3. Fetch token count safely from current array registry
+	var current_tokens: int = 0
+	if token_pools and token_pools.size() > target_side_id:
+		var side_tokens = token_pools[target_side_id]
+		if side_tokens is Dictionary and side_tokens.has(pool_type):
+			current_tokens = int(side_tokens[pool_type])
+		elif side_tokens is Array and side_tokens.size() > pool_type:
+			current_tokens = int(side_tokens[pool_type])
+
+	# 4. Resolve modification branching
+	if current_tokens > 0:
+		var tokens_stripped:int = min(current_tokens, token_tax)
+		token_pools[target_side_id][pool_type] -= tokens_stripped
+		
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 💠 Siphon: Stripped %d %s tokens from %s." % [tokens_stripped, stat_label, target_role]])
+	else:
+		var current_dice: int = target_side_data[target_stat]
+		var dice_stripped: int = min(current_dice, die_fallback)
+		target_side_data[target_stat] -= dice_stripped
+		
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 🪓 Shatter: No tokens found! %s lost %d %s dice instead." % [target_role, dice_stripped, stat_label]])
+			on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
+
 ## Consumes all available dice of a specified type to generate tokens.
 ## Unit Ability: Consumes all available dice of a specified stat type to generate tokens.
 static func _execute_spend_specific_dice_to_gain_specific_token(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var token_multiplier: int = fx[2]
 	var pool_type: int = fx[3]
+	# Safely read max_spend from index 6 to avoid colliding with unit type arrays at index 4 and 5
+	var max_spend: int = fx[6] if fx.size() > 6 else -1
 	
 	# 1. Map the card's pool type enum to your internal Stat keys
 	var source_stat := Stat.OFFENCE
@@ -1672,6 +1822,10 @@ static func _execute_spend_specific_dice_to_gain_specific_token(fx: Array, token
 
 	# 2. Capture all available dice currently residing in the player's pool
 	var spend_amount: int = side_data[source_stat]
+
+	# Apply the cap constraint if a max_spend boundary is defined
+	if max_spend > 0:
+		spend_amount = min(spend_amount, max_spend)
 
 	if spend_amount <= 0:
 		if on_event.is_valid():
@@ -1689,6 +1843,7 @@ static func _execute_spend_specific_dice_to_gain_specific_token(fx: Array, token
 	# 5. Telemetry logging output
 	if on_event.is_valid():
 		on_event.call("ability_triggered", [card_id, "↳ ⚡ Converted %d %s dice into +%d %s tokens!" % [spend_amount, stat_label, tokens_gained, stat_label]])
+
 
 static func _execute_gain_specific_token_per_unit(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var multiplier: int = int(fx[2])
@@ -1799,7 +1954,7 @@ static func _execute_rally_all_of_your_units(_fx: Array, _token_pools: Array, si
 
 #region Generic Rout functions
 
-static func _execute_rout_or_spend_dice_conditional(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+static func _execute_rout_or_spend_dice_unconditional(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var parent_state: Dictionary = side_data.get("parent_state", {})
 	if parent_state.is_empty():
 		return
@@ -1815,37 +1970,13 @@ static func _execute_rout_or_spend_dice_conditional(fx: Array, _token_pools: Arr
 	var labels := {1: "Offence ⚔️", 2: "Defence 🛡️", 3: "Morale 🎖️"}
 	
 	if not pool_type in stat_map:
-		push_error("CRITICAL ENGINE ERROR: Card ID %d used ROUT_OR_SPEND_CONDITIONAL but has an invalid or missing pool_type index (%d)!" % [card_id, pool_type])
+		push_error("CRITICAL ENGINE ERROR: Card ID %d used ROUT_OR_SPEND_UNCONDITIONAL but has an invalid or missing pool_type index (%d)!" % [card_id, pool_type])
 		return
 		
 	var target_stat = stat_map[pool_type]
 	var target_label = labels[pool_type]
 	
-	if on_event.is_valid():
-		on_event.call("ability_triggered", [card_id, "Resolved Outnumber check (Our Unrouted: %d vs Enemy: %d)" % [_count_unrouted_units(side_data), _count_unrouted_units(opp_side_data)]])
-		
-	if _has_more_unrouted_units_than_opponent(side_data, opp_side_data):
-		if opp_side_data[target_stat] >= penalty_amount:
-			opp_side_data[target_stat] -= penalty_amount
-			if on_event.is_valid():
-				on_event.call("ability_triggered", [card_id, "↳ 🤝 %s spent %d %s die/dice to not rout his units." % [opp_role, penalty_amount, target_label]])
-				on_event.call("dice_updated", [opp_role, opp_side_data[Stat.OFFENCE], opp_side_data[Stat.DEFENCE], opp_side_data[Stat.MORALE]])
-		else:
-			var target_unit := _find_lowest_tier_unrouted_unit(opp_side_data["squads"])
-			if not target_unit.is_empty():
-				var squad: Dictionary = target_unit["squad"]
-				var idx: int = target_unit["index"]
-				squad["figures_routed"][idx] = true
-				
-				if on_event.is_valid():
-					on_event.call("ability_triggered", [card_id, "↳ 🪓 Insufficient dice pool! Forced routing resolved on %s." % squad["name"]])
-					on_event.call("unit_routed", [opp_role, squad["name"], 0])
-				
-				log_current_army_statuses(parent_state, on_event, "damage_step")
-	else:
-		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 🌊 Tactical Condition: Outnumber state failed. No penalty applied."])
-
+	_perform_rout_or_spend_tax(opp_side_data, opp_role, target_stat, target_label, penalty_amount, card_id, parent_state, on_event)
 
 #endregion
 
@@ -2192,46 +2323,6 @@ static func _execute_destroy_for_destroy(fx: Array, _token_pools: Array, side_da
 		var enemy_list_string := ", ".join(victim_names)
 		on_event.call("ability_triggered", [card_id, "↳ ⚖️ Trade Complete: Sacrificed [%s] to destroy enemy [%s]!" % [friendly_list_string, enemy_list_string]])
 
-
-static func _execute_shield_debuff_conditional(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
-	var max_tokens_to_strip: int = fx[2]
-	var pool_type: int = fx[3]
-	
-	# 1. Use the token index helper to inspect the opponent's pool status silently
-	var opp_token_idx := _get_token_index(role, pool_type, true)
-	var current_opp_tokens: int = token_pools[opp_token_idx]
-	
-	# --- BRANCH 1: Opponent has tokens -> Outsource to generic token handler ---
-	if current_opp_tokens > 0:
-		var tokens_lost = min(current_opp_tokens, max_tokens_to_strip)
-		
-		# Build a temporary runtime effect payload targeted at the enemy's tokens
-		var token_payload := [
-			CardData.EffectType.GAIN_SPECIFIC_COMBAT_TOKEN, # Index 0: EffectType
-			1,                                             # Index 1: TargetType.OPPONENT
-			-tokens_lost,                                  # Index 2: Value (Negative modifier strips tokens)
-			pool_type,                                     # Index 3: PoolType
-			fx[4],                                         # Index 4: Block Type
-			fx[5]                                          # Index 5: Requirements Array
-		]
-		
-		_execute_gain_specific_combat_token(token_payload, token_pools, side_data, role, card_id, units_valid, on_event)
-		
-	# --- BRANCH 2: Opponent has 0 tokens -> Outsource to generic dice dropper ---
-	else:
-		# Build a temporary runtime effect payload targeted at the enemy's dice pool
-		var dice_payload := [
-			CardData.EffectType.LOSE_SPECIFIC_DICE,         # Index 0: EffectType
-			1,                                             # Index 1: TargetType.OPPONENT
-			1,                                             # Index 2: Value (Count of dice to drop)
-			pool_type,                                     # Index 3: PoolType
-			fx[4],                                         # Index 4: Block Type
-			fx[5]                                          # Index 5: Requirements Array
-		]
-		
-		_execute_lose_specific_dice(dice_payload, token_pools, side_data, role, card_id, units_valid, on_event)
-
-
 static func _execute_rally_if_defending(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
 	# Conditional check: If this side isn't the designated defender, the effect skips
 	if role != "Defender":
@@ -2485,5 +2576,36 @@ static func _execute_destroy_or_spend_dice_based_on_tier(_fx: Array, _token_pool
 			on_event.call("ability_triggered", [card_id, "↳ 💀 %s could not pay %d dice! '%s' was destroyed." % [opp_role, tax_cost, squad["name"]]])
 			
 		log_current_army_statuses(parent_state, on_event, "damage_step")
+
+static func _execute_if_outnumber_rout_or_spend_dice_conditional(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	if parent_state.is_empty():
+		return
+		
+	var is_attacker := (role == "Attacker")
+	var opp_role := "Defender" if is_attacker else "Attacker"
+	var opp_side_data: Dictionary = parent_state.get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
+	
+	var penalty_amount: int = int(fx[2])
+	var pool_type: int = int(fx[3])
+	
+	var stat_map := {1: Stat.OFFENCE, 2: Stat.DEFENCE, 3: Stat.MORALE}
+	var labels := {1: "Offence ⚔️", 2: "Defence 🛡️", 3: "Morale 🎖️"}
+	
+	if not pool_type in stat_map:
+		push_error("CRITICAL ENGINE ERROR: Card ID %d used ROUT_OR_SPEND_CONDITIONAL but has an invalid or missing pool_type index (%d)!" % [card_id, pool_type])
+		return
+		
+	var target_stat = stat_map[pool_type]
+	var target_label = labels[pool_type]
+	
+	if on_event.is_valid():
+		on_event.call("ability_triggered", [card_id, "Resolved Outnumber check (Our Unrouted: %d vs Enemy: %d)" % [_count_unrouted_units(side_data), _count_unrouted_units(opp_side_data)]])
+		
+	if _has_more_unrouted_units_than_opponent(side_data, opp_side_data):
+		_perform_rout_or_spend_tax(opp_side_data, opp_role, target_stat, target_label, penalty_amount, card_id, parent_state, on_event)
+	else:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 🌊 Tactical Condition: Outnumber state failed. No penalty applied."])
 
 #endregion

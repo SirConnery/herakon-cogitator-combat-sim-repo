@@ -128,7 +128,6 @@ func run_mass_combat_simulation() -> void:
 #region Single Combat simulation
 
 ## Runs a single, highly configurable battle sandbox with full step-by-step logging telemetry
-## Runs a single, highly configurable battle sandbox with full step-by-step logging telemetry
 func run_single_logged_combat() -> void:
 	print("🚨 run_single_logged_battle() is executing!")
 	
@@ -174,6 +173,41 @@ func run_single_logged_combat() -> void:
 	
 	var attacker_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(current_atk_id, current_stage, att_count, active_ground_combat, raw_factions)
 	var defender_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(current_def_id, current_stage, def_count, active_ground_combat, raw_factions)
+	
+	# 3.5. RESOLVE FACTION-SPECIFIC DEBUG DECKS OVERRIDES
+	var atk_profile_data: Dictionary = raw_factions.get(current_atk_id, {})
+	var atk_debug_deck: Array = atk_profile_data.get("debug_deck", [])
+	if not atk_debug_deck.is_empty():
+		var target_card: int = atk_debug_deck[0]
+		var new_deck: Array = []
+		for i in range(10):
+			new_deck.append(target_card)
+		new_deck.shuffle()
+		
+		var new_hand: Array = []
+		var draw_count: int = min(5, new_deck.size())
+		for i in range(draw_count):
+			new_hand.append(new_deck.pop_at(0))
+			
+		attacker_blueprint["combat_deck"] = new_deck
+		attacker_blueprint["cards_in_hand"] = new_hand
+
+	var def_profile_data: Dictionary = raw_factions.get(current_def_id, {})
+	var def_debug_deck: Array = def_profile_data.get("debug_deck", [])
+	if not def_debug_deck.is_empty():
+		var target_card: int = def_debug_deck[0]
+		var new_deck: Array = []
+		for i in range(10):
+			new_deck.append(target_card)
+		new_deck.shuffle()
+		
+		var new_hand: Array = []
+		var draw_count: int = min(5, new_deck.size())
+		for i in range(draw_count):
+			new_hand.append(new_deck.pop_at(0))
+			
+		defender_blueprint["combat_deck"] = new_deck
+		defender_blueprint["cards_in_hand"] = new_hand
 	
 	# 4. OVERRIDE CUSTOM TESTING DECKS AND EXTRACT HANDS
 	if use_custom_combat_decks:
@@ -282,7 +316,8 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_t
 	var raw_effect_type: int = int(fx.effect_type)
 	var value_slot: Variant = fx.value
 	
-	if raw_effect_type == CardData.EffectType.CHOICE:
+	# BOTH Choice and Conditional node blocks contain packed nested child arrays
+	if raw_effect_type == CardData.EffectType.CHOICE or raw_effect_type == CardData.EffectType.CONDITIONAL:
 		var flattened_choices: Array = []
 		var raw_choices = fx.choices
 		
@@ -307,7 +342,9 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_t
 		value_slot,              # Index 2
 		fx.pool_type,            # Index 3
 		ability_block_type_id,  # Index 4
-		req_unit_types          # Index 5
+		req_unit_types,          # Index 5
+		fx.max_spend,            # Index 6
+		fx.condition_type       # Index 7
 	]
 
 #endregion

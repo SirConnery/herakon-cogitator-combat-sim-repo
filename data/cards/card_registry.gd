@@ -9,7 +9,7 @@ enum CardID {
 	SM_FURY_OF_THE_ULTRAMAR						= 1003,
 	SM_BLESSED_POWER_ARMOUR						= 1004,
 	SM_COMBAT_FAITH_IN_EMPEROR					= 1005,
-	SM_HOLD_THE_LINE							= 1006,
+	SM_HOLD_THE_LINE								= 1006,
 	SM_GLORY_AND_DEATH							= 1007,
 	SM_DROP_POD_ASSAULT							= 1008,
 	SM_VETERAN_SCOUTS							= 1009,
@@ -19,21 +19,24 @@ enum CardID {
 	SM_EMPERORS_MIGHT							= 1013,
 	SM_EMPERORS_GLORY							= 1014,
 
+	# --- CHAOS SPACE MARINES (CSM) ---
+	CSM_KHORNES_RAGE								= 2001,
+
 	# --- ORKS (ORKS) ---
 	ORKS_GRETCHIN								= 3001,
 	ORKS_MEK_BOYZ								= 3002,
 	ORKS_ARD_BOYZ								= 3003,
-	ORKS_SHOOTA_BOYZ							= 3004,
-	ORKS_SLUGGA_BOYZ							= 3005,
+	ORKS_SHOOTA_BOYZ								= 3004,
+	ORKS_SLUGGA_BOYZ								= 3005,
 	ORKS_WAAAGH									= 3006,
 	ORKS_SEA_OF_GREEN							= 3007,
 	ORKS_MEGA_NOBZ								= 3008,
 	ORKS_BIKER_NOBZ								= 3009,
 	ORKS_WEIRDBOYZ								= 3010,
-	ORKS_PARTY_WAGON							= 3011,
+	ORKS_PARTY_WAGON								= 3011,
 	ORKS_ROKKIT_WAGON							= 3012,
-	ORKS_SNAPPER_GARGANT						= 3013,
-	ORKS_SMASHER_GARGANT						= 3014,
+	ORKS_SNAPPER_GARGANT							= 3013,
+	ORKS_SMASHER_GARGANT							= 3014,
 	 
 	
 }
@@ -117,7 +120,7 @@ static func get_database() -> Dictionary:
 	
 	db[card.card_id] = card
 	
-	# ==========================================================================
+# ==========================================================================
 	# --- CARD 1003: Fury of the Ultramar ---
 	# ==========================================================================
 	card = CardData.new()
@@ -128,14 +131,15 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.SPACE_MARINES, CardData.UnitType.STRIKE_CRUISERS]
 	
 	# --- GENERAL ABILITY ---
-	# Rule 1: Opponent rerolls 1 die (Mandatory execution path)
+	# Rule 1: Opponent rerolls 1 specific Defence (Shield) die
 	var sm_fury_gen_opp := CardEffect.new()
 	sm_fury_gen_opp.effect_type = CardData.EffectType.REROLL
 	sm_fury_gen_opp.target_type = CardData.TargetType.OPPONENT
 	sm_fury_gen_opp.value = 1
+	sm_fury_gen_opp.pool_type = CardData.DicePoolType.DEFENSE
 	card.general_ability.append(sm_fury_gen_opp)
 	
-	# Rule 2: Synchronized Choice Node (50/50 branch assignment path)
+	# Rule 2: Synchronized Choice Node
 	var sm_fury_gen_self_choice := CardEffect.new()
 	sm_fury_gen_self_choice.effect_type = CardData.EffectType.CHOICE
 	sm_fury_gen_self_choice.target_type = CardData.TargetType.SELF
@@ -154,11 +158,13 @@ static func get_database() -> Dictionary:
 	sm_fury_gen_self_choice.choices = [fury_self_reroll_opt, fury_self_pass_opt]
 	card.general_ability.append(sm_fury_gen_self_choice)
 	
-	# --- UNIT ABILITY (AUTOMATED CONDITIONAL) ---
+	# --- UNIT ABILITY ---
+	# Shield pressure: Strip 2 shield tokens; if opponent has 0 tokens, destroy 1 shield dice instead
 	var sm_fury_unit := CardEffect.new()
-	sm_fury_unit.effect_type = CardData.EffectType.SHIELD_DEBUFF_CONDITIONAL
+	sm_fury_unit.effect_type = CardData.EffectType.LOSE_TOKENS_OR_DICE
 	sm_fury_unit.target_type = CardData.TargetType.OPPONENT
-	sm_fury_unit.value = 2  
+	sm_fury_unit.value = 2        # Token tax amount
+	sm_fury_unit.max_spend = 1    # Fallback die tax amount if token pool is empty
 	sm_fury_unit.pool_type = CardData.DicePoolType.DEFENSE
 	card.unit_ability.append(sm_fury_unit)
 	
@@ -491,7 +497,7 @@ static func get_database() -> Dictionary:
 	# --- CARD 1014: Emperor's Glory ---
 	# ==========================================================================
 	card = CardData.new()
-	card.card_id = 1014 # CardID.SM_EMPERORS_GLORY
+	card.card_id = CardID.SM_EMPERORS_GLORY
 	card.card_name = "Emperor's Glory"
 	card.card_tier = CardData.CardTier.TIER_3
 	card.offence_icons = 2
@@ -516,6 +522,35 @@ static func get_database() -> Dictionary:
 	sm_glory_unit_2.effect_type = CardData.EffectType.CONVERT_SAFE_DICE_TO_MORALE
 	sm_glory_unit_2.target_type = CardData.TargetType.SELF
 	card.unit_ability.append(sm_glory_unit_2)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 2001: Khorne's Rage ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.CSM_KHORNES_RAGE
+	card.card_name = "Khorne's Rage"
+	card.card_tier = CardData.CardTier.STARTER
+	card.offence_icons = 1
+	card.required_unit_types = [CardData.UnitType.CHAOS_SPACE_MARINES, CardData.UnitType.ICONOCLAST_DESTROYERS]
+	
+	# General ability: Spend 1 offence dice to gain 3 offence tokens
+	var csm_rage_gen := CardEffect.new()
+	csm_rage_gen.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_SPECIFIC_TOKEN
+	csm_rage_gen.target_type = CardData.TargetType.SELF
+	csm_rage_gen.value = 3
+	csm_rage_gen.max_spend = 1
+	csm_rage_gen.pool_type = CardData.DicePoolType.OFFENSE
+	card.general_ability.append(csm_rage_gen)
+	
+	# Unit ability: Opponent chooses and routs 1 unit unless they spend 1 Defence die
+	var csm_rage_unit := CardEffect.new()
+	csm_rage_unit.effect_type = CardData.EffectType.ROUT_OR_SPEND_DICE
+	csm_rage_unit.target_type = CardData.TargetType.OPPONENT
+	csm_rage_unit.value = 1
+	csm_rage_unit.pool_type = CardData.DicePoolType.DEFENSE
+	card.unit_ability.append(csm_rage_unit)
 	
 	db[card.card_id] = card
 	
@@ -721,7 +756,7 @@ static func get_database() -> Dictionary:
 	# --- GENERAL ABILITY 2 ---
 	# Outnumber check: forces opponent to drop 1 Morale die or rout 1 unit
 	var ork_sea_gen_2 := CardEffect.new()
-	ork_sea_gen_2.effect_type = CardData.EffectType.ROUT_OR_SPEND_DICE_CONDITIONAL
+	ork_sea_gen_2.effect_type = CardData.EffectType.IF_OUTNUMBER_ROUT_OR_SPEND_DICE_CONDITIONAL
 	ork_sea_gen_2.target_type = CardData.TargetType.OPPONENT
 	ork_sea_gen_2.value = 1
 	ork_sea_gen_2.pool_type = CardData.DicePoolType.MORALE
