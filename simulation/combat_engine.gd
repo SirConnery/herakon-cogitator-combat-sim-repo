@@ -1019,11 +1019,13 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.RALLY: _execute_rally, 
 	CardData.EffectType.RALLY_ALL_FRIENDLY_UNITS: _execute_rally_all_friendly_units,
 	
-	CardData.EffectType.ROUT_OR_SPEND_DICE: _execute_rout_or_spend_dice_unconditional,
+	CardData.EffectType.ROUT_LOWEST_TIER_OR_SPEND_DICE: _execute_rout_lowest_tier_or_spend_dice_unconditional,
 	
 	
 	CardData.EffectType.OPPONENT_DISCARDS_WORST_FACEUP_CARD: _execute_opponent_discards_worst_faceup_card,
 	CardData.EffectType.OPPONENT_DISCARDS_BEST_FACEUP_CARD: _execute_opponent_discards_best_faceup_card,
+	CardData.EffectType.DISCARD_STEAL_ICONS: _execute_discard_steal_icons,
+	
 	
 	CardData.EffectType.SPAWN_UNIT: _execute_spawn_unit,
 	CardData.EffectType.SPAWN_REINFORCEMENT_TOKEN: _execute_spawn_reinforcement_token,
@@ -1033,12 +1035,10 @@ static var EFFECT_RESOLVERS = {
 	# SM
 	CardData.EffectType.PREVENT_ROUTING_THIS_ROUND: _execute_prevent_routing_this_round, # Show No Fear
 	CardData.EffectType.ADDITIONAL_ASSESS_DAMAGE_STEP_THIS_ROUND: _execute_additional_assess_damage_step_this_round, # Armoured Advance
-	CardData.EffectType.CONVERT_SAFE_DICE_TO_MORALE: _execute_convert_safe_dice_to_morale,
+	CardData.EffectType.CONVERT_SAFE_DICE_TO_MORALE: _execute_convert_safe_dice_to_morale, # Emperor's Glory
 	
 	# ORK
 	CardData.EffectType.DESTROY_FOR_DESTROY: _execute_destroy_for_destroy, # Gretchin
-	CardData.EffectType.DISCARD_STEAL_ICONS: _execute_discard_steal_icons, # Mek Boyz
-	CardData.EffectType.IF_OUTNUMBER_ROUT_OR_SPEND_DICE_CONDITIONAL: _execute_if_outnumber_rout_or_spend_dice_conditional,
 	CardData.EffectType.DESTROY_OR_SPEND_DICE_BASED_ON_TIER: _execute_destroy_or_spend_dice_based_on_tier, # Smasher Gargant
 }
 
@@ -1977,7 +1977,7 @@ static func _execute_rally_all_friendly_units(_fx: Array, _token_pools: Array, s
 
 #region Generic Rout functions
 
-static func _execute_rout_or_spend_dice_unconditional(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+static func _execute_rout_lowest_tier_or_spend_dice_unconditional(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var parent_state: Dictionary = side_data.get("parent_state", {})
 	if parent_state.is_empty():
 		return
@@ -2235,27 +2235,30 @@ static func _execute_spawn_reinforcement_token(_fx: Array, _token_pools: Array, 
 	var health_val := 2
 	var morale_val := 2
 	
-	if faction == 0:
-		if is_ground:
-			unit_name = "Scouts"
-			unit_type = CardData.UnitType.SCOUTS
-		else:
-			unit_name = "Strike Cruisers"
-			unit_type = CardData.UnitType.STRIKE_CRUISERS
-	elif faction == 1:
-		if is_ground:
-			unit_name = "Ork Boyz"
-			unit_type = CardData.UnitType.ORK_BOYZ
-		else:
-			unit_name = "Onslaughts"
-			unit_type = CardData.UnitType.ONSLAUGHTS
-			
+	match faction:
+		0: # FactionID.SPACE_MARINES
+			if is_ground:
+				unit_name = "Scouts"
+				unit_type = CardData.UnitType.SCOUTS
+			else:
+				unit_name = "Strike Cruisers"
+				unit_type = CardData.UnitType.STRIKE_CRUISERS
+		2: # FactionID.ORKS
+			if is_ground:
+				unit_name = "Ork Boyz"
+				unit_type = CardData.UnitType.ORK_BOYZ
+			else:
+				unit_name = "Onslaughts"
+				unit_type = CardData.UnitType.ONSLAUGHTS
+
 	if not unit_name.is_empty():
 		_spawn_unit(side_data, unit_name, unit_type, 0, combat_val, health_val, morale_val, not is_ground)
 		
-	if on_event.is_valid():
-		on_event.call("ability_triggered", [card_id, "↳ 🟢 Reinforcements Deployed: Added 1 unrouted %s squad." % unit_name])
-		log_current_army_statuses(parent_state, on_event, "damage_step")
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 🟢 Reinforcements Deployed: Added 1 unrouted %s squad." % unit_name])
+			log_current_army_statuses(parent_state, on_event, "damage_step")
+	else:
+		push_warning("Spawn skipped: Unhandled faction ID %d inside token execution loop." % faction)
 
 #endregion
 
@@ -2555,35 +2558,5 @@ static func _execute_destroy_or_spend_dice_based_on_tier(_fx: Array, _token_pool
 			
 		log_current_army_statuses(parent_state, on_event, "damage_step")
 
-static func _execute_if_outnumber_rout_or_spend_dice_conditional(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
-	var parent_state: Dictionary = side_data.get("parent_state", {})
-	if parent_state.is_empty():
-		return
-		
-	var is_attacker := (role == "Attacker")
-	var opp_role := "Defender" if is_attacker else "Attacker"
-	var opp_side_data: Dictionary = parent_state.get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
-	
-	var penalty_amount: int = int(fx[2])
-	var pool_type: int = int(fx[3])
-	
-	var stat_map := {1: Stat.OFFENCE, 2: Stat.DEFENCE, 3: Stat.MORALE}
-	var labels := {1: "Offence ⚔️", 2: "Defence 🛡️", 3: "Morale 🎖️"}
-	
-	if not pool_type in stat_map:
-		push_error("CRITICAL ENGINE ERROR: Card ID %d used ROUT_OR_SPEND_CONDITIONAL but has an invalid or missing pool_type index (%d)!" % [card_id, pool_type])
-		return
-		
-	var target_stat = stat_map[pool_type]
-	var target_label = labels[pool_type]
-	
-	if on_event.is_valid():
-		on_event.call("ability_triggered", [card_id, "Resolved Outnumber check (Our Unrouted: %d vs Enemy: %d)" % [_count_unrouted_units(side_data), _count_unrouted_units(opp_side_data)]])
-		
-	if _has_more_unrouted_units_than_opponent(side_data, opp_side_data):
-		_perform_rout_or_spend_tax(opp_side_data, opp_role, target_stat, target_label, penalty_amount, card_id, parent_state, on_event)
-	else:
-		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 🌊 Tactical Condition: Outnumber state failed. No penalty applied."])
 
 #endregion

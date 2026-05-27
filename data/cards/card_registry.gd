@@ -4,40 +4,40 @@ extends RefCounted
 enum CardID {
 	
 	# --- SPACE MARINES (SM) ---
-	SM_AMBUSH                                    = 1001,
-	SM_RECONNAISSANCE                            = 1002,
-	SM_FURY_OF_THE_ULTRAMAR                        = 1003,
-	SM_BLESSED_POWER_ARMOUR                        = 1004,
-	SM_COMBAT_FAITH_IN_EMPEROR                    = 1005,
-	SM_HOLD_THE_LINE                                = 1006,
-	SM_GLORY_AND_DEATH                            = 1007,
-	SM_DROP_POD_ASSAULT                            = 1008,
-	SM_VETERAN_SCOUTS                            = 1009,
-	SM_SHOW_NO_FEAR                                = 1010,
-	SM_BREAK_THE_LINE                            = 1011,
-	SM_ARMOURED_ADVANCE                            = 1012,
-	SM_EMPERORS_MIGHT                            = 1013,
-	SM_EMPERORS_GLORY                            = 1014,
+	SM_AMBUSH                    = 1001,
+	SM_RECONNAISSANCE            = 1002,
+	SM_FURY_OF_THE_ULTRAMAR      = 1003,
+	SM_BLESSED_POWER_ARMOUR      = 1004,
+	SM_COMBAT_FAITH_IN_EMPEROR   = 1005,
+	SM_HOLD_THE_LINE             = 1006,
+	SM_GLORY_AND_DEATH           = 1007,
+	SM_DROP_POD_ASSAULT          = 1008,
+	SM_VETERAN_SCOUTS            = 1009,
+	SM_SHOW_NO_FEAR              = 1010,
+	SM_BREAK_THE_LINE            = 1011,
+	SM_ARMOURED_ADVANCE          = 1012,
+	SM_EMPERORS_MIGHT            = 1013,
+	SM_EMPERORS_GLORY            = 1014,
 
 	# --- CHAOS SPACE MARINES (CSM) ---
-	CSM_KHORNES_RAGE                                = 2001,
+	CSM_KHORNES_RAGE             = 2001,
 
 	# --- ORKS (ORKS) ---
-	ORKS_GRETCHIN                                = 3001,
-	ORKS_MEK_BOYZ                                = 3002,
-	ORKS_ARD_BOYZ                                = 3003,
-	ORKS_SHOOTA_BOYZ                                = 3004,
-	ORKS_SLUGGA_BOYZ                                = 3005,
-	ORKS_WAAAGH                                    = 3006,
-	ORKS_SEA_OF_GREEN                            = 3007,
-	ORKS_MEGA_NOBZ                                = 3008,
-	ORKS_BIKER_NOBZ                                = 3009,
-	ORKS_WEIRDBOYZ                                = 3010,
-	ORKS_PARTY_WAGON                                = 3011,
-	ORKS_ROKKIT_WAGON                            = 3012,
-	ORKS_SNAPPER_GARGANT                            = 3013,
-	ORKS_SMASHER_GARGANT                            = 3014,
-	 
+	ORKS_GRETCHIN                = 3001,
+	ORKS_MEK_BOYZ                = 3002,
+	ORKS_ARD_BOYZ                = 3003,
+	ORKS_SHOOTA_BOYZ             = 3004,
+	ORKS_SLUGGA_BOYZ             = 3005,
+	ORKS_WAAAGH                  = 3006,
+	ORKS_SEA_OF_GREEN            = 3007,
+	ORKS_MEGA_NOBZ               = 3008,
+	ORKS_BIKER_NOBZ              = 3009,
+	ORKS_WEIRDBOYZ               = 3010,
+	ORKS_PARTY_WAGON             = 3011,
+	ORKS_ROKKIT_WAGON            = 3012,
+	ORKS_SNAPPER_GARGANT         = 3013,
+	ORKS_SMASHER_GARGANT         = 3014,
+	
 	
 }
 
@@ -595,7 +595,7 @@ static func get_database() -> Dictionary:
 	
 	# Unit ability: Opponent chooses and routs 1 unit unless they spend 1 Defence die
 	fx = CardEffect.new()
-	fx.effect_type = CardData.EffectType.ROUT_OR_SPEND_DICE
+	fx.effect_type = CardData.EffectType.ROUT_LOWEST_TIER_OR_SPEND_DICE
 	fx.target_type = CardData.TargetType.OPPONENT
 	fx.value = 1
 	fx.pool_type = CardData.DicePoolType.DEFENSE
@@ -791,17 +791,26 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = []
 	
 	# --- GENERAL ABILITY 1 ---
+	# Spawn tier 0 unit
 	fx = CardEffect.new()
 	fx.effect_type = CardData.EffectType.SPAWN_REINFORCEMENT_TOKEN
 	fx.target_type = CardData.TargetType.SELF
+	fx.value = 1
 	card.general_ability.append(fx)
 	
 	# --- GENERAL ABILITY 2 ---
+	# If outnumbering opponent, opponent routs or spends morale
 	fx = CardEffect.new()
-	fx.effect_type = CardData.EffectType.IF_OUTNUMBER_ROUT_OR_SPEND_DICE_CONDITIONAL
-	fx.target_type = CardData.TargetType.OPPONENT
-	fx.value = 1
-	fx.pool_type = CardData.DicePoolType.MORALE
+	fx.effect_type = CardData.EffectType.CONDITIONAL
+	fx.condition_type = CardData.ConditionType.OUTNUMBERING
+	
+	node = CardEffect.new()
+	node.effect_type = CardData.EffectType.ROUT_LOWEST_TIER_OR_SPEND_DICE
+	node.target_type = CardData.TargetType.OPPONENT
+	node.value = 1
+	node.pool_type = CardData.DicePoolType.MORALE
+	
+	fx.choices = [node]
 	card.general_ability.append(fx)
 	
 	db[card.card_id] = card
@@ -907,16 +916,33 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.BATTLE_WAGONS, CardData.UnitType.KILL_KROOZERS]
 	
 	# --- GENERAL ABILITY ---
+	# Triggers the dynamic tier-0 ground/space unit spawner we just fixed
 	fx = CardEffect.new()
 	fx.effect_type = CardData.EffectType.SPAWN_REINFORCEMENT_TOKEN
 	fx.target_type = CardData.TargetType.SELF
 	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
+	# Refactored compound token logic into an atomic, conditional sequence block
 	fx = CardEffect.new()
-	fx.effect_type = CardData.EffectType.GAIN_TOKENS_IF_MORE_UNITS_THAN_OPPONENT
-	fx.target_type = CardData.TargetType.SELF
-	fx.value = 2
+	fx.effect_type = CardData.EffectType.CONDITIONAL
+	fx.condition_type = CardData.ConditionType.OUTNUMBERING
+	
+	# Step 1 inside outnumber sequence: Gain 2 Offence Tokens
+	opt_a = CardEffect.new()
+	opt_a.effect_type = CardData.EffectType.GAIN_COMBAT_TOKEN
+	opt_a.target_type = CardData.TargetType.SELF
+	opt_a.value = 2
+	opt_a.pool_type = CardData.DicePoolType.OFFENSE
+	
+	# Step 2 inside outnumber sequence: Gain 2 Defence Tokens
+	opt_b = CardEffect.new()
+	opt_b.effect_type = CardData.EffectType.GAIN_COMBAT_TOKEN
+	opt_b.target_type = CardData.TargetType.SELF
+	opt_b.value = 2
+	opt_b.pool_type = CardData.DicePoolType.DEFENSE
+	
+	fx.choices = [opt_a, opt_b]
 	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
