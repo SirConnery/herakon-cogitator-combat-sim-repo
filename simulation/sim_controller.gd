@@ -128,6 +128,7 @@ func run_mass_combat_simulation() -> void:
 #region Single Combat simulation
 
 ## Runs a single, highly configurable battle sandbox with full step-by-step logging telemetry
+## Runs a single, highly configurable battle sandbox with full step-by-step logging telemetry
 func run_single_logged_combat() -> void:
 	print("🚨 run_single_logged_battle() is executing!")
 	
@@ -142,29 +143,24 @@ func run_single_logged_combat() -> void:
 	var current_atk_id: FactionRegistry.FactionID
 	var current_def_id: FactionRegistry.FactionID
 	
-	# Extract a pristine, untyped raw pool directly from global enum registry
 	var global_pool: Array = FactionRegistry.FactionID.values()
 	
 	if attacker_is_random_in_single and defender_is_random_in_single:
-		# Scenario A: Both Random - Pull two completely unique factions from the global system pool
 		current_atk_id = global_pool.pick_random() as FactionRegistry.FactionID
 		var filtered_pool = global_pool.filter(func(f): return int(f) != int(current_atk_id))
 		current_def_id = filtered_pool.pick_random() as FactionRegistry.FactionID
 		
 	elif attacker_is_random_in_single and not defender_is_random_in_single:
-		# Scenario B: Attacker is Random, Defender is Fixed (e.g. Random vs Orks)
 		current_def_id = defender_faction_in_single_combat
 		var allowed_attackers = global_pool.filter(func(f): return int(f) != int(current_def_id))
 		current_atk_id = allowed_attackers.pick_random() as FactionRegistry.FactionID
 		
 	elif not attacker_is_random_in_single and defender_is_random_in_single:
-		# Scenario C: Attacker is Fixed, Defender is Random (e.g. Orks vs Random)
 		current_atk_id = attacker_faction_in_single_combat
 		var allowed_defenders = global_pool.filter(func(f): return int(f) != int(current_atk_id))
 		current_def_id = allowed_defenders.pick_random() as FactionRegistry.FactionID
 		
 	else:
-		# Scenario D: Both Fixed - UI layer selection validation guarantees these are already asymmetric
 		current_atk_id = attacker_faction_in_single_combat
 		current_def_id = defender_faction_in_single_combat
 		
@@ -179,12 +175,31 @@ func run_single_logged_combat() -> void:
 	var attacker_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(current_atk_id, current_stage, att_count, active_ground_combat, raw_factions)
 	var defender_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(current_def_id, current_stage, def_count, active_ground_combat, raw_factions)
 	
-	# 4. OVERRIDE CUSTOM TESTING DECKS IF SPECIFIED
+	# 4. OVERRIDE CUSTOM TESTING DECKS AND EXTRACT HANDS
 	if use_custom_combat_decks:
 		if not custom_attacker_combat_deck.is_empty():
-			attacker_blueprint["combat_deck"] = custom_attacker_combat_deck.duplicate()
+			var custom_atk_deck: Array = custom_attacker_combat_deck.duplicate()
+			custom_atk_deck.shuffle()
+			
+			var custom_atk_hand: Array = []
+			var draw_count: int = min(5, custom_atk_deck.size())
+			for i in range(draw_count):
+				custom_atk_hand.append(custom_atk_deck.pop_at(0))
+				
+			attacker_blueprint["combat_deck"] = custom_atk_deck
+			attacker_blueprint["cards_in_hand"] = custom_atk_hand
+			
 		if not custom_defender_combat_deck.is_empty():
-			defender_blueprint["combat_deck"] = custom_defender_combat_deck.duplicate()
+			var custom_def_deck: Array = custom_defender_combat_deck.duplicate()
+			custom_def_deck.shuffle()
+			
+			var custom_def_hand: Array = []
+			var draw_count: int = min(5, custom_def_deck.size())
+			for i in range(draw_count):
+				custom_def_hand.append(custom_def_deck.pop_at(0))
+				
+			defender_blueprint["combat_deck"] = custom_def_deck
+			defender_blueprint["cards_in_hand"] = custom_def_hand
 			
 	# Save historical hand states safely for UI visualization references
 	attacker_starting_hand = attacker_blueprint["cards_in_hand"].duplicate()

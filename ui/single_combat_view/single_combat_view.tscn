@@ -33,7 +33,7 @@ text = "Start New Combat"
 [node name="SelectAttackerFaction" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=388010470]
 layout_mode = 2
 
-[node name="AttackerFactionTitle" type="Label" parent="MainLayout/UserControls/SelectAttackerFaction" unique_id=921623196]
+[node name="Title" type="Label" parent="MainLayout/UserControls/SelectAttackerFaction" unique_id=921623196]
 layout_mode = 2
 text = "Attacker Faction"
 
@@ -41,21 +41,67 @@ text = "Attacker Faction"
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="SelectDefenderFaction" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=663883343]
+[node name="SelectAttackerCards" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1800824837]
 layout_mode = 2
 
-[node name="AttackerFactionTitle" type="Label" parent="MainLayout/UserControls/SelectDefenderFaction" unique_id=546137866]
+[node name="Title" type="Label" parent="MainLayout/UserControls/SelectAttackerCards" unique_id=385275026]
+layout_mode = 2
+text = "Attacker Combat Deck"
+
+[node name="CardsSelectAttackerBtn" type="OptionButton" parent="MainLayout/UserControls/SelectAttackerCards" unique_id=1960379908]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="AttackerUseDefaultDeck" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1368646404]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/UserControls/AttackerUseDefaultDeck" unique_id=326227912]
+layout_mode = 2
+text = "Default Deck"
+
+[node name="AttackerUsesDefaultDeck" type="CheckButton" parent="MainLayout/UserControls/AttackerUseDefaultDeck" unique_id=1907745244]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="SelectDefenderFaction" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=2118276411]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/UserControls/SelectDefenderFaction" unique_id=710204765]
 layout_mode = 2
 text = "Defender Faction"
 
-[node name="FactionSelectDefenderBtn" type="OptionButton" parent="MainLayout/UserControls/SelectDefenderFaction" unique_id=1855450291]
+[node name="FactionSelectDefenderBtn" type="OptionButton" parent="MainLayout/UserControls/SelectDefenderFaction" unique_id=1757113176]
 unique_name_in_owner = true
 layout_mode = 2
+
+[node name="SelectDefenderCards" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1116840416]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/UserControls/SelectDefenderCards" unique_id=547676362]
+layout_mode = 2
+text = "Defender Combat Deck"
+
+[node name="CardsSelectDefenderBtn" type="OptionButton" parent="MainLayout/UserControls/SelectDefenderCards" unique_id=1153725299]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="DefenderUseDefaultDeck" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1160964929]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/UserControls/DefenderUseDefaultDeck" unique_id=436646391]
+layout_mode = 2
+text = "Default Deck"
+
+[node name="DefenderUsesDefaultDeck" type="CheckButton" parent="MainLayout/UserControls/DefenderUseDefaultDeck" unique_id=1930219325]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
 
 [node name="StageSelectContainer" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1384464544]
 layout_mode = 2
 
-[node name="StageSelectTitle" type="Label" parent="MainLayout/UserControls/StageSelectContainer" unique_id=1476894399]
+[node name="Title" type="Label" parent="MainLayout/UserControls/StageSelectContainer" unique_id=1476894399]
 layout_mode = 2
 text = "Select Stage"
 
@@ -66,13 +112,14 @@ layout_mode = 2
 [node name="IsGroundCombatContainer" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1158314248]
 layout_mode = 2
 
-[node name="IsGroundCombatTitle" type="Label" parent="MainLayout/UserControls/IsGroundCombatContainer" unique_id=1974220497]
+[node name="Title" type="Label" parent="MainLayout/UserControls/IsGroundCombatContainer" unique_id=1974220497]
 layout_mode = 2
 text = "Ground Combat"
 
 [node name="IsGroundCombatBtn" type="CheckButton" parent="MainLayout/UserControls/IsGroundCombatContainer" unique_id=2097769803]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 4
 
 [node name="HeaderPanel" type="PanelContainer" parent="MainLayout" unique_id=668278624]
 layout_mode = 2
