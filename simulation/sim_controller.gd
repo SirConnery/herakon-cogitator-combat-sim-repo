@@ -15,8 +15,9 @@ var factions_to_sim: Array[FactionRegistry.FactionID] = [
 #endregion
 
 #region Single Combat variables
-# ─── SINGLE SANBOX CONFIGURATION ───
-var random_factions_in_single_combat: bool = false
+# ─── SINGLE SANDBOX CONFIGURATION ───
+var attacker_is_random_in_single: bool = true
+var defender_is_random_in_single: bool = true
 var attacker_faction_in_single_combat: FactionRegistry.FactionID = FactionRegistry.FactionID.ORKS
 var defender_faction_in_single_combat: FactionRegistry.FactionID = FactionRegistry.FactionID.SPACE_MARINES
 
@@ -137,22 +138,33 @@ func run_single_logged_combat() -> void:
 	if random_combat_type:
 		active_ground_combat = (randi() % 2 == 0)
 		
-	# 2. RESOLVE CONFIGURABLE MATCHUP IDENTITIES
+	# 2. RESOLVE CONFIGURABLE MATCHUP IDENTITIES (ANTI-MIRROR GUARANTEED)
 	var current_atk_id: FactionRegistry.FactionID
 	var current_def_id: FactionRegistry.FactionID
 	
-	if random_factions_in_single_combat:
-		if factions_to_sim.size() < 2:
-			push_error("Single Combat Error: factions_to_sim must contain at least 2 unique factions for random generation.")
-			return
-		var available_factions = factions_to_sim.duplicate()
-		var atk_index := randi_range(0, available_factions.size() - 1)
-		current_atk_id = available_factions[atk_index]
-		available_factions.remove_at(atk_index)
+	# Extract a pristine, untyped raw pool directly from global enum registry
+	var global_pool: Array = FactionRegistry.FactionID.values()
+	
+	if attacker_is_random_in_single and defender_is_random_in_single:
+		# Scenario A: Both Random - Pull two completely unique factions from the global system pool
+		current_atk_id = global_pool.pick_random() as FactionRegistry.FactionID
+		var filtered_pool = global_pool.filter(func(f): return int(f) != int(current_atk_id))
+		current_def_id = filtered_pool.pick_random() as FactionRegistry.FactionID
 		
-		var def_index := randi_range(0, available_factions.size() - 1)
-		current_def_id = available_factions[def_index]
+	elif attacker_is_random_in_single and not defender_is_random_in_single:
+		# Scenario B: Attacker is Random, Defender is Fixed (e.g. Random vs Orks)
+		current_def_id = defender_faction_in_single_combat
+		var allowed_attackers = global_pool.filter(func(f): return int(f) != int(current_def_id))
+		current_atk_id = allowed_attackers.pick_random() as FactionRegistry.FactionID
+		
+	elif not attacker_is_random_in_single and defender_is_random_in_single:
+		# Scenario C: Attacker is Fixed, Defender is Random (e.g. Orks vs Random)
+		current_atk_id = attacker_faction_in_single_combat
+		var allowed_defenders = global_pool.filter(func(f): return int(f) != int(current_atk_id))
+		current_def_id = allowed_defenders.pick_random() as FactionRegistry.FactionID
+		
 	else:
+		# Scenario D: Both Fixed - UI layer selection validation guarantees these are already asymmetric
 		current_atk_id = attacker_faction_in_single_combat
 		current_def_id = defender_faction_in_single_combat
 		

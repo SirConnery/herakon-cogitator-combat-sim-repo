@@ -21,6 +21,59 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="UserControls" type="HBoxContainer" parent="MainLayout" unique_id=1971477260]
+layout_mode = 2
+
+[node name="StartNewCombatBtn" type="Button" parent="MainLayout/UserControls" unique_id=1688779065]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Start New Combat"
+
+[node name="SelectAttackerFaction" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=388010470]
+layout_mode = 2
+
+[node name="AttackerFactionTitle" type="Label" parent="MainLayout/UserControls/SelectAttackerFaction" unique_id=921623196]
+layout_mode = 2
+text = "Attacker Faction"
+
+[node name="FactionSelectAttackerBtn" type="OptionButton" parent="MainLayout/UserControls/SelectAttackerFaction" unique_id=1165120651]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SelectDefenderFaction" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=663883343]
+layout_mode = 2
+
+[node name="AttackerFactionTitle" type="Label" parent="MainLayout/UserControls/SelectDefenderFaction" unique_id=546137866]
+layout_mode = 2
+text = "Defender Faction"
+
+[node name="FactionSelectDefenderBtn" type="OptionButton" parent="MainLayout/UserControls/SelectDefenderFaction" unique_id=1855450291]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="StageSelectContainer" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1384464544]
+layout_mode = 2
+
+[node name="StageSelectTitle" type="Label" parent="MainLayout/UserControls/StageSelectContainer" unique_id=1476894399]
+layout_mode = 2
+text = "Select Stage"
+
+[node name="StageSelectBtn" type="OptionButton" parent="MainLayout/UserControls/StageSelectContainer" unique_id=985789818]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="IsGroundCombatContainer" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1158314248]
+layout_mode = 2
+
+[node name="IsGroundCombatTitle" type="Label" parent="MainLayout/UserControls/IsGroundCombatContainer" unique_id=1974220497]
+layout_mode = 2
+text = "Ground Combat"
+
+[node name="IsGroundCombatBtn" type="CheckButton" parent="MainLayout/UserControls/IsGroundCombatContainer" unique_id=2097769803]
+unique_name_in_owner = true
+layout_mode = 2
+
 [node name="HeaderPanel" type="PanelContainer" parent="MainLayout" unique_id=668278624]
 layout_mode = 2
 size_flags_stretch_ratio = 0.1
@@ -32,7 +85,7 @@ theme_override_constants/separation = 4
 [node name="HLayout" type="HBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer" unique_id=533786021]
 layout_mode = 2
 
-[node name="WorldLabel" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/HLayout" unique_id=2064207568]
+[node name="CombatAreaValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/HLayout" unique_id=2064207568]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -95,56 +148,3 @@ size_flags_vertical = 3
 [node name="Round3" type="VBoxContainer" parent="MainLayout/CentralCombatView/RoundsContainer" unique_id=390256035]
 layout_mode = 2
 size_flags_vertical = 3
-
-[node name="UserControls" type="HBoxContainer" parent="MainLayout" unique_id=1971477260]
-layout_mode = 2
-
-[node name="SelectAttackerFaction" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=388010470]
-layout_mode = 2
-
-[node name="AttackerFactionTitle" type="Label" parent="MainLayout/UserControls/SelectAttackerFaction" unique_id=921623196]
-layout_mode = 2
-text = "Attacker Faction"
-
-[node name="FactionSelectAttackerBtn" type="OptionButton" parent="MainLayout/UserControls/SelectAttackerFaction" unique_id=1165120651]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="SelectDefenderFaction" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=663883343]
-layout_mode = 2
-
-[node name="AttackerFactionTitle" type="Label" parent="MainLayout/UserControls/SelectDefenderFaction" unique_id=546137866]
-layout_mode = 2
-text = "Defender Faction"
-
-[node name="FactionSelectDefenderBtn" type="OptionButton" parent="MainLayout/UserControls/SelectDefenderFaction" unique_id=1855450291]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="StageSelectContainer" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1384464544]
-layout_mode = 2
-
-[node name="StageSelectTitle" type="Label" parent="MainLayout/UserControls/StageSelectContainer" unique_id=1476894399]
-layout_mode = 2
-text = "Select Stage"
-
-[node name="StageSelectBtn" type="OptionButton" parent="MainLayout/UserControls/StageSelectContainer" unique_id=985789818]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="IsGroundCombatContainer" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1158314248]
-layout_mode = 2
-
-[node name="IsGroundCombatTitle" type="Label" parent="MainLayout/UserControls/IsGroundCombatContainer" unique_id=1974220497]
-layout_mode = 2
-text = "Ground Combat"
-
-[node name="IsGroundCombatBtn" type="CheckButton" parent="MainLayout/UserControls/IsGroundCombatContainer" unique_id=2097769803]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="StartNewCombatBtn" type="Button" parent="MainLayout/UserControls" unique_id=1688779065]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Start New Combat"
