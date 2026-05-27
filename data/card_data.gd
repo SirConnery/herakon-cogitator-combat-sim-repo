@@ -20,7 +20,7 @@ SPEND_MORALE_TO_GAIN_SPECIFIC_DICE,
 GAIN_COMBAT_TOKEN,
 GAIN_TOKEN_PER_SPECIFIC_DICE,
 SPEND_SPECIFIC_DICE_TO_GAIN_TOKEN,
-GAIN_TOKEN_PER_UNIT,
+GAIN_TOKEN_PER_UNROUTED_UNIT,
 GAIN_TOKENS_IF_MORE_UNITS_THAN_OPPONENT,
 
 LOSE_TOKENS_OR_DICE,
@@ -32,6 +32,7 @@ DISCARD_STEAL_ICONS,
 RALLY,
 RALLY_ALL_FRIENDLY_UNITS,
 
+ROUT_LOWEST_TIER,
 ROUT_LOWEST_TIER_OR_SPEND_DICE,
 
 SPAWN_UNIT,
@@ -54,7 +55,20 @@ enum ConditionType {
 	OUTNUMBERING,
 	ATTACKING,
 	DEFENDING,
-	HAS_MORALE_DICE
+	HAS_MORALE_DICE,
+	OPPONENT_HAS_ROUTED_UNITS,
+	HAS_MORE_MORALE_THAN_OPPONENT,
+	OPPONENT_HAS_UNROUTED_UNITS,
+	OPPONENT_HAS_NO_UNROUTED_UNITS,
+}
+
+enum UnitFilterMode {
+	ALL_UNITS,       # Counts every unrouted figure on your side
+	REQUIRED_TYPES,  # Counts only unit types matching card.required_unit_types
+	TIER_0,          # Counts only tier 0 figures
+	TIER_1,          # Counts only tier 1 figures
+	TIER_2,          # Counts only tier 2 figures
+	TIER_3           # Counts only tier 3 figures
 }
 
 enum TargetType { SELF, OPPONENT, BOTH }

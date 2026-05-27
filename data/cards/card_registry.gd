@@ -21,7 +21,11 @@ enum CardID {
 
 	# --- CHAOS SPACE MARINES (CSM) ---
 	CSM_KHORNES_RAGE             = 2001,
-
+	CSM_FOUL_WORSHIP             = 2002,
+	CSM_IMPURE_ZEAL              = 2003,
+	CSM_DARK_FAITH               = 2004,
+	CSM_LURE_OF_CHAOS            = 2005,
+	
 	# --- ORKS (ORKS) ---
 	ORKS_GRETCHIN                = 3001,
 	ORKS_MEK_BOYZ                = 3002,
@@ -46,6 +50,7 @@ static func get_database() -> Dictionary:
 	var card: CardData
 	
 	var fx: CardEffect
+	var fx_2: CardEffect
 	var node: CardEffect
 	var opt_a: CardEffect
 	var opt_b: CardEffect
@@ -584,7 +589,8 @@ static func get_database() -> Dictionary:
 	card.offence_icons = 1
 	card.required_unit_types = [CardData.UnitType.CHAOS_SPACE_MARINES, CardData.UnitType.ICONOCLAST_DESTROYERS]
 	
-	# General ability: Spend 1 offence dice to gain 3 offence tokens
+	# --- GENERAL ABILITY ---
+	# Spend 1 offence dice to gain 3 offence tokens
 	fx = CardEffect.new()
 	fx.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKEN
 	fx.target_type = CardData.TargetType.SELF
@@ -593,13 +599,150 @@ static func get_database() -> Dictionary:
 	fx.pool_type = CardData.DicePoolType.OFFENSE
 	card.general_ability.append(fx)
 	
-	# Unit ability: Opponent chooses and routs 1 unit unless they spend 1 Defence die
+	# --- UNIT ABILITY ---
+	# Rout unit or spend 1 Defence dice
 	fx = CardEffect.new()
 	fx.effect_type = CardData.EffectType.ROUT_LOWEST_TIER_OR_SPEND_DICE
 	fx.target_type = CardData.TargetType.OPPONENT
 	fx.value = 1
 	fx.pool_type = CardData.DicePoolType.DEFENSE
 	card.unit_ability.append(fx)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 2002: Foul Worship ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.CSM_FOUL_WORSHIP
+	card.card_name = "Foul Worship"
+	card.card_tier = CardData.CardTier.STARTER
+	card.defence_icons = 1
+	card.required_unit_types = [CardData.UnitType.CULTISTS, CardData.UnitType.ICONOCLAST_DESTROYERS]
+	
+	# --- GENERAL ABILITY ---
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_DICE
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 1
+	card.general_ability.append(fx)
+	
+	# --- UNIT ABILITY ---
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.CONDITIONAL
+	fx.condition_type = CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS
+	
+	node = CardEffect.new()
+	node.effect_type = CardData.EffectType.GAIN_TOKEN_PER_UNROUTED_UNIT
+	node.target_type = CardData.TargetType.SELF
+	node.value = 1
+	node.pool_type = CardData.DicePoolType.DEFENSE
+	node.max_spend = CardData.UnitFilterMode.REQUIRED_TYPES
+	
+	fx.choices = [node]
+	card.unit_ability.append(fx)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 2003: Impure Zeal ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.CSM_IMPURE_ZEAL
+	card.card_name = "Impure Zeal"
+	card.card_tier = CardData.CardTier.STARTER
+	card.offence_icons = 1
+	card.defence_icons = 1
+	card.required_unit_types = [CardData.UnitType.CULTISTS, CardData.UnitType.ICONOCLAST_DESTROYERS]
+	
+	# --- GENERAL ABILITY ---
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.CONDITIONAL
+	fx.condition_type = CardData.ConditionType.HAS_MORE_MORALE_THAN_OPPONENT
+	
+	node = CardEffect.new()
+	node.effect_type = CardData.EffectType.RALLY
+	node.target_type = CardData.TargetType.SELF
+	node.value = 1
+	
+	fx.choices = [node]
+	card.general_ability.append(fx)
+	
+	# --- UNIT ABILITY ---
+	# Gain 1 offence token per unrouted tier 0 unit
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_TOKEN_PER_UNROUTED_UNIT
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 1
+	fx.pool_type = CardData.DicePoolType.OFFENSE
+	fx.max_spend = CardData.UnitFilterMode.REQUIRED_TYPES
+	card.unit_ability.append(fx)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 2004: Dark Faith ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.CSM_DARK_FAITH
+	card.card_name = "Dark Faith"
+	card.card_tier = CardData.CardTier.STARTER
+	card.morale_icons = 1
+	card.required_unit_types = [CardData.UnitType.CULTISTS, CardData.UnitType.ICONOCLAST_DESTROYERS]
+	
+	# --- GENERAL ABILITY ---
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
+	fx.target_type = CardData.TargetType.SELF
+	fx.value = 1
+	fx.pool_type = CardData.DicePoolType.MORALE
+	card.general_ability.append(fx)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 2005: Lure of Chaos ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.CSM_LURE_OF_CHAOS
+	card.card_name = "Lure of Chaos"
+	card.card_tier = CardData.CardTier.STARTER
+	card.morale_icons = 1
+	card.required_unit_types = [CardData.UnitType.CULTISTS, CardData.UnitType.ICONOCLAST_DESTROYERS]
+	
+	# Setup Branch 1: Opponent has unrouted units
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.CONDITIONAL
+	fx.condition_type = CardData.ConditionType.OPPONENT_HAS_UNROUTED_UNITS
+	
+	opt_a = CardEffect.new()
+	opt_a.effect_type = CardData.EffectType.ROUT_LOWEST_TIER
+	opt_a.target_type = CardData.TargetType.OPPONENT
+	opt_a.value = 1
+	
+	opt_b = CardEffect.new()
+	opt_b.effect_type = CardData.EffectType.GAIN_DICE
+	opt_b.target_type = CardData.TargetType.OPPONENT
+	opt_b.value = 1
+	
+	fx.choices.append(opt_a)
+	fx.choices.append(opt_b)
+	
+	# Setup Branch 2: Opponent has NO unrouted units
+	fx_2 = CardEffect.new()
+	fx_2.effect_type = CardData.EffectType.CONDITIONAL
+	fx_2.condition_type = CardData.ConditionType.OPPONENT_HAS_NO_UNROUTED_UNITS
+	
+	node = CardEffect.new()
+	node.effect_type = CardData.EffectType.SPAWN_REINFORCEMENT_TOKEN
+	node.target_type = CardData.TargetType.SELF
+	node.value = 1
+	
+	fx_2.choices.append(node)
+	
+	# --- GENERAL ABILITY EXECUTION ORDER ---
+	card.general_ability.append(fx_2) 
+	card.general_ability.append(fx)
 	
 	db[card.card_id] = card
 	
@@ -770,11 +913,13 @@ static func get_database() -> Dictionary:
 	card.general_ability.append(fx)
 	
 	# --- UNIT ABILITY ---
+	# Explicitly scales offense tokens from only the unit types required by this card
 	fx = CardEffect.new()
-	fx.effect_type = CardData.EffectType.GAIN_TOKEN_PER_UNIT
+	fx.effect_type = CardData.EffectType.GAIN_TOKEN_PER_UNROUTED_UNIT
 	fx.target_type = CardData.TargetType.SELF
 	fx.value = 1
 	fx.pool_type = CardData.DicePoolType.OFFENSE
+	fx.max_spend = CardData.UnitFilterMode.REQUIRED_TYPES
 	card.unit_ability.append(fx)
 	
 	db[card.card_id] = card
