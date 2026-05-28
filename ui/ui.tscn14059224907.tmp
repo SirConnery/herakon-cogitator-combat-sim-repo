@@ -1,0 +1,46 @@
+[gd_scene format=3 uid="uid://yy3vdqul34p0"]
+
+[ext_resource type="Script" uid="uid://dc7rarbc4m0je" path="res://ui/ui.gd" id="1_nb4k0"]
+[ext_resource type="PackedScene" uid="uid://dt8u6hm6e5iq1" path="res://ui/single_combat_view/single_combat_view.tscn" id="2_ks8t7"]
+[ext_resource type="PackedScene" uid="uid://4yl6nw2apdti" path="res://ui/mass_combat_view/mass_combat_view.tscn" id="3_wl5ax"]
+[ext_resource type="PackedScene" uid="uid://xsql61jfesrb" path="res://ui/diagnostics_view/diagnostics_view.tscn" id="4_tf0e0"]
+[ext_resource type="PackedScene" uid="uid://blegqx44cm1q1" path="res://simulation/SimController.tscn" id="4_vkava"]
+
+[node name="Ui" type="Control" unique_id=868425142]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_nb4k0")
+
+[node name="MainTabs" type="TabContainer" parent="." unique_id=725016407]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+current_tab = 0
+
+[node name="Home" type="Control" parent="MainTabs" unique_id=174336675]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="SingleCombatView" parent="MainTabs" unique_id=1865234252 instance=ExtResource("2_ks8t7")]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="MassCombatView" parent="MainTabs" unique_id=1641760004 instance=ExtResource("3_wl5ax")]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="DiagnosticsView" parent="MainTabs" unique_id=1986078317 instance=ExtResource("4_tf0e0")]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 3
+
+[node name="SimController" parent="." unique_id=390564033 instance=ExtResource("4_vkava")]

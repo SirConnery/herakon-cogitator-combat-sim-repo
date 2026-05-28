@@ -1,6 +1,7 @@
 extends Object
 class_name SimCombatEngine
 
+
 #region Starting vars and functions
 
 # --- HIGH-SPEED SIMULATION ENUMS ---
@@ -501,6 +502,22 @@ static func _has_specific_dice(side_data: Dictionary, pool_type: int, amount: in
 			
 	return side_data.get(target_stat, 0) >= amount
 
+static func get_token_amount(token_pools: Array, role: String, pool_type: int) -> int:
+	if token_pools.size() < 4:
+		return 0
+		
+	# Determine base position based on resolved role string
+	var base_idx := 0 if role == "Attacker" else 2
+	
+	# Map pool_type to array offset (1 = Offence, 2 = Defence)
+	var offset := 0 if pool_type == 1 else 1
+	
+	var target_idx := base_idx + offset
+	if target_idx >= 0 and target_idx < token_pools.size():
+		return int(token_pools[target_idx])
+		
+	return 0
+
 static func _has_more_specific_dice_than_opponent(side_data: Dictionary, opp_side_data: Dictionary, pool_type: int) -> bool:
 	var self_count := 0
 	# Leverage your working helper to find the exact local count
@@ -935,19 +952,344 @@ static func _check_weirdboyz_after_defender_resolves(state: Dictionary, round_in
 
 #endregion
 
-#region Gain Dice and Gain tokens helpers
+#region Centralized Gain Dice and Gain tokens helpers
+
+static func _add_dice_to_pool(target_side_data: Dictionary, target_role: String, requested_val: int, pool_type: int, card_id: int, original_side_data: Dictionary, on_event: Callable) -> void:
+	# 1. Enforce the global 8-dice maximum cap constraint
+	var current_total_dice: int = target_side_data[Stat.OFFENCE] + target_side_data[Stat.DEFENCE] + target_side_data[Stat.MORALE]
+	var allowed_val: int = min(requested_val, 8 - current_total_dice)
+	
+	if allowed_val <= 0:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 💨 Gain skipped: %s is already at the maximum 8 dice cap." % target_role])
+		return
+		
+	if on_event.is_valid(): 
+		on_event.call("ability_triggered", [card_id, "Resolved GAIN_DICE (Allowed: %d out of %d for %s)" % [allowed_val, requested_val, target_role]])
+		
+	var b_offence := 0
+	var b_defence := 0
+	var b_morale := 0
+	
+	# 2. Route distribution logic: 0 = Random Roll, 1/2/3 = Specific Allocations
+	if pool_type == 0:
+		for d in range(allowed_val):
+			match _roll_custom_die_index():
+				0: b_offence += 1
+				1: b_defence += 1
+				2: b_morale += 1
+	else:
+		match pool_type:
+			1: b_offence = allowed_val
+			2: b_defence = allowed_val
+			3: b_morale = allowed_val
+			
+	# 3. Fire internal roll notifications
+	if on_event.is_valid(): 
+		on_event.call("bonus_dice_rolled", [target_role, b_offence, b_defence, b_morale])
+	
+	# 4. Commit values directly to target memory arrays
+	target_side_data[Stat.OFFENCE] += b_offence
+	target_side_data[Stat.DEFENCE] += b_defence
+	target_side_data[Stat.MORALE] += b_morale
+
+	# 5. Broadcast state modification to update visual UI panel numbers
+	if on_event.is_valid():
+		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
+
+	# 6. Global master registry table dump print log
+	var parent_state: Dictionary = original_side_data.get("parent_state", {})
+	if not parent_state.is_empty() and on_event.is_valid():
+		var atk_side: Dictionary = parent_state.get(Side.ATTACKER, {})
+		var def_side: Dictionary = parent_state.get(Side.DEFENDER, {})
+		
+		if not atk_side.is_empty() and not def_side.is_empty():
+			log_current_dice_pools(on_event, atk_side, def_side, "Dice Gain")
+
+static func _remove_dice_from_pool(target_side_data: Dictionary, target_role: String, requested_val: int, pool_type: int, card_id: int, original_side_data: Dictionary, on_event: Callable) -> void:
+	# Ensure the requested loss count is processed as a clean positive integer
+	var raw_loss_count: int = abs(requested_val)
+	
+	var b_offence := 0
+	var b_defence := 0
+	var b_morale := 0
+	
+	# --- BRANCH A: RANDOM DICE LOSS (pool_type == 0) ---
+	# Dynamically builds a lottery pool based ONLY on what the player currently has!
+	if pool_type == 0:
+		var active_dice_lottery: Array[int] = []
+		for i in range(target_side_data[Stat.OFFENCE]): active_dice_lottery.append(1)
+		for i in range(target_side_data[Stat.DEFENCE]): active_dice_lottery.append(2)
+		for i in range(target_side_data[Stat.MORALE]):  active_dice_lottery.append(3)
+		
+		if active_dice_lottery.is_empty():
+			if on_event.is_valid():
+				on_event.call("ability_triggered", [card_id, "↳ 💨 Loss skipped: %s has no dice to lose." % target_role])
+			return
+			
+		var total_to_remove: int = min(raw_loss_count, active_dice_lottery.size())
+		for d in range(total_to_remove):
+			var random_idx := randi() % active_dice_lottery.size()
+			match active_dice_lottery.pop_at(random_idx):
+				1: b_offence += 1
+				2: b_defence += 1
+				3: b_morale += 1
+
+	# --- BRANCH B: SPECIFIC DICE LOSS (1 = Off, 2 = Def, 3 = Morale) ---
+	else:
+		match pool_type:
+			1: b_offence = min(raw_loss_count, target_side_data[Stat.OFFENCE])
+			2: b_defence = min(raw_loss_count, target_side_data[Stat.DEFENCE])
+			3: b_morale = min(raw_loss_count, target_side_data[Stat.MORALE])
+
+	var total_dropped := b_offence + b_defence + b_morale
+	if total_dropped <= 0:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 💨 Loss skipped: Specified pools on %s are already completely empty." % target_role])
+		return
+
+	# Commit mutations safely (guaranteed never to drop below zero via our min checks above)
+	target_side_data[Stat.OFFENCE] -= b_offence
+	target_side_data[Stat.DEFENCE] -= b_defence
+	target_side_data[Stat.MORALE] -= b_morale
+
+	# Telemetry Pass
+	if on_event.is_valid():
+		var label_items: Array[String] = []
+		if b_offence > 0: label_items.append("-%d ⚔️" % b_offence)
+		if b_defence > 0: label_items.append("-%d 🛡️" % b_defence)
+		if b_morale > 0:  label_items.append("-%d 🎖️" % b_morale)
+		
+		on_event.call("ability_triggered", [card_id, "Resolved LOSE_DICE: %s lost [%s]" % [target_role, ", ".join(label_items)]])
+		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
+
+	# Master Table Print Dump Sync
+	var parent_state: Dictionary = original_side_data.get("parent_state", {})
+	if not parent_state.is_empty() and on_event.is_valid():
+		var atk_side: Dictionary = parent_state.get(Side.ATTACKER, {})
+		var def_side: Dictionary = parent_state.get(Side.DEFENDER, {})
+		if not atk_side.is_empty() and not def_side.is_empty():
+			log_current_dice_pools(on_event, atk_side, def_side, "Dice Loss")
+
+static func _convert_dice_in_pool(target_side_data: Dictionary, target_role: String, max_to_convert: int, target_pool_type: int, card_id: int, original_side_data: Dictionary, on_event: Callable) -> void:
+	var stat_map := {1: Stat.OFFENCE, 2: Stat.DEFENCE, 3: Stat.MORALE}
+	if not target_pool_type in stat_map:
+		return
+		
+	var target_stat = stat_map[target_pool_type]
+	var converted_count := 0
+	var stripped_counts := {Stat.OFFENCE: 0, Stat.DEFENCE: 0, Stat.MORALE: 0}
+
+	# --- CORE CONVERSION LOOP ---
+	for conversion in range(max_to_convert):
+		var best_source_stat := -1
+		var max_available_dice := 0
+		
+		for src_stat in [Stat.OFFENCE, Stat.DEFENCE, Stat.MORALE]:
+			if src_stat == target_stat:
+				continue
+			if target_side_data[src_stat] > max_available_dice:
+				max_available_dice = target_side_data[src_stat]
+				best_source_stat = src_stat
+				
+		if best_source_stat == -1 or max_available_dice <= 0:
+			break
+			
+		target_side_data[best_source_stat] -= 1
+		target_side_data[target_stat] += 1
+		
+		stripped_counts[best_source_stat] += 1
+		converted_count += 1
+
+	# --- TELEMETRY AND STATE SYNCHRONIZATION ---
+	if converted_count > 0 and on_event.is_valid():
+		# Mapping clean visual icon states for scannable log lines
+		var icons := {Stat.OFFENCE: "⚔️", Stat.DEFENCE: "🛡️", Stat.MORALE: "🎖️"}
+		var breakdown_parts: Array[String] = []
+		
+		for stat_key in stripped_counts:
+			if stripped_counts[stat_key] > 0:
+				breakdown_parts.append("%d %s" % [stripped_counts[stat_key], icons[stat_key]])
+				
+		# 1. Sleek, high-visibility visual log string transformation
+		var summary_msg := "↳ 🔄 Dice Conversion (%s): Converted %s into %d %s" % [
+			target_role, 
+			", ".join(breakdown_parts), 
+			converted_count, 
+			icons[target_stat]
+		]
+		on_event.call("ability_triggered", [card_id, summary_msg])
+		
+		# 2. Informs visual container widgets to update their graphics counters immediately!
+		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
+		
+		# 3. Complete system matrix terminal dump print statement
+		var parent_state: Dictionary = original_side_data.get("parent_state", {})
+		if not parent_state.is_empty():
+			var atk_side: Dictionary = parent_state.get(Side.ATTACKER, {})
+			var def_side: Dictionary = parent_state.get(Side.DEFENDER, {})
+			
+			if not atk_side.is_empty() and not def_side.is_empty():
+				log_current_dice_pools(on_event, atk_side, def_side, "Conversion")
+
+static func _convert_dice_to_random_different_dice(target_side_data: Dictionary, target_role: String, max_to_convert: int, source_pool_type: int, card_id: int, original_side_data: Dictionary, on_event: Callable) -> void:
+	var stat_map := {1: Stat.OFFENCE, 2: Stat.DEFENCE, 3: Stat.MORALE}
+	if not source_pool_type in stat_map:
+		return
+		
+	var source_stat = stat_map[source_pool_type]
+	var current_source_dice: int = target_side_data[source_stat]
+	
+	# Determine how many dice can actually be modified based on what's physically available
+	var actual_convert_count: int = min(max_to_convert, current_source_dice)
+	
+	if actual_convert_count <= 0:
+		if on_event.is_valid():
+			var labels := {1: "⚔️", 2: "🛡️", 3: "🎖️"}
+			on_event.call("ability_triggered", [card_id, "↳ 💨 Conversion skipped: 0 %s dice available on %s's side." % [labels[source_pool_type], target_role]])
+		return
+
+	# --- EXCLUSION FILTER ---
+	# Dynamically isolates the alternative stats (e.g., if converting Morale, filters to ONLY Offence and Defence)
+	var alternative_stats: Array[int] = []
+	for pool_key in stat_map.keys():
+		if pool_key != source_pool_type:
+			alternative_stats.append(stat_map[pool_key])
+
+	var added_counts := {Stat.OFFENCE: 0, Stat.DEFENCE: 0, Stat.MORALE: 0}
+
+	# 1. Deduct the whole target chunk safely up front
+	target_side_data[source_stat] -= actual_convert_count
+
+	# 2. Distribute randomly across remaining alternate pools
+	for iteration in range(actual_convert_count):
+		var chosen_stat: int = alternative_stats[randi() % alternative_stats.size()]
+		target_side_data[chosen_stat] += 1
+		added_counts[chosen_stat] += 1
+
+	# --- TELEMETRY AND UI SYNC ---
+	if on_event.is_valid():
+		var labels := {Stat.OFFENCE: "⚔️", Stat.DEFENCE: "🛡️", Stat.MORALE: "🎖️"}
+		var source_label: String = labels[source_stat]
+		
+		var breakdown_parts: Array[String] = []
+		for stat_key in added_counts:
+			if added_counts[stat_key] > 0:
+				breakdown_parts.append("+%d %s" % [added_counts[stat_key], labels[stat_key]])
+				
+		var summary_msg := "↳ 🔄 Dice Conversion (%s): Exchanged %d %s dice into alternative types -> %s" % [
+			target_role, actual_convert_count, source_label, ", ".join(breakdown_parts)
+		]
+		on_event.call("ability_triggered", [card_id, summary_msg])
+		
+		# Informs layout panels to immediately update screen numbers
+		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
+
+	# Global master system log window print statements
+	var parent_state: Dictionary = original_side_data.get("parent_state", {})
+	if not parent_state.is_empty() and on_event.is_valid():
+		var atk_side: Dictionary = parent_state.get(Side.ATTACKER, {})
+		var def_side: Dictionary = parent_state.get(Side.DEFENDER, {})
+		
+		if not atk_side.is_empty() and not def_side.is_empty():
+			log_current_dice_pools(on_event, atk_side, def_side, "Conversion")
+
+static func _reroll_dice_in_pool(target_side_data: Dictionary, target_role: String, val: int, pool_type: int, card_id: int, on_event: Callable) -> void:
+	var current_o: int = target_side_data[Stat.OFFENCE]
+	var current_d: int = target_side_data[Stat.DEFENCE]
+	var current_m: int = target_side_data[Stat.MORALE]
+	
+	# Sentinel configuration: if value is -1, we clear out the entire target criteria footprint
+	var is_all_flush := (val == -1)
+	var actual_reroll_count := 0
+	var removed_o := 0
+	var removed_d := 0
+	var removed_m := 0
+	var pool_label := "random"
+	
+	# --- 1. EVALUATE TARGET POPULATION TO EXTRACTION POOLS ---
+	if pool_type == 0: # CardData.DicePoolType.RANDOM
+		var total_dice := current_o + current_d + current_m
+		actual_reroll_count = total_dice if is_all_flush else min(val, total_dice)
+		if actual_reroll_count <= 0:
+			return
+			
+		var flat_pool: Array[int] = []
+		for i in range(current_o): flat_pool.append(0)
+		for i in range(current_d): flat_pool.append(1)
+		for i in range(current_m): flat_pool.append(2)
+		
+		for iteration in range(actual_reroll_count):
+			var picked_idx := randi() % flat_pool.size()
+			match flat_pool.pop_at(picked_idx):
+				0: removed_o += 1
+				1: removed_d += 1
+				2: removed_m += 1
+	else: # Specific Target Pools (1 = Offense, 2 = Defense, 3 = Morale)
+		match pool_type:
+			1: # CardData.DicePoolType.OFFENSE
+				actual_reroll_count = current_o if is_all_flush else min(val, current_o)
+				removed_o = actual_reroll_count
+				pool_label = "⚔️"
+			2: # CardData.DicePoolType.DEFENSE
+				actual_reroll_count = current_d if is_all_flush else min(val, current_d)
+				removed_d = actual_reroll_count
+				pool_label = "🛡️"
+			3: # CardData.DicePoolType.MORALE
+				actual_reroll_count = current_m if is_all_flush else min(val, current_m)
+				removed_m = actual_reroll_count
+				pool_label = "🎖️"
+				
+		if actual_reroll_count <= 0:
+			if is_all_flush and on_event.is_valid():
+				on_event.call("ability_triggered", [card_id, "↳ 🔄 Reroll All skipped: %s has 0 %s dice." % [target_role, pool_label]])
+			return
+
+	# --- 2. TRANSACTIONAL ATOMIC UPDATE PHASE ---
+	# Deduct from side data instantly
+	target_side_data[Stat.OFFENCE] -= removed_o
+	target_side_data[Stat.DEFENCE] -= removed_d
+	target_side_data[Stat.MORALE] -= removed_m
+	
+	# Roll fresh replacements
+	var added_o := 0
+	var added_d := 0
+	var added_m := 0
+	
+	for iteration in range(actual_reroll_count):
+		match _roll_custom_die_index():
+			0: added_o += 1
+			1: added_d += 1
+			2: added_m += 1
+			
+	# Inject newly rolled metrics back into tracking targets
+	target_side_data[Stat.OFFENCE] += added_o
+	target_side_data[Stat.DEFENCE] += added_d
+	target_side_data[Stat.MORALE] += added_m
+
+	# --- 3. TELEMETRY WRAP ---
+	if on_event.is_valid():
+		var log_prefix := "↳ 🎲 Batch Roll Resolved %s:" % target_role if is_all_flush else "↳ 🎲 Tactical Reroll:"
+		var summary_msg := "%s Selected %d %s dice (-%d⚔️, -%d🛡️, -%d🎖️). New results -> +%d ⚔️ | +%d 🛡️ | +%d 🎖️" % [
+			log_prefix, actual_reroll_count, pool_label, removed_o, removed_d, removed_m, added_o, added_d, added_m
+		]
+		on_event.call("ability_triggered", [card_id, summary_msg])
+		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
+
+
 
 ## Centralized bottleneck for modifying token pools safely across both players
-static func _gain_tokens(token_pools: Array, role: String, pool_type: int, amount: int, is_opponent: bool = false) -> void:
+static func _gain_or_lose_tokens(token_pools: Array, role: String, pool_type: int, amount: int, is_opponent: bool = false) -> void:
 	var token_idx := _get_token_index(role, pool_type, is_opponent)
 	
 	# Guard clause to ensure safety if indexing boundaries are adjusted
 	if token_idx >= 0 and token_idx < token_pools.size():
-		token_pools[token_idx] += amount
+		# 🛡️ Underflow Guard: Keeps the pool value from ever dropping below 0
+		token_pools[token_idx] = max(0, token_pools[token_idx] + amount)
 
 #endregion
 
-#region Timing Hook
+#region Timing Hook (IMPORTANT)
 
 static func _execute_timing_hook(window: int, state: Dictionary, context: Array, round_index: int, card_db: Dictionary, on_event: Callable) -> void:
 	match window:
@@ -1012,7 +1354,7 @@ static func _execute_timing_hook(window: int, state: Dictionary, context: Array,
 
 #endregion
 
-#region Effect Resolvers database
+#region Effect Resolvers database (IMPORTANT)
 
 # Resolvers for instant effects
 static var EFFECT_RESOLVERS = {
@@ -1023,16 +1365,16 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.GAIN_SPECIFIC_DICE: _execute_gain_specific_dice,
 	CardData.EffectType.LOSE_SPECIFIC_DICE: _execute_lose_specific_dice,
 	CardData.EffectType.CONVERT_DICE_TO_SPECIFIC_DICE: _execute_convert_dice_to_specific_dice,
+	CardData.EffectType.CONVERT_DICE_TO_RANDOM_DIFFERENT_DICE: _execute_convert_dice_to_random_different_dice,
 	CardData.EffectType.REROLL: _execute_reroll,
 	CardData.EffectType.REROLL_ALL_SPECIFIC_DICE: _execute_reroll_all_specific_dice,
 	CardData.EffectType.REROLL_SPECIFIC_DICE_FOR_EACH_UNIT: _execute_reroll_specific_dice_for_each_unit,
 	CardData.EffectType.SPEND_MORALE_TO_GAIN_SPECIFIC_DICE: _execute_spend_morale_to_gain_specific_dice,
 	CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKEN: _execute_spend_specific_dice_to_gain_token,
 	
-	CardData.EffectType.GAIN_COMBAT_TOKEN: _execute_gain_combat_token,
+	CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS: _execute_gain_or_lose_combat_tokens,
 	CardData.EffectType.GAIN_TOKEN_PER_SPECIFIC_DICE: _execute_gain_token_per_specific_dice,
 	CardData.EffectType.GAIN_TOKEN_PER_UNROUTED_UNIT: _execute_gain_token_per_unrouted_unit,
-	CardData.EffectType.LOSE_TOKENS_OR_DICE: _execute_lose_tokens_or_dice,
 	
 	CardData.EffectType.RALLY: _execute_rally, 
 	CardData.EffectType.RALLY_ALL_FRIENDLY_UNITS: _execute_rally_all_friendly_units,
@@ -1060,14 +1402,13 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.CONVERT_SAFE_DICE_TO_MORALE: _execute_convert_safe_dice_to_morale, # Emperor's Glory
 	
 	# ORK
-	CardData.EffectType.DESTROY_FOR_DESTROY: _execute_destroy_for_destroy, # Gretchin
 	CardData.EffectType.DESTROY_OR_SPEND_DICE_BASED_ON_TIER: _execute_destroy_or_spend_dice_based_on_tier, # Smasher Gargant
 }
 
 #endregion
 
 
-#region Main Resolvers
+#region Main Resolvers (IMPORTANT)
 
 static func _resolve_instant_ability(active_card_id: int, card_db: Dictionary, token_pools: Array, side_id: int, state: Dictionary, on_event: Callable) -> void:
 	var card_data: Array = card_db[active_card_id]
@@ -1179,7 +1520,7 @@ static func _execute_choice_selection(fx: Array, token_pools: Array, side_data: 
 
 #endregion
 
-#region Condition selector
+#region Condition selector (IMPORTANT)
 
 static func _execute_generic_conditional(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
 	var sub_effects: Array = fx[2]
@@ -1189,11 +1530,13 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 	if parent_state.is_empty():
 		return
 		
-	# Identify sides using the explicit phase role string to avoid dict comparison bugs
 	var is_attacker := (role == "Attacker")
 	var opp_side_data: Dictionary = parent_state.get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
 	
-	# Evaluate Rule Conditions safely
+	# Pre-calculate opponent token index parameters for our new conditions
+	var opp_role := "Defender" if is_attacker else "Attacker"
+	var opp_base_idx := 0 if opp_role == "Attacker" else 2
+
 	var condition_passed := false
 	match condition_rule:
 		CardData.ConditionType.OUTNUMBERING:
@@ -1208,6 +1551,14 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 			condition_passed = not _has_specific_dice(side_data, 3, 1)
 		CardData.ConditionType.HAS_MORE_MORALE_THAN_OPPONENT:
 			condition_passed = _has_more_specific_dice_than_opponent(side_data, opp_side_data, 3)
+		CardData.ConditionType.HAS_ROUTED_UNITS:
+			condition_passed = _has_any_routed_units(side_data)
+		CardData.ConditionType.HAS_NO_ROUTED_UNITS:
+			condition_passed = not _has_any_routed_units(side_data)
+		CardData.ConditionType.HAS_UNROUTED_UNITS:
+			condition_passed = _has_any_unrouted_units(side_data)
+		CardData.ConditionType.HAS_NO_UNROUTED_UNITS:
+			condition_passed = not _has_any_unrouted_units(side_data)
 		CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS:
 			condition_passed = _has_any_routed_units(opp_side_data)
 		CardData.ConditionType.OPPONENT_HAS_NO_ROUTED_UNITS:
@@ -1220,132 +1571,93 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 			condition_passed = _has_any_routed_units(opp_side_data) and opp_side_data[Stat.DEFENCE] > 0
 		CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS_AND_NO_DEFENSE_DICE:
 			condition_passed = _has_any_routed_units(opp_side_data) and opp_side_data[Stat.DEFENCE] <= 0
+		CardData.ConditionType.OPPONENT_HAS_TWO_OR_MORE_DEFENSE_TOKENS:
+			condition_passed = get_token_amount(token_pools, opp_role, 2) >= 2
+		CardData.ConditionType.OPPONENT_HAS_FEWER_THAN_TWO_DEFENSE_TOKENS:
+			condition_passed = get_token_amount(token_pools, opp_role, 2) < 2
 		_:
 			condition_passed = true
 			
-	# Execution branching path
 	if condition_passed:
 		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 📈 Tactical Rule Passed: Executing inner composite abilities."])
+			on_event.call("ability_triggered", [card_id, "↳ 📈 Condition Passed: Executing inner abilities."])
 		
-		# Execute nested actions sequentially
 		for sub_fx in sub_effects:
 			var sub_effect_type: int = sub_fx[0]
 			if EFFECT_RESOLVERS.has(sub_effect_type):
 				EFFECT_RESOLVERS[sub_effect_type].call(sub_fx, token_pools, side_data, role, card_id, units_valid, on_event)
 	else:
 		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 🌊 Tactical Rule Bypassed: Requirements not matched."])
+			on_event.call("ability_triggered", [card_id, "↳ 🌊 Condition Bypassed: Requirements not matched."])
 
 #endregion
 
 
 #region Generic Dice functions
+# --- GENERIC RANDOM DICE EXECUTOR ---
 static func _execute_gain_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
-	if fx[2] is Array:
-		return
-		
-	var requested_val: int = fx[2]
-	var current_total_dice: int = side_data[Stat.OFFENCE] + side_data[Stat.DEFENCE] + side_data[Stat.MORALE]
-	var allowed_val: int = min(requested_val, 8 - current_total_dice)
-	
-	if allowed_val <= 0:
-		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "Resolved GAIN_DICE skipped - Already at maximum 8 dice cap."])
-		return
-		
-	if on_event.is_valid(): 
-		on_event.call("ability_triggered", [card_id, "Resolved GAIN_DICE (Count: %d)" % allowed_val])
-	
-	var b_offence := 0; var b_defence := 0; var b_morale := 0
-	for d in range(allowed_val):
-		match _roll_custom_die_index():
-			0: b_offence += 1
-			1: b_defence += 1
-			2: b_morale += 1
-		
-	if on_event.is_valid(): 
-		on_event.call("bonus_dice_rolled", [role, b_offence, b_defence, b_morale])
-	
-	side_data[Stat.OFFENCE] += b_offence
-	side_data[Stat.DEFENCE] += b_defence
-	side_data[Stat.MORALE] += b_morale
-
-
-static func _execute_gain_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
-	if fx[2] is Array:
-		return
-		
-	var requested_val: int = fx[2]
+	if fx[2] is Array: return
 	var target_type: int = fx[1]
-	var pool_type: int = fx[3]
+	var requested_val: int = fx[2]
 	
-	var is_attacker := (role == "Attacker")
-	var targets_self := (target_type == 0)
-	
-	# FIXED: Dynamically resolve who is actually gaining the dice portfolio entries
 	var target_side_data := side_data
 	var target_role := role
-	if not targets_self:
-		target_role = "Defender" if is_attacker else "Attacker"
-		target_side_data = side_data.get("parent_state", {}).get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
+	if target_type != 0:
+		target_role = "Defender" if role == "Attacker" else "Attacker"
+		target_side_data = side_data.get("parent_state", {}).get(Side.DEFENDER if role == "Attacker" else Side.ATTACKER, {})
 		
-	if target_side_data.is_empty():
-		return
+	if target_side_data.is_empty(): return
 
-	# Evaluate cap restrictions based on the true target's pool size
-	var current_total_dice: int = target_side_data[Stat.OFFENCE] + target_side_data[Stat.DEFENCE] + target_side_data[Stat.MORALE]
-	var allowed_val: int = min(requested_val, 8 - current_total_dice)
-	
-	if allowed_val <= 0:
-		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "Resolved GAIN_SPECIFIC_DICE skipped - %s already at maximum 8 dice cap." % target_role])
-		return
-		
-	if on_event.is_valid(): 
-		on_event.call("ability_triggered", [card_id, "Resolved GAIN_SPECIFIC_DICE (Allowed: %d out of %d for %s)" % [allowed_val, requested_val, target_role]])
-		
-	var b_offence := 0; var b_defence := 0; var b_morale := 0
-	
-	if pool_type == 0:
-		for d in range(allowed_val):
-			match _roll_custom_die_index():
-				0: b_offence += 1
-				1: b_defence += 1
-				2: b_morale += 1
-	else:
-		match pool_type:
-			1: b_offence = allowed_val
-			2: b_defence = allowed_val
-			3: b_morale = allowed_val
-			
-	if on_event.is_valid(): 
-		on_event.call("bonus_dice_rolled", [target_role, b_offence, b_defence, b_morale])
-	
-	target_side_data[Stat.OFFENCE] += b_offence
-	target_side_data[Stat.DEFENCE] += b_defence
-	target_side_data[Stat.MORALE] += b_morale
+	# Pass '0' as pool_type to trigger the random dice rolling branches safely!
+	_add_dice_to_pool(target_side_data, target_role, requested_val, 0, card_id, side_data, on_event)
 
-	var parent_state: Dictionary = side_data.get("parent_state", {})
-	if not parent_state.is_empty() and on_event.is_valid():
-		var atk_side: Dictionary = parent_state.get(Side.ATTACKER, {})
-		var def_side: Dictionary = parent_state.get(Side.DEFENDER, {})
+
+# --- SPECIFIC DICE TYPE EXECUTOR ---
+static func _execute_gain_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	if fx[2] is Array: return
+	var target_type: int = fx[1]
+	var requested_val: int = fx[2]
+	var pool_type: int = fx[3] # 1 = Offence, 2 = Defence, 3 = Morale
+	
+	var target_side_data := side_data
+	var target_role := role
+	if target_type != 0:
+		target_role = "Defender" if role == "Attacker" else "Attacker"
+		target_side_data = side_data.get("parent_state", {}).get(Side.DEFENDER if role == "Attacker" else Side.ATTACKER, {})
 		
-		if not atk_side.is_empty() and not def_side.is_empty():
-			log_current_dice_pools(on_event, atk_side, def_side, "Dice Gain")
+	if target_side_data.is_empty(): return
+
+	# Passes the exact requested pool_type directly through
+	_add_dice_to_pool(target_side_data, target_role, requested_val, pool_type, card_id, side_data, on_event)
 
 static func _execute_lose_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
-	if fx[2] is Array:
-		return
-		
-	var requested_val: int = fx[2]
+	if fx[2] is Array: return
 	var target_type: int = fx[1]
-	var pool_type: int = fx[3]
+	var requested_val: int = fx[2] # Accept numbers normally (e.g. 1 means drop 1 die)
+	var pool_type: int = fx[3]     # 0 = Random, 1 = Off, 2 = Def, 3 = Morale
+	
+	# --- SYSTEM ROUTING ---
+	var target_side_data := side_data
+	var target_role := role
+	if target_type != 0: # Target Opponent
+		target_role = "Defender" if role == "Attacker" else "Attacker"
+		target_side_data = side_data.get("parent_state", {}).get(Side.DEFENDER if role == "Attacker" else Side.ATTACKER, {})
+		
+	if target_side_data.is_empty(): return
+	# ----------------------
+
+	# Pipe directly through the subtraction pipeline
+	_remove_dice_from_pool(target_side_data, target_role, requested_val, pool_type, card_id, side_data, on_event)
+
+static func _execute_convert_dice_to_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var target_type: int = fx[1]      # fx[1] = target_type (0 = SELF, 1 = OPPONENT)
+	var max_to_convert: int = fx[2]   # fx[2] = count values limit
+	var target_pool_type: int = fx[3] # fx[3] = pool target category type
 	
 	var is_attacker := (role == "Attacker")
 	var targets_self := (target_type == 0)
 	
-	# Determine whose dice pool is shrinking
+	# --- SYSTEM ROUTING ---
 	var target_side_data := side_data
 	var target_role := role
 	if not targets_self:
@@ -1354,68 +1666,21 @@ static func _execute_lose_specific_dice(fx: Array, _token_pools: Array, side_dat
 		
 	if target_side_data.is_empty():
 		return
+	# ----------------------
 
-	var labels := {1: "Offence", 2: "Defence", 3: "Morale"}
-	var stat_map := {1: Stat.OFFENCE, 2: Stat.DEFENCE, 3: Stat.MORALE}
-	
-	var lost_offence := 0
-	var lost_defence := 0
-	var lost_morale := 0
+	# Handoff operations entirely to the decoupled central tracking manager
+	_convert_dice_in_pool(target_side_data, target_role, max_to_convert, target_pool_type, card_id, side_data, on_event)
 
-	# --- BRANCH 1: Strip From A Specific Targeted Pool ---
-	if pool_type in stat_map:
-		var target_stat = stat_map[pool_type]
-		var available_dice: int = target_side_data[target_stat]
-		var actual_lost = min(requested_val, available_dice)
-		
-		if actual_lost > 0:
-			target_side_data[target_stat] -= actual_lost
-			match pool_type:
-				1: lost_offence = actual_lost
-				2: lost_defence = actual_lost
-				3: lost_morale = actual_lost
-				
-			if on_event.is_valid():
-				on_event.call("ability_triggered", [card_id, "Resolved LOSE_SPECIFIC_DICE: %s lost %d %s die/dice." % [target_role, actual_lost, labels[pool_type]]])
-
-	# --- BRANCH 2: Strip Randomly From Any Existing Pools ---
-	elif pool_type == 0:
-		for iteration in range(requested_val):
-			var o_count: int = target_side_data[Stat.OFFENCE]
-			var d_count: int = target_side_data[Stat.DEFENCE]
-			var m_count: int = target_side_data[Stat.MORALE]
-			var total_dice := o_count + d_count + m_count
-			
-			if total_dice == 0:
-				break # Opponent is bone-dry, nothing left to take
-				
-			var picked_idx := randi() % total_dice
-			if picked_idx < o_count:
-				target_side_data[Stat.OFFENCE] -= 1
-				lost_offence += 1
-			elif picked_idx < (o_count + d_count):
-				target_side_data[Stat.DEFENCE] -= 1
-				lost_defence += 1
-			else:
-				target_side_data[Stat.MORALE] -= 1
-				lost_morale += 1
-				
-		var total_lost_classes := lost_offence + lost_defence + lost_morale
-		if total_lost_classes > 0 and on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "Resolved LOSE_SPECIFIC_DICE: %s lost %d random dice portfolio entries (-%d⚔️, -%d🛡️, -%d🎖️)." % [target_role, total_lost_classes, lost_offence, lost_defence, lost_morale]])
-
-	# Broadcast a master state updates call log if changes occurred
-	if (lost_offence + lost_defence + lost_morale) > 0 and on_event.is_valid():
-		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
-
-
-static func _execute_convert_dice_to_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
-	var max_to_convert: int = fx[2]
-	var target_pool_type: int = fx[3]
+static func _execute_convert_dice_to_random_different_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	if fx[2] is Array: return
+	var target_type: int = fx[1]      # fx[1] = target_type (0 = SELF, 1 = OPPONENT)
+	var max_to_convert: int = fx[2]   # fx[2] = count values limit
+	var source_pool_type: int = fx[3] # fx[3] = source pool to convert FROM (e.g., 3 = Morale)
 	
 	var is_attacker := (role == "Attacker")
-	var targets_self = (fx[1] == 0)
+	var targets_self := (target_type == 0)
 	
+	# --- SYSTEM ROUTING ---
 	var target_side_data := side_data
 	var target_role := role
 	if not targets_self:
@@ -1424,63 +1689,23 @@ static func _execute_convert_dice_to_specific_dice(fx: Array, _token_pools: Arra
 		
 	if target_side_data.is_empty():
 		return
+	# ----------------------
 
-	var stat_map := {1: Stat.OFFENCE, 2: Stat.DEFENCE, 3: Stat.MORALE}
-	if not target_pool_type in stat_map:
-		return
-		
-	var target_stat = stat_map[target_pool_type]
-	var converted_count := 0
-	var stripped_counts := {Stat.OFFENCE: 0, Stat.DEFENCE: 0, Stat.MORALE: 0}
-
-	for conversion in range(max_to_convert):
-		var best_source_stat := -1
-		var max_available_dice := 0
-		
-		for src_stat in [Stat.OFFENCE, Stat.DEFENCE, Stat.MORALE]:
-			if src_stat == target_stat:
-				continue
-			if target_side_data[src_stat] > max_available_dice:
-				max_available_dice = target_side_data[src_stat]
-				best_source_stat = src_stat
-				
-		if best_source_stat == -1 or max_available_dice <= 0:
-			break
-			
-		target_side_data[best_source_stat] -= 1
-		target_side_data[target_stat] += 1
-		
-		stripped_counts[best_source_stat] += 1
-		converted_count += 1
-
-	if converted_count > 0 and on_event.is_valid():
-		var labels := {Stat.OFFENCE: "Offence", Stat.DEFENCE: "Defence", Stat.MORALE: "Morale"}
-		var breakdown_parts: Array[String] = []
-		for stat_key in stripped_counts:
-			if stripped_counts[stat_key] > 0:
-				breakdown_parts.append("%d %s" % [stripped_counts[stat_key], labels[stat_key]])
-				
-		on_event.call("ability_triggered", [card_id, "↳ 🔄 Dice Conversion: %s turned %d alternate dice (%s) directly into %s dice!" % [target_role, converted_count, ", ".join(breakdown_parts), labels[target_stat]]])
-		
-		var parent_state: Dictionary = side_data.get("parent_state", {})
-		if not parent_state.is_empty():
-			var atk_side: Dictionary = parent_state.get(Side.ATTACKER, {})
-			var def_side: Dictionary = parent_state.get(Side.DEFENDER, {})
-			
-			if not atk_side.is_empty() and not def_side.is_empty():
-				log_current_dice_pools(on_event, atk_side, def_side, "Conversion")
+	# Handoff operations entirely to the decoupled central alternative conversion pipeline
+	_convert_dice_to_random_different_dice(target_side_data, target_role, max_to_convert, source_pool_type, card_id, side_data, on_event)
 
 static func _execute_reroll(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	if fx[2] is Array:
 		return
 		
-	var val: int = fx[2]
-	var target_type: int = fx[1]
+	var val: int = fx[2]           # Count value or -1 sentinel indicator value
+	var target_type: int = fx[1]   # 0 = Self, 1 = Opponent
 	var pool_type: int = fx[3] if fx.size() > 3 else 0
 	
 	var is_attacker := (role == "Attacker")
 	var targets_self := (target_type == 0)
 	
+	# --- SYSTEM ROUTING ---
 	var target_side_data: Dictionary = side_data
 	var target_role := role
 	if not targets_self:
@@ -1489,93 +1714,19 @@ static func _execute_reroll(fx: Array, _token_pools: Array, side_data: Dictionar
 		
 	if target_side_data.is_empty():
 		return
+	# ----------------------
 
-	var current_o: int = target_side_data[Stat.OFFENCE]
-	var current_d: int = target_side_data[Stat.DEFENCE]
-	var current_m: int = target_side_data[Stat.MORALE]
-	
-	# Sentinel configuration: if value is -1, we clear out the entire target criteria footprint
-	var is_all_flush := (val == -1)
-	var actual_reroll_count := 0
-	var removed_o := 0
-	var removed_d := 0
-	var removed_m := 0
-	var pool_label := "random"
-	
-	# 1. Evaluate target parameters to calculate targeted extraction counts
-	if pool_type == 0: # CardData.DicePoolType.RANDOM
-		var total_dice := current_o + current_d + current_m
-		actual_reroll_count = total_dice if is_all_flush else min(val, total_dice)
-		if actual_reroll_count <= 0:
-			return
-			
-		var flat_pool: Array[int] = []
-		for i in range(current_o): flat_pool.append(0)
-		for i in range(current_d): flat_pool.append(1)
-		for i in range(current_m): flat_pool.append(2)
-		
-		for iteration in range(actual_reroll_count):
-			var picked_idx := randi() % flat_pool.size()
-			match flat_pool.pop_at(picked_idx):
-				0: removed_o += 1
-				1: removed_d += 1
-				2: removed_m += 1
-	else: # Specific Target Pools (1 = Offense, 2 = Defense, 3 = Morale)
-		match pool_type:
-			1: # CardData.DicePoolType.OFFENSE
-				actual_reroll_count = current_o if is_all_flush else min(val, current_o)
-				removed_o = actual_reroll_count
-				pool_label = "Offence ⚔️"
-			2: # CardData.DicePoolType.DEFENSE
-				actual_reroll_count = current_d if is_all_flush else min(val, current_d)
-				removed_d = actual_reroll_count
-				pool_label = "Defence 🛡️"
-			3: # CardData.DicePoolType.MORALE
-				actual_reroll_count = current_m if is_all_flush else min(val, current_m)
-				removed_m = actual_reroll_count
-				pool_label = "Morale 🎖️"
-				
-		if actual_reroll_count <= 0:
-			if is_all_flush and on_event.is_valid():
-				on_event.call("ability_triggered", [card_id, "↳ 🔄 Reroll All skipped: %s has 0 %s dice." % [target_role, pool_label]])
-			return
-
-	# 2. Apply the combined removal batch instantly
-	target_side_data[Stat.OFFENCE] -= removed_o
-	target_side_data[Stat.DEFENCE] -= removed_d
-	target_side_data[Stat.MORALE] -= removed_m
-	
-	# 3. Roll fresh replacement metrics into an insertion tracker
-	var added_o := 0
-	var added_d := 0
-	var added_m := 0
-	
-	for iteration in range(actual_reroll_count):
-		var face_added := _roll_custom_die_index()
-		match face_added:
-			0: added_o += 1
-			1: added_d += 1
-			2: added_m += 1
-			
-	# 4. Inject newly rolled faces back into play systems all at once
-	target_side_data[Stat.OFFENCE] += added_o
-	target_side_data[Stat.DEFENCE] += added_d
-	target_side_data[Stat.MORALE] += added_m
-
-	# 5. Print clean unified summary
-	if on_event.is_valid():
-		var log_prefix := "↳ 🎲 Batch Roll Resolved %s:" % target_role if is_all_flush else "↳ 🎲 Tactical Reroll:"
-		var summary_msg := "%s Selected %d %s dice (-%d⚔️, -%d🛡️, -%d🎖️). New results -> +%d ⚔️ | +%d 🛡️ | +%d 🎖️" % [
-			log_prefix, actual_reroll_count, pool_label, removed_o, removed_d, removed_m, added_o, added_d, added_m
-		]
-		on_event.call("ability_triggered", [card_id, summary_msg])
-		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
+	# Handoff operations entirely to the centralized helper manager pipeline
+	_reroll_dice_in_pool(target_side_data, target_role, val, pool_type, card_id, on_event)
 
 
 static func _execute_reroll_all_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
-	var pool_type: int = fx[3]
-	var targets_self: bool = (fx[1] == 0)
+	var target_type: int = fx[1] # fx[1] = target_type (0 = SELF, 1 = OPPONENT)
+	var pool_type: int = fx[3]   # fx[3] = pool_type (1 = Offence, 2 = Defence, 3 = Morale)
 	
+	var targets_self: bool = (target_type == 0)
+	
+	# --- SYSTEM ROUTING ---
 	var target_side_data := side_data
 	var target_role := role
 	if not targets_self:
@@ -1585,68 +1736,39 @@ static func _execute_reroll_all_specific_dice(fx: Array, _token_pools: Array, si
 		
 	if target_side_data.is_empty():
 		return
+	# ----------------------
 
-	var stat_map := {1: Stat.OFFENCE, 2: Stat.DEFENCE, 3: Stat.MORALE}
-	var labels := {1: "Offence", 2: "Defence", 3: "Morale"}
-	
-	if not pool_type in stat_map:
-		return
-		
-	var target_stat = stat_map[pool_type]
-	var total_to_reroll: int = target_side_data[target_stat]
-	
-	if total_to_reroll <= 0:
-		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 🔄 Reroll All skipped: %s has 0 %s dice." % [target_role, labels[pool_type]]])
-		return
-	
-	# 1. Take the entire frozen batch out of the live pool instantly
-	target_side_data[target_stat] = 0
-	
-	# 2. Roll all fresh faces into an isolated temporary buffer
-	var results := [0, 0, 0] # [Offence, Defence, Morale]
-	for i in range(total_to_reroll):
-		var face_added := _roll_custom_die_index()
-		results[face_added] += 1
-			
-	# 3. Commit the new batch results back to the live pool all at once
-	target_side_data[Stat.OFFENCE] += results[0]
-	target_side_data[Stat.DEFENCE] += results[1]
-	target_side_data[Stat.MORALE] += results[2]
-
-	# 4. Print a single consolidated batch summary to eliminate log confusion
-	if on_event.is_valid():
-		var summary_msg := "↳ 🎲 Batch Roll Resolved %s: Picked up all %d %s dice. Simultaneous results -> +%d ⚔️ | +%d 🛡️ | +%d 🎖️" % [
-			target_role, total_to_reroll, labels[pool_type], results[0], results[1], results[2]
-		]
-		on_event.call("ability_triggered", [card_id, summary_msg])
-		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
-
+	_reroll_dice_in_pool(target_side_data, target_role, -1, pool_type, card_id, on_event)
 
 static func _execute_reroll_specific_dice_for_each_unit(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
-	var target_unit_type: int = fx[2]
-	var pool_type: int = fx[3]
-	var targets_self: bool = (fx[1] == 0)
+	var target_type: int = fx[1]      # fx[1] = target_type (0 = SELF, 1 = OPPONENT)
+	var target_unit_type: int = fx[2] # fx[2] = unit_type ID to scan and scale from
+	var pool_type: int = fx[3]        # fx[3] = pool_type (1 = Offence, 2 = Defence, 3 = Morale)
 	
 	var is_attacker := (role == "Attacker")
-	var user_side_data := side_data
-	var target_side_data := side_data
-	var target_role := role
+	var targets_self := (target_type == 0)
 	
-	if not targets_self:
-		target_role = "Defender" if is_attacker else "Attacker"
-		target_side_data = side_data.get("parent_state", {}).get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
-	else:
-		user_side_data = side_data.get("parent_state", {}).get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
-
-	if target_side_data.is_empty() or user_side_data.is_empty():
+	# --- SYSTEM ROUTING ---
+	var caster_side := side_data
+	var opponent_side: Dictionary = side_data.get("parent_state", {}).get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
+	
+	if opponent_side.is_empty():
 		return
 
+	# Preserves the exact functional relationship of your original rule setup:
+	# - Targeting Opponent: Scans Caster units to Reroll Opponent dice.
+	# - Targeting Self: Scans Opponent units to Reroll Caster dice.
+	var scanned_side_data := caster_side if not targets_self else opponent_side
+	var reroll_side_data := opponent_side if not targets_self else caster_side
+	var reroll_role := ("Defender" if is_attacker else "Attacker") if not targets_self else role
+
+	# --- 1. UNIT SCALING ANALYSIS ---
 	var unit_count := 0
-	for squad in user_side_data["squads"]:
+	for squad in scanned_side_data.get("squads", []):
 		var squad_type: int = int(squad.get("unit_type", 0))
 		if squad_type == target_unit_type:
-			for i in range(squad["alive_figures"].size()):
+			# Adheres to your 1-man-per-entry individual figure tracking design
+			for i in range(squad.get("alive_figures", []).size()):
 				if squad["alive_figures"][i] > 0 and not squad["figures_routed"][i]:
 					unit_count += 1
 					
@@ -1655,42 +1777,12 @@ static func _execute_reroll_specific_dice_for_each_unit(fx: Array, _token_pools:
 			on_event.call("ability_triggered", [card_id, "↳ ⚠️ Disruptive Presence failed: No active scaling units found."])
 		return
 
-	var stat_map := {1: Stat.OFFENCE, 2: Stat.DEFENCE, 3: Stat.MORALE}
-	var labels := {1: "Offence", 2: "Defence", 3: "Morale"}
-	
-	if not pool_type in stat_map:
-		return
-		
-	var target_stat = stat_map[pool_type]
-	var available_dice: int = target_side_data[target_stat]
-	var final_reroll_count: int = min(unit_count, available_dice)
-	
-	if final_reroll_count <= 0:
-		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 🔄 Disrupt skipped: %s has 0 %s dice to target." % [target_role, labels[pool_type]]])
-		return
-
-	# 1. Deduct the whole target chunk safely up front
-	target_side_data[target_stat] -= final_reroll_count
-	
-	# 2. Roll fresh outcomes into an isolated tracking buffer
-	var results := [0, 0, 0]
-	for iteration in range(final_reroll_count):
-		var face_added := _roll_custom_die_index()
-		results[face_added] += 1
-
-	# 3. Inject new rolled allocations back into active state systems
-	target_side_data[Stat.OFFENCE] += results[0]
-	target_side_data[Stat.DEFENCE] += results[1]
-	target_side_data[Stat.MORALE] += results[2]
-
-	# 4. Print clean unified summary
 	if on_event.is_valid():
-		var summary_msg := "↳ 🪓 Disruptive Presence: Found %d matching units! Forced %s to simultaneous-reroll %d %s dice -> Gained +%d ⚔️ | +%d 🛡️ | +%d 🎖️" % [
-			unit_count, target_role, final_reroll_count, labels[pool_type], results[0], results[1], results[2]
-		]
-		on_event.call("ability_triggered", [card_id, summary_msg])
-		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
+		on_event.call("ability_triggered", [card_id, "↳ 🪓 Disruptive Presence: Scanned %d active scaling unit(s)." % unit_count])
+
+	# --- 2. PIPED THROUGH CENTRAL HELPER ---
+	_reroll_dice_in_pool(reroll_side_data, reroll_role, unit_count, pool_type, card_id, on_event)
+
 
 static func _execute_spend_morale_to_gain_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	# 1. Calculate dynamic spend cap based on current wallet contents vs card max value
@@ -1734,32 +1826,61 @@ static func _execute_spend_morale_to_gain_specific_dice(fx: Array, _token_pools:
 
 #region Generic Token functions
 
-static func _execute_gain_combat_token(fx: Array, token_pools: Array, _side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+static func _execute_gain_or_lose_combat_tokens(fx: Array, token_pools: Array, _side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	if fx[2] is Array:
 		return
 		
-	var val: int = fx[2]
-	var pool_type: int = fx[3]
+	var target_type: int = fx[1]   # fx[1] = target_type
+	var val: int = fx[2]           # fx[2] = value (Can be positive or negative!)
+	var pool_type: int = fx[3]     # fx[3] = pool_type
 	
-	var base_idx := 0 if role == "Attacker" else 2
-	var token_idx := base_idx + (0 if pool_type == 1 else 1)
+	var is_opponent: bool = (target_type != 0)
 	
-	var label := "Offence" if pool_type == 1 else "Defence"
-	if on_event.is_valid():
-		on_event.call("ability_triggered", [card_id, "Resolved GAIN_SPECIFIC_COMBAT_TOKEN (+%d %s Token)" % [val, label]])
+	# 1. Resolve true target identities for precise telemetry logs
+	var target_role := role
+	if is_opponent:
+		target_role = "Defender" if role == "Attacker" else "Attacker"
 		
-	token_pools[token_idx] += val
-
+	var label := "Offence" if pool_type == 1 else "Defence"
+	
+	# 2. Dynamic Telemetry formatting based on token sign direction
 	if on_event.is_valid():
-		on_event.call("tokens_updated", [role, token_pools[base_idx], token_pools[base_idx + 1]])
+		if val >= 0:
+			on_event.call("ability_triggered", [card_id, "Resolved GAIN_COMBAT_TOKEN: %s gained +%d %s Token(s)." % [target_role, val, label]])
+		else:
+			# Uses abs() to turn -2 into a clean, readable positive number 2 for the log
+			on_event.call("ability_triggered", [card_id, "Resolved LOSE_COMBAT_TOKEN: %s lost %d %s Token(s)." % [target_role, abs(val), label]])
+		
+	# 3. ─── PIPED THROUGH YOUR RENAMED CENTRAL HELPER ───
+	_gain_or_lose_tokens(token_pools, role, pool_type, val, is_opponent)
+
+	# 4. Broadcast master state update to sync visual UI counters
+	if on_event.is_valid():
+		var target_base_idx := 0 if target_role == "Attacker" else 2
+		on_event.call("tokens_updated", [target_role, token_pools[target_base_idx], token_pools[target_base_idx + 1]])
 
 static func _execute_gain_token_per_specific_dice(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
-	# 1. Extract configurations from the flat payload array
-	var multiplier: int = int(fx[2])
-	var source_pool_type: int = int(fx[3])
-	var target_token_type: int = int(fx[6]) if fx.size() > 6 else 0 # Defaults to RANDOM (0) if omitted
+	var target_type: int = fx[1]                                   # fx[1] = target_type (0 = SELF, 1 = OPPONENT)
+	var multiplier: int = int(fx[2])                              # fx[2] = value (multiplier)
+	var source_pool_type: int = int(fx[3])                         # fx[3] = pool_type to scan
+	var target_token_type: int = int(fx[6]) if fx.size() > 6 else 0 # fx[6] = token type to award (0 = RANDOM)
 	
-	# 2. Map source pool type index to internal Stat keys
+	# --- 1. SYSTEM ROUTING (Aligned with your established architecture) ---
+	var is_attacker := (role == "Attacker")
+	var targets_self := (target_type == 0)
+	
+	var target_side_data := side_data
+	var target_role := role
+	var is_opponent := not targets_self
+	
+	if is_opponent:
+		target_role = "Defender" if is_attacker else "Attacker"
+		target_side_data = side_data.get("parent_state", {}).get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
+		
+	if target_side_data.is_empty():
+		return
+
+	# --- 2. MAP SOURCE DICE POOL ---
 	var source_stat := Stat.OFFENCE
 	var source_label := "Offence ⚔️"
 	
@@ -1771,98 +1892,36 @@ static func _execute_gain_token_per_specific_dice(fx: Array, token_pools: Array,
 			source_stat = Stat.MORALE
 			source_label = "Morale 🎖️"
 
-	# 3. Fetch specific source dice count safely
-	var current_dice: int = side_data.get(source_stat, 0)
+	# Scan the resolved target's board state
+	var current_dice: int = target_side_data.get(source_stat, 0)
 	if current_dice <= 0:
 		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 🪖 Scaling failed: 0 %s dice in pool." % source_label])
+			on_event.call("ability_triggered", [card_id, "↳ 🪖 Scaling failed: 0 %s dice in %s's pool." % [source_label, target_role]])
 		return
 		
 	var total_allocations := current_dice * multiplier
 	if total_allocations <= 0:
 		return
 
-	var base_idx := 0 if role == "Attacker" else 2
-	var off_tokens_harvested := 0
-	var def_tokens_harvested := 0
-
-	# 4. Process token target routing dynamically
-	match target_token_type:
-		0: # CardData.DicePoolType.RANDOM -> Choose ONE token type globally for all allocations
-			if randi() % 2 == 0:
-				off_tokens_harvested = total_allocations
-			else:
-				def_tokens_harvested = total_allocations
-		1: # CardData.DicePoolType.OFFENSE
-			off_tokens_harvested = total_allocations
-		2: # CardData.DicePoolType.DEFENSE
-			def_tokens_harvested = total_allocations
-
-	# 5. Commit calculations directly into the token array structure
-	token_pools[base_idx] += off_tokens_harvested
-	token_pools[base_idx + 1] += def_tokens_harvested
-
-	# 6. Route state notifications through your decoupled logging lines
-	if on_event.is_valid() and (off_tokens_harvested > 0 or def_tokens_harvested > 0):
-		on_event.call("ability_triggered", [card_id, "↳ 💠 Scanned %d %s dice (x%d payout). Gained: +%d ⚔️ | +%d 🛡️ tokens." % [current_dice, source_label, multiplier, off_tokens_harvested, def_tokens_harvested]])
-		on_event.call("tokens_updated", [role, token_pools[base_idx], token_pools[base_idx + 1]])
-
-static func _execute_lose_tokens_or_dice(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
-	var token_tax: int = fx[2]
-	var pool_type: int = fx[3]
-	var die_fallback: int = fx[6] if fx.size() > 6 else 1
-	
-	var parent_state: Dictionary = side_data.get("parent_state", {})
-	if parent_state.is_empty():
-		return
+	# --- 3. PROCESS REWARD TOKEN ROUTING ---
+	var chosen_token_pool_type := target_token_type
+	if chosen_token_pool_type == 0: # RANDOM choice evaluation
+		chosen_token_pool_type = 1 if (randi() % 2 == 0) else 2
 		
-	# 1. Resolve side identifiers and target datasets dynamically
-	var current_side_id := Side.ATTACKER if parent_state.get(Side.ATTACKER) == side_data else Side.DEFENDER
-	var targets_self :int = (fx[1] == 0)
-	
-	var target_side_id := current_side_id if targets_self else (Side.DEFENDER if current_side_id == Side.ATTACKER else Side.ATTACKER)
-	var target_role := "Attacker" if target_side_id == Side.ATTACKER else "Defender"
-	var target_side_data: Dictionary = parent_state.get(target_side_id, {})
-	
-	if target_side_data.is_empty():
-		return
+	var token_label := "Offence" if chosen_token_pool_type == 1 else "Defence"
 
-	# 2. Map pool type indexes to engine constants
-	var target_stat := Stat.OFFENCE
-	var stat_label := "Offence ⚔️"
-	
-	match pool_type:
-		2: # CardData.DicePoolType.DEFENSE
-			target_stat = Stat.DEFENCE
-			stat_label = "Defence 🛡️"
-		3: # CardData.DicePoolType.MORALE
-			target_stat = Stat.MORALE
-			stat_label = "Morale 🎖️"
+	# --- 4. PIPED THROUGH CENTRAL HELPER ---
+	# Offloads index tracking safely to your manager script logic
+	_gain_or_lose_tokens(token_pools, role, chosen_token_pool_type, total_allocations, is_opponent)
 
-	# 3. Fetch token count safely from current array registry
-	var current_tokens: int = 0
-	if token_pools and token_pools.size() > target_side_id:
-		var side_tokens = token_pools[target_side_id]
-		if side_tokens is Dictionary and side_tokens.has(pool_type):
-			current_tokens = int(side_tokens[pool_type])
-		elif side_tokens is Array and side_tokens.size() > pool_type:
-			current_tokens = int(side_tokens[pool_type])
-
-	# 4. Resolve modification branching
-	if current_tokens > 0:
-		var tokens_stripped:int = min(current_tokens, token_tax)
-		token_pools[target_side_id][pool_type] -= tokens_stripped
+	# --- 5. CONSOLIDATED TELEMETRY PASS ---
+	if on_event.is_valid():
+		on_event.call("ability_triggered", [card_id, "↳ 💠 Scanned %d %s dice on %s's side (x%d payout). Awarded +%d %s token(s)." % [current_dice, source_label, target_role, multiplier, total_allocations, token_label]])
 		
-		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 💠 Siphon: Stripped %d %s tokens from %s." % [tokens_stripped, stat_label, target_role]])
-	else:
-		var current_dice: int = target_side_data[target_stat]
-		var dice_stripped: int = min(current_dice, die_fallback)
-		target_side_data[target_stat] -= dice_stripped
-		
-		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 🪓 Shatter: No tokens found! %s lost %d %s dice instead." % [target_role, dice_stripped, stat_label]])
-			on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
+		# Dynamically resolve index base offsets to update the correct visual component panels
+		var target_base_idx := 0 if target_role == "Attacker" else 2
+		on_event.call("tokens_updated", [target_role, token_pools[target_base_idx], token_pools[target_base_idx + 1]])
+
 
 ## Consumes all available dice of a specified type to generate tokens.
 ## Unit Ability: Consumes all available dice of a specified stat type to generate tokens.
@@ -1902,7 +1961,7 @@ static func _execute_spend_specific_dice_to_gain_token(fx: Array, token_pools: A
 
 	# 4. Calculate token yield and route seamlessly through our generic handler
 	var tokens_gained := spend_amount * token_multiplier
-	_gain_tokens(token_pools, role, pool_type, tokens_gained, false)
+	_gain_or_lose_tokens(token_pools, role, pool_type, tokens_gained, false)
 
 	# 5. Telemetry logging output
 	if on_event.is_valid():
@@ -1958,7 +2017,7 @@ static func _execute_gain_token_per_unrouted_unit(fx: Array, token_pools: Array,
 	var tokens_to_gain = matching_unit_count * multiplier
 	var base_idx := 0 if role == "Attacker" else 2
 	
-	_gain_tokens(token_pools, role, pool_type, tokens_to_gain, false)
+	_gain_or_lose_tokens(token_pools, role, pool_type, tokens_to_gain, false)
 	
 	# 4. Dispatch completely generic event logging without card-specific flavors
 	if on_event.is_valid():
@@ -2476,69 +2535,6 @@ static func _find_lethal_sacrifice_target(squads: Array, total_damage: int, roun
 
 #region Faction Instant Card abilities
 
-static func _execute_destroy_for_destroy(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
-	var required_unit_types: Array = fx[5]
-	var count_to_destroy: int = fx[2]
-	
-	var is_attacker := (role == "Attacker")
-	var opponent_data: Dictionary = side_data.get("parent_state", {}).get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
-	var opponent_role := "Defender" if is_attacker else "Attacker"
-	
-	if opponent_data.is_empty():
-		return
-
-	var self_sacrificed := 0
-	var sacrificed_names: Array[String] = []
-	
-	# 1. Prioritized Self-Sacrifice Loop
-	while self_sacrificed < count_to_destroy:
-		var target_unit := _find_lowest_tier_matching_unit(side_data["squads"], required_unit_types)
-		if target_unit.is_empty():
-			break
-			
-		var squad: Dictionary = target_unit["squad"]
-		var idx: int = target_unit["index"]
-		
-		# Buffer friendly sacrifice names for the summary printout
-		sacrificed_names.append(squad["name"])
-		
-		if self_sacrificed == 0 and on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "Executing DESTROY_FOR_DESTROY sacrifice trade!"])
-		
-		# Refactored: Standardized cleanup execution pass
-		_destroy_figure(squad, idx, role, on_event)
-		self_sacrificed += 1
-
-	if self_sacrificed == 0:
-		return
-
-	var opponent_sacrificed := 0
-	var victim_names: Array[String] = []
-	
-	# 2. Hostile Destruction Phase
-	while opponent_sacrificed < count_to_destroy:
-		if _count_living_units(opponent_data) == 0:
-			break
-			
-		var victim_target := _find_lowest_tier_unit_to_destroy(opponent_data["squads"])
-		if victim_target.is_empty():
-			break
-			
-		var vic_squad: Dictionary = victim_target["squad"]
-		var vic_idx: int = victim_target["index"]
-		
-		# Buffer enemy victim names for the summary printout
-		victim_names.append(vic_squad["name"])
-		
-		# Refactored: Standardized cleanup execution pass
-		_destroy_figure(vic_squad, vic_idx, opponent_role, on_event)
-		opponent_sacrificed += 1
-
-	# 3. Consolidated Summary Output Pass
-	if on_event.is_valid() and not victim_names.is_empty():
-		var friendly_list_string := ", ".join(sacrificed_names)
-		var enemy_list_string := ", ".join(victim_names)
-		on_event.call("ability_triggered", [card_id, "↳ ⚖️ Trade Complete: Sacrificed [%s] to destroy enemy [%s]!" % [friendly_list_string, enemy_list_string]])
 
 static func _execute_rally_if_defending(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
 	# Conditional check: If this side isn't the designated defender, the effect skips

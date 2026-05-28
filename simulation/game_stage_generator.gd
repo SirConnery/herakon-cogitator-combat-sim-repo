@@ -25,31 +25,37 @@ static func choose_weighted(weights: PackedFloat32Array) -> int:
 static func generate_faction_blueprint(faction_id: int, stage: Stage, unit_count: int, is_ground_combat: bool, factions_db: Dictionary) -> Dictionary:
 	var faction_raw = factions_db[faction_id]
 	
-	# 1. Generate the randomized composition tiers matching active stage constraints
-	var randomized_tiers := generate_composition(stage, unit_count, is_ground_combat)
-	
-	# 2. Extract and filter theater-compliant units out of raw registry configurations
+	# 1. Map theater-compliant units and extract their absolute capacity thresholds
+	var max_counts_by_tier := {}
 	var registry_units_by_tier := {}
+	
 	for unit_data in faction_raw["units"]:
 		if is_ground_combat == unit_data["is_ship"]:
 			continue # Skip mismatching units
 			
 		registry_units_by_tier[unit_data["tier"]] = unit_data
+		# Cache the hard limit directly from the database entry (e.g., 3 for Titans, 6 for Scouts)
+		max_counts_by_tier[unit_data["tier"]] = unit_data.get("unit_count", 99)
 
+	# 2. Generate the randomized composition tiers matching stage weights AND database limits
+	var randomized_tiers := generate_composition(stage, unit_count, is_ground_combat, max_counts_by_tier)
+	
+	# 3. Compile standalone single-figure instances safely using deep duplication
 	var selected_units_blueprints: Array = []
 	for tier in randomized_tiers:
 		if registry_units_by_tier.has(tier):
-			selected_units_blueprints.append(registry_units_by_tier[tier])
+			# .duplicate(true) ensures each figure has its own individual memory reference for tracking damage/routing!
+			selected_units_blueprints.append(registry_units_by_tier[tier].duplicate(true))
 		elif is_ground_combat:
 			push_error("Faction %d lacks ground units for Tier %d!" % [faction_id, tier])
 
-	# 3. Compile the structural combat deck using our decoupled routing handler
+	# 4. Compile the structural combat deck using our decoupled routing handler
 	var compiled_deck := compile_combat_deck(faction_raw)
 
-	# 4. Shuffle the compiled deck to randomize card distribution order
+	# 5. Shuffle the compiled deck to randomize card distribution order
 	compiled_deck.shuffle()
 
-	# 5. Extract exactly 5 cards directly off the top into your initial starting hand
+	# 6. Extract exactly 5 cards directly off the top into your initial starting hand
 	var drawn_hand: Array = []
 	var draw_count: int = min(5, compiled_deck.size())
 	for i in range(draw_count):
@@ -83,10 +89,8 @@ static func compile_combat_deck(faction_raw: Dictionary) -> Array:
 	var compiled_deck: Array = []
 	
 	if upgrade_pool.is_empty():
-		# Safe structural fallback if the registry lacks upgrade cards entirely
 		return faction_raw.get("combat_deck", []).duplicate()
 		
-	# Draw exactly 10 cards randomly out of the upgrade pool
 	for i in range(10):
 		var random_idx := randi() % upgrade_pool.size()
 		compiled_deck.append(upgrade_pool[random_idx])
@@ -94,13 +98,12 @@ static func compile_combat_deck(faction_raw: Dictionary) -> Array:
 	return compiled_deck
 
 
-## Generates a randomized list of unit tiers based on game stage, target unit count, and theater type
-static func generate_composition(stage: Stage, unit_count: int, is_ground_combat: bool = true) -> PackedInt32Array:
+## Generates a randomized list of unit tiers based on game stage, target unit count, and database pool limits
+static func generate_composition(stage: Stage, unit_count: int, is_ground_combat: bool, max_counts_by_tier: Dictionary) -> PackedInt32Array:
 	var composition := PackedInt32Array()
 	
-	# Configure base weights based on the stage
 	var base_weights := PackedFloat32Array()
-	var tier_counts := [0, 0, 0, 0] # Tracks [T0, T1, T2, T3] generated so far
+	var tier_counts := [0, 0, 0, 0] # Tracks [T0, T1, T2, T3] generated figures so far
 	
 	match stage:
 		Stage.EARLY:
@@ -127,15 +130,12 @@ static func generate_composition(stage: Stage, unit_count: int, is_ground_combat
 	while composition.size() < unit_count:
 		var active_weights := base_weights.duplicate()
 		
-		# --- DYNAMIC WEIGHT MUTATION ---
-		match stage:
-			Stage.EARLY:
-				if tier_counts[2] >= 1: active_weights[2] = 0.0 # Max 1 Tier 2
-			Stage.MID:
-				if tier_counts[2] >= 2: active_weights[2] = 0.0 # Max 2 Tier 2
-			Stage.LATE:
-				if tier_counts[0] >= 2: active_weights[0] = 0.0 # Max 2 Tier 0
-				if is_ground_combat and tier_counts[3] >= 1: active_weights[3] = 0.0 
+		# --- DYNAMIC DATABASE LIMIT ENFORCEMENT ---
+		# Cycles through your tiers and kills the selection weight if the figure count hits the database cap
+		for tier in range(active_weights.size()):
+			if max_counts_by_tier.has(tier):
+				if tier_counts[tier] >= max_counts_by_tier[tier]:
+					active_weights[tier] = 0.0
 
 		# --- EMERGENCY ESCAPE HATCH ---
 		var total_weight_pool := 0.0
@@ -143,12 +143,7 @@ static func generate_composition(stage: Stage, unit_count: int, is_ground_combat
 			total_weight_pool += w
 			
 		if total_weight_pool <= 0.0:
-			if not is_ground_combat:
-				composition.append(0)
-				tier_counts[0] += 1
-				continue
-				
-			push_warning("GameStageGenerator: Generation halted. All available unit tiers for stage %s have hit hard constraints at %d units." % [Stage.keys()[stage], composition.size()])
+			push_warning("GameStageGenerator: Generation stopped. Available matching unit pools are completely exhausted at %d units." % composition.size())
 			break
 
 		# Roll using our safe, mutated weight array

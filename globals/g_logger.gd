@@ -4,17 +4,39 @@ var active_round_panels: Array[CombatRoundPanel] = []
 var active_round_index: int = 0
 var context: Dictionary = {}
 
+# --- PERFORMANCE CACHE STORAGE ---
+var cached_atk_name: String = ""
+var cached_def_name: String = ""
+
 #region Session Lifecycle
 
 func clear_session() -> void:
 	active_round_panels.clear()
 	active_round_index = 0
 	context.clear()
+	cached_atk_name = ""
+	cached_def_name = ""
 
 
 func initialize_battle_logger(initialization_context: Dictionary) -> void:
 	active_round_index = 0
 	context = initialization_context
+	
+	# --- OPTIMIZATION: CACHE NAMES ONCE ON STARTUP ---
+	cached_atk_name = "Attacker"
+	cached_def_name = "Defender"
+	
+	var controller = context.get("controller_ref")
+	if controller != null:
+		var raw_factions = FactionRegistry.get_database()
+		
+		var atk_profile = raw_factions.get(controller.attacker_faction_in_single_combat)
+		if atk_profile:
+			cached_atk_name = atk_profile.get("name", "Attacker")
+			
+		var def_profile = raw_factions.get(controller.defender_faction_in_single_combat)
+		if def_profile:
+			cached_def_name = def_profile.get("name", "Defender")
 
 
 func finalize_battle_logger(attacker_won: bool) -> void:
@@ -66,28 +88,17 @@ func engine_callback(event_type: String, data: Array) -> void:
 					panel.update_unit_displays(false, "Deploying...", "")
 
 		
-		
 		# =========================================================
 		# UNITS
 		# =========================================================
 		"unit_status_logged":
-			# data = [side_name, unrouted_str, routed_str, optional_phase_context]
-			print("💂    Units unrouted and routed -> %s: %s | %s" % [data[0], data[1], data[2]])
+			print("💂   Units unrouted and routed -> %s: %s | %s" % [data[0], data[1], data[2]])
 			
 			if current_panel != null:
-				var active_attacker_name: String = ""
-				var controller = context.get("controller_ref")
-				if controller != null:
-					var raw_factions = FactionRegistry.get_database()
-					var atk_profile = raw_factions.get(controller.attacker_faction_in_single_combat)
-					active_attacker_name = atk_profile.get("name", FactionRegistry.FactionID.keys()[controller.attacker_faction_in_single_combat])
-				
-				var is_attacker :bool = (data[0] == active_attacker_name)
-				
-				# Extract target phase context if the engine provided it, otherwise default to "all"
+				# PERFORMANCE FIX: Direct lookup evaluation using cached startup names
+				var is_attacker: bool = (data[0] == cached_atk_name)
 				var phase_context: String = data[3] if data.size() > 3 else "all"
 				
-				# Execute universal unified visual router pass
 				current_panel.update_unit_displays(is_attacker, data[1], data[2], phase_context)
 		
 		
@@ -108,7 +119,6 @@ func engine_callback(event_type: String, data: Array) -> void:
 			
 		
 		"dice_pool_status_logged":
-			# data = [role_string, offence, defence, morale, phase_context]
 			print("🎲 %s dice updated (%s) -> %d ⚔️ | %d 🛡️ | %d 🎖️" % [data[0], data[4], data[1], data[2], data[3]])
 			
 			if current_panel:
@@ -121,7 +131,6 @@ func engine_callback(event_type: String, data: Array) -> void:
 			
 			if current_panel:
 				var is_attacker: bool = (data[0] == "Attacker")
-				# Updates ONLY the damage assessment columns with the final modified pools
 				current_panel.update_dice_displays(is_attacker, data[1], data[2], data[3], "damage_step")
 		
 		"bonus_dice_rolled":
@@ -132,7 +141,6 @@ func engine_callback(event_type: String, data: Array) -> void:
 				current_panel.append_console_log(msg)
 		
 		"dice_rerolled_log":
-			# data = [target_role_string ("Attacker"/"Defender"), face_removed_string, face_added_string]
 			var msg := "🔄 [%s] Reroll: Lost 1 %s die -> Gained 1 %s die" % [
 				data[0], 
 				data[1], 
@@ -166,7 +174,6 @@ func engine_callback(event_type: String, data: Array) -> void:
 				current_panel.update_card_icons_displays(is_attacker, off_icons, def_icons, mor_icons, phase_context)
 		
 		"opponent_card_discarded":
-			# data = [active_card_id, opp_role_label, discarded_card_id, target_idx]
 			var controller = context.get("controller_ref")
 			var active_card_name := "Card #" + str(data[0])
 			var discarded_card_name := "Card #" + str(data[2])
@@ -180,7 +187,7 @@ func engine_callback(event_type: String, data: Array) -> void:
 				if discarded_fetched != null and str(discarded_fetched) != "":
 					discarded_card_name = str(discarded_fetched)
 			
-			var msg := "	[*] %s: ↳ 📇 Discard forced! %s chose and recycled '%s' from card slot %d back into their combat deck." % [
+			var msg := "    [*] %s: ↳ 📇 Discard forced! %s chose and recycled '%s' from card slot %d back into their combat deck." % [
 				active_card_name, data[1], discarded_card_name, data[3]
 			]
 			print(msg)
@@ -229,7 +236,6 @@ func engine_callback(event_type: String, data: Array) -> void:
 
 			if controller:
 				var fetched_name = controller.get_card_metadata(data[0], "card_name")
-				# Guard against Nil entries before committing to our strict type string
 				if fetched_name != null and str(fetched_name) != "":
 					card_name = str(fetched_name)
 
@@ -279,7 +285,6 @@ func engine_callback(event_type: String, data: Array) -> void:
 		"unit_routed":
 			var message := "🏳️ %s '%s' routed (took %d dmg)" % [data[0], data[1], data[2]]
 			print(message)
-			# Routes directly to your scrolling panel text display
 			if current_panel:
 				current_panel.append_console_log(message)
 
@@ -326,7 +331,6 @@ func engine_callback(event_type: String, data: Array) -> void:
 			if target_panel:
 				target_panel.append_console_log(message)
 			
-			# Clear unreached round rows cleanly to indicate match resolution
 			for i in range(active_round_index + 1, active_round_panels.size()):
 				if active_round_panels[i] != null:
 					active_round_panels[i].update_unit_displays(true, "Match Terminated", "")
@@ -358,6 +362,5 @@ func engine_callback(event_type: String, data: Array) -> void:
 			print(message)
 			if target_panel:
 				target_panel.append_console_log(message)
-
 
 #endregion
