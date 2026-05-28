@@ -44,7 +44,6 @@ enum CardID {
 	ORKS_SMASHER_GARGANT         = 3014,
 	
 	# --- TESTING ---
-	TESTING                      = 9999,
 }
 
 static func get_database() -> Dictionary:
@@ -54,8 +53,8 @@ static func get_database() -> Dictionary:
 	var fx_1: CardEffect
 	var fx_2: CardEffect
 	var fx_3: CardEffect
-	var fx_u1: CardEffect
-	var fx_u2: CardEffect
+	var fx_u_1: CardEffect
+	var fx_u_2: CardEffect
 	var node: CardEffect
 	var opt_a: CardEffect
 	var opt_b: CardEffect
@@ -94,11 +93,11 @@ static func get_database() -> Dictionary:
 	card.general_ability.append(fx_1)
 	
 	# --- UNIT ABILITY ---
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.DESTROY_ON_ROUT_OR_SPEND
-	fx_1.target_type = CardData.TargetType.OPPONENT
-	fx_1.value = 1 
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.DESTROY_ON_ROUT_OR_SPEND
+	fx_u_1.target_type = CardData.TargetType.OPPONENT
+	fx_u_1.value = 1 
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -180,11 +179,11 @@ static func get_database() -> Dictionary:
 	opt_u_a.value = 1
 	opt_u_a.pool_type = CardData.DicePoolType.DEFENSE
 
-	fx_u1 = CardEffect.new()
-	fx_u1.effect_type = CardData.EffectType.CONDITIONAL
-	fx_u1.condition_type = CardData.ConditionType.OPPONENT_HAS_FEWER_THAN_TWO_DEFENSE_TOKENS
-	fx_u1.choices.append(opt_u_a)
-	card.unit_ability.append(fx_u1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u_1.condition_type = CardData.ConditionType.OPPONENT_HAS_FEWER_THAN_TWO_DEFENSE_TOKENS
+	fx_u_1.choices.append(opt_u_a)
+	card.unit_ability.append(fx_u_1)
 
 	# PART B: Standard Tax -> If opponent has 2 or more tokens, strip 2 Shield tokens
 	opt_u_b = CardEffect.new()
@@ -193,11 +192,11 @@ static func get_database() -> Dictionary:
 	opt_u_b.value = -2
 	opt_u_b.pool_type = CardData.DicePoolType.DEFENSE
 
-	fx_u2 = CardEffect.new()
-	fx_u2.effect_type = CardData.EffectType.CONDITIONAL
-	fx_u2.condition_type = CardData.ConditionType.OPPONENT_HAS_TWO_OR_MORE_DEFENSE_TOKENS
-	fx_u2.choices.append(opt_u_b)
-	card.unit_ability.append(fx_u2)
+	fx_u_2 = CardEffect.new()
+	fx_u_2.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u_2.condition_type = CardData.ConditionType.OPPONENT_HAS_TWO_OR_MORE_DEFENSE_TOKENS
+	fx_u_2.choices.append(opt_u_b)
+	card.unit_ability.append(fx_u_2)
 
 	db[card.card_id] = card
 	
@@ -220,12 +219,12 @@ static func get_database() -> Dictionary:
 	card.general_ability.append(fx_1)
 	
 	# --- UNIT ABILITY ---
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.CONVERT_DICE_TO_SPECIFIC_DICE
-	fx_1.target_type = CardData.TargetType.SELF
-	fx_1.value = 2
-	fx_1.pool_type = CardData.DicePoolType.DEFENSE
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CONVERT_DICE_TO_SPECIFIC_DICE
+	fx_u_1.target_type = CardData.TargetType.SELF
+	fx_u_1.value = 2
+	fx_u_1.pool_type = CardData.DicePoolType.DEFENSE
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -247,9 +246,9 @@ static func get_database() -> Dictionary:
 	card.general_ability.append(fx_1)
 	
 	# Unit Choice Effect
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.CHOICE
-	fx_1.target_type = CardData.TargetType.SELF
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CHOICE
+	fx_u_1.target_type = CardData.TargetType.SELF
 	
 	opt_a = CardEffect.new()
 	opt_a.effect_type = CardData.EffectType.RALLY
@@ -262,8 +261,8 @@ static func get_database() -> Dictionary:
 	opt_b.value = 1
 	opt_b.pool_type = CardData.DicePoolType.MORALE
 	
-	fx_1.choices = [opt_a, opt_b]
-	card.unit_ability.append(fx_1)
+	fx_u_1.choices = [opt_a, opt_b]
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -302,9 +301,9 @@ static func get_database() -> Dictionary:
 	
 	# --- UNIT ABILITY ---
 	# Gain 1 Defence dice OR 1 Morale dice
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.CHOICE
-	fx_1.target_type = CardData.TargetType.SELF
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CHOICE
+	fx_u_1.target_type = CardData.TargetType.SELF
 	
 	opt_a = CardEffect.new()
 	opt_a.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
@@ -318,8 +317,8 @@ static func get_database() -> Dictionary:
 	opt_b.value = 1
 	opt_b.pool_type = CardData.DicePoolType.MORALE
 	
-	fx_1.choices = [opt_a, opt_b]
-	card.unit_ability.append(fx_1)
+	fx_u_1.choices = [opt_a, opt_b]
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -358,9 +357,9 @@ static func get_database() -> Dictionary:
 	
 	# --- UNIT ABILITY ---
 	# Tactical choice block
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.CHOICE
-	fx_1.target_type = CardData.TargetType.OPPONENT
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CHOICE
+	fx_u_1.target_type = CardData.TargetType.OPPONENT
 	
 	opt_a = CardEffect.new()
 	opt_a.effect_type = CardData.EffectType.LOSE_SPECIFIC_DICE
@@ -374,8 +373,8 @@ static func get_database() -> Dictionary:
 	opt_b.value = 1
 	opt_b.pool_type = CardData.DicePoolType.MORALE
 	
-	fx_1.choices = [opt_a, opt_b]
-	card.unit_ability.append(fx_1)
+	fx_u_1.choices = [opt_a, opt_b]
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -399,9 +398,9 @@ static func get_database() -> Dictionary:
 	
 	# --- UNIT ABILITY ---
 	# Spend 1 morale dice to place Space Marine
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.CONDITIONAL
-	fx_1.condition_type = CardData.ConditionType.HAS_MORALE_DICE
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u_1.condition_type = CardData.ConditionType.HAS_MORALE_DICE
 	
 	# Step 1: Pay the cost automatically
 	opt_a = CardEffect.new()
@@ -417,8 +416,8 @@ static func get_database() -> Dictionary:
 	opt_b.value = 1
 	opt_b.pool_type = CardData.UnitType.SPACE_MARINES as CardData.DicePoolType
 	
-	fx_1.choices = [opt_a, opt_b]
-	card.unit_ability.append(fx_1)
+	fx_u_1.choices = [opt_a, opt_b]
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -465,9 +464,9 @@ static func get_database() -> Dictionary:
 	
 	# --- UNIT ABILITY ---
 	# Spend 1 morale to rally all units
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.CONDITIONAL
-	fx_1.condition_type = CardData.ConditionType.HAS_MORALE_DICE
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u_1.condition_type = CardData.ConditionType.HAS_MORALE_DICE
 	
 	# Step 1: Pay 1 Morale die cost
 	opt_a = CardEffect.new()
@@ -481,8 +480,8 @@ static func get_database() -> Dictionary:
 	opt_b.effect_type = CardData.EffectType.RALLY_ALL_FRIENDLY_UNITS
 	opt_b.target_type = CardData.TargetType.SELF
 	
-	fx_1.choices = [opt_a, opt_b]
-	card.unit_ability.append(fx_1)
+	fx_u_1.choices = [opt_a, opt_b]
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -508,11 +507,11 @@ static func get_database() -> Dictionary:
 
 	# --- UNIT ABILITY ---
 	# The opponent discards 1 of his faceup combat cards
-	fx_2 = CardEffect.new()
-	fx_2.effect_type = CardData.EffectType.OPPONENT_DISCARDS_WORST_FACEUP_CARD
-	fx_2.target_type = CardData.TargetType.OPPONENT
-	fx_2.value = 1
-	card.unit_ability.append(fx_2)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.OPPONENT_DISCARDS_WORST_FACEUP_CARD
+	fx_u_1.target_type = CardData.TargetType.OPPONENT
+	fx_u_1.value = 1
+	card.unit_ability.append(fx_u_1)
 
 	db[card.card_id] = card
 	
@@ -535,10 +534,10 @@ static func get_database() -> Dictionary:
 	card.general_ability.append(fx_1)
 	
 	# Unit ability: Resolve an additional assess damage step this round
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.ADDITIONAL_ASSESS_DAMAGE_STEP_THIS_ROUND
-	fx_1.target_type = CardData.TargetType.SELF
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.ADDITIONAL_ASSESS_DAMAGE_STEP_THIS_ROUND
+	fx_u_1.target_type = CardData.TargetType.SELF
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -560,12 +559,12 @@ static func get_database() -> Dictionary:
 	card.general_ability.append(fx_1)
 	
 	# Unit ability: Spend any number of Offence dice. For each spent, gain 2 offence tokens.
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKEN
-	fx_1.target_type = CardData.TargetType.SELF
-	fx_1.value = 2 # Multiplier: Tokens gained per single die consumed
-	fx_1.pool_type = CardData.DicePoolType.OFFENSE
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKENS
+	fx_u_1.target_type = CardData.TargetType.SELF
+	fx_u_1.value = 2 # Multiplier: Tokens gained per single die consumed
+	fx_u_1.pool_type = CardData.DicePoolType.OFFENSE
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -588,16 +587,16 @@ static func get_database() -> Dictionary:
 	card.general_ability.append(fx_1)
 	
 	# Unit ability 1: Rally all units
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.RALLY_ALL_FRIENDLY_UNITS
-	fx_1.target_type = CardData.TargetType.SELF
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.RALLY_ALL_FRIENDLY_UNITS
+	fx_u_1.target_type = CardData.TargetType.SELF
+	card.unit_ability.append(fx_u_1)
 	
 	# Unit ability 2: Strategic Morale Conversion
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.CONVERT_SAFE_DICE_TO_MORALE
-	fx_1.target_type = CardData.TargetType.SELF
-	card.unit_ability.append(fx_1)
+	fx_u_2 = CardEffect.new()
+	fx_u_2.effect_type = CardData.EffectType.CONVERT_SAFE_DICE_TO_MORALE
+	fx_u_2.target_type = CardData.TargetType.SELF
+	card.unit_ability.append(fx_u_2)
 	
 	db[card.card_id] = card
 	
@@ -614,7 +613,7 @@ static func get_database() -> Dictionary:
 	# --- GENERAL ABILITY ---
 	# Spend 1 offence dice to gain 3 offence tokens
 	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKEN
+	fx_1.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKENS
 	fx_1.target_type = CardData.TargetType.SELF
 	fx_1.value = 3
 	fx_1.max_spend = 1
@@ -623,12 +622,12 @@ static func get_database() -> Dictionary:
 	
 	# --- UNIT ABILITY ---
 	# Rout unit or spend 1 Defence dice
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.ROUT_LOWEST_TIER_OR_SPEND_DICE
-	fx_1.target_type = CardData.TargetType.OPPONENT
-	fx_1.value = 1
-	fx_1.pool_type = CardData.DicePoolType.DEFENSE
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.ROUT_LOWEST_TIER_OR_SPEND_DICE
+	fx_u_1.target_type = CardData.TargetType.OPPONENT
+	fx_u_1.value = 1
+	fx_u_1.pool_type = CardData.DicePoolType.DEFENSE
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -650,9 +649,9 @@ static func get_database() -> Dictionary:
 	card.general_ability.append(fx_1)
 	
 	# --- UNIT ABILITY ---
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.CONDITIONAL
-	fx_1.condition_type = CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u_1.condition_type = CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS
 	
 	node = CardEffect.new()
 	node.effect_type = CardData.EffectType.GAIN_TOKEN_PER_UNROUTED_UNIT
@@ -661,8 +660,8 @@ static func get_database() -> Dictionary:
 	node.pool_type = CardData.DicePoolType.DEFENSE
 	node.max_spend = CardData.UnitFilterMode.REQUIRED_TYPES
 	
-	fx_1.choices = [node]
-	card.unit_ability.append(fx_1)
+	fx_u_1.choices = [node]
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -692,13 +691,13 @@ static func get_database() -> Dictionary:
 	
 	# --- UNIT ABILITY ---
 	# Gain 1 offence token per unrouted tier 0 unit
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.GAIN_TOKEN_PER_UNROUTED_UNIT
-	fx_1.target_type = CardData.TargetType.SELF
-	fx_1.value = 1
-	fx_1.pool_type = CardData.DicePoolType.OFFENSE
-	fx_1.max_spend = CardData.UnitFilterMode.REQUIRED_TYPES
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.GAIN_TOKEN_PER_UNROUTED_UNIT
+	fx_u_1.target_type = CardData.TargetType.SELF
+	fx_u_1.value = 1
+	fx_u_1.pool_type = CardData.DicePoolType.OFFENSE
+	fx_u_1.max_spend = CardData.UnitFilterMode.REQUIRED_TYPES
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -769,8 +768,8 @@ static func get_database() -> Dictionary:
 	
 	# --- UNIT ABILITY ---
 	# Choice: Gain 2 Offence tokens OR 2 Defence tokens
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.CHOICE
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CHOICE
 	
 	opt_a = CardEffect.new()
 	opt_a.effect_type = CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS
@@ -784,9 +783,9 @@ static func get_database() -> Dictionary:
 	opt_b.value = 2
 	opt_b.pool_type = CardData.DicePoolType.DEFENSE
 	
-	fx_1.choices.append(opt_a)
-	fx_1.choices.append(opt_b)
-	card.unit_ability.append(fx_1)
+	fx_u_1.choices.append(opt_a)
+	fx_u_1.choices.append(opt_b)
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -807,7 +806,7 @@ static func get_database() -> Dictionary:
 	fx_1.condition_type = CardData.ConditionType.HAS_NO_MORALE_DICE
 	
 	opt_a = CardEffect.new()
-	opt_a.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKEN
+	opt_a.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKENS
 	opt_a.target_type = CardData.TargetType.SELF
 	opt_a.pool_type = CardData.DicePoolType.OFFENSE
 	opt_a.value = 3
@@ -820,7 +819,7 @@ static func get_database() -> Dictionary:
 	fx_2.condition_type = CardData.ConditionType.HAS_MORALE_DICE
 	
 	opt_b = CardEffect.new()
-	opt_b.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKEN
+	opt_b.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKENS
 	opt_b.target_type = CardData.TargetType.SELF
 	opt_b.pool_type = CardData.DicePoolType.MORALE
 	opt_b.value = 3
@@ -832,33 +831,34 @@ static func get_database() -> Dictionary:
 	
 	# --- UNIT ABILITY ---
 	# Branch 1: Opponent HAS routed units BUT has NO Defence dice -> Force destruction
-	fx_u1 = CardEffect.new()
-	fx_u1.effect_type = CardData.EffectType.CONDITIONAL
-	fx_u1.condition_type = CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS_AND_NO_DEFENSE_DICE
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u_1.condition_type = CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS_AND_NO_DEFENSE_DICE
 	
 	opt_u_a = CardEffect.new()
 	opt_u_a.effect_type = CardData.EffectType.DESTROY_LOWEST_TIER
 	opt_u_a.target_type = CardData.TargetType.OPPONENT
 	opt_u_a.value = 1
 	opt_u_a.destruction_mode = CardData.DestructionMode.ROUTED 
-	fx_u1.choices.append(opt_u_a)
+	fx_u_1.choices.append(opt_u_a)
 	
 	# Branch 2: Opponent HAS routed units AND HAS Defence dice -> Tax 1 Defence die
-	fx_u2 = CardEffect.new()
-	fx_u2.effect_type = CardData.EffectType.CONDITIONAL
-	fx_u2.condition_type = CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS_AND_DEFENSE_DICE
+	fx_u_2 = CardEffect.new()
+	fx_u_2.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u_2.condition_type = CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS_AND_DEFENSE_DICE
 	
 	opt_u_b = CardEffect.new()
-	opt_u_b.effect_type = CardData.EffectType.LOSE_SPECIFIC_DICE # Reused your primitive executor perfectly!
+	opt_u_b.effect_type = CardData.EffectType.LOSE_SPECIFIC_DICE
 	opt_u_b.target_type = CardData.TargetType.OPPONENT
 	opt_u_b.pool_type = CardData.DicePoolType.DEFENSE
 	opt_u_b.value = 1
-	fx_u2.choices.append(opt_u_b)
+	fx_u_2.choices.append(opt_u_b)
 	
-	card.unit_ability.append(fx_u1)
-	card.unit_ability.append(fx_u2)
+	card.unit_ability.append(fx_u_1)
+	card.unit_ability.append(fx_u_2)
 	
 	db[card.card_id] = card
+	
 	
 	
 	# ==========================================================================
@@ -970,10 +970,10 @@ static func get_database() -> Dictionary:
 	card.general_ability.append(fx_1)
 	
 	# --- UNIT ABILITY ---
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.DISCARD_STEAL_ICONS
-	fx_1.target_type = CardData.TargetType.OPPONENT
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.DISCARD_STEAL_ICONS
+	fx_u_1.target_type = CardData.TargetType.OPPONENT
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -995,12 +995,12 @@ static func get_database() -> Dictionary:
 	card.general_ability.append(fx_1)
 	
 	# --- UNIT ABILITY ---
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.REROLL_SPECIFIC_DICE_FOR_EACH_UNIT
-	fx_1.target_type = CardData.TargetType.OPPONENT
-	fx_1.value = CardData.UnitType.ORK_BOYZ
-	fx_1.pool_type = CardData.DicePoolType.OFFENSE
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.REROLL_SPECIFIC_DICE_FOR_EACH_UNIT
+	fx_u_1.target_type = CardData.TargetType.OPPONENT
+	fx_u_1.value = CardData.UnitType.ORK_BOYZ
+	fx_u_1.pool_type = CardData.DicePoolType.OFFENSE
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -1022,12 +1022,12 @@ static func get_database() -> Dictionary:
 	card.general_ability.append(fx_1)
 	
 	# --- UNIT ABILITY ---
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.REROLL_SPECIFIC_DICE_FOR_EACH_UNIT
-	fx_1.target_type = CardData.TargetType.OPPONENT
-	fx_1.value = CardData.UnitType.ORK_BOYZ
-	fx_1.pool_type = CardData.DicePoolType.DEFENSE
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.REROLL_SPECIFIC_DICE_FOR_EACH_UNIT
+	fx_u_1.target_type = CardData.TargetType.OPPONENT
+	fx_u_1.value = CardData.UnitType.ORK_BOYZ
+	fx_u_1.pool_type = CardData.DicePoolType.DEFENSE
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -1056,11 +1056,11 @@ static func get_database() -> Dictionary:
 	card.general_ability.append(fx_1)
 	
 	# --- UNIT ABILITY ---
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.RALLY
-	fx_1.target_type = CardData.TargetType.SELF
-	fx_1.value = 1
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.RALLY
+	fx_u_1.target_type = CardData.TargetType.SELF
+	fx_u_1.value = 1
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -1083,13 +1083,13 @@ static func get_database() -> Dictionary:
 	
 	# --- UNIT ABILITY ---
 	# Explicitly scales offense tokens from only the unit types required by this card
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.GAIN_TOKEN_PER_UNROUTED_UNIT
-	fx_1.target_type = CardData.TargetType.SELF
-	fx_1.value = 1
-	fx_1.pool_type = CardData.DicePoolType.OFFENSE
-	fx_1.max_spend = CardData.UnitFilterMode.REQUIRED_TYPES
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.GAIN_TOKEN_PER_UNROUTED_UNIT
+	fx_u_1.target_type = CardData.TargetType.SELF
+	fx_u_1.value = 1
+	fx_u_1.pool_type = CardData.DicePoolType.OFFENSE
+	fx_u_1.max_spend = CardData.UnitFilterMode.REQUIRED_TYPES
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -1148,12 +1148,12 @@ static func get_database() -> Dictionary:
 	card.general_ability.append(fx_1)
 	
 	# --- UNIT ABILITY ---
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS
-	fx_1.target_type = CardData.TargetType.SELF
-	fx_1.value = 1
-	fx_1.pool_type = CardData.DicePoolType.DEFENSE
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS
+	fx_u_1.target_type = CardData.TargetType.SELF
+	fx_u_1.value = 1
+	fx_u_1.pool_type = CardData.DicePoolType.DEFENSE
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -1176,12 +1176,12 @@ static func get_database() -> Dictionary:
 	card.general_ability.append(fx_1)
 	
 	# --- UNIT ABILITY ---
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS
-	fx_1.target_type = CardData.TargetType.SELF
-	fx_1.value = 1
-	fx_1.pool_type = CardData.DicePoolType.OFFENSE
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS
+	fx_u_1.target_type = CardData.TargetType.SELF
+	fx_u_1.value = 1
+	fx_u_1.pool_type = CardData.DicePoolType.OFFENSE
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -1211,10 +1211,10 @@ static func get_database() -> Dictionary:
 	card.general_ability.append(fx_1)
 	
 	# --- UNIT ABILITY ---
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.MIRROR_OPPONENT_TOKEN_GAINS
-	fx_1.target_type = CardData.TargetType.SELF
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.MIRROR_OPPONENT_TOKEN_GAINS
+	fx_u_1.target_type = CardData.TargetType.SELF
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -1238,9 +1238,9 @@ static func get_database() -> Dictionary:
 	
 	# --- UNIT ABILITY ---
 	# Refactored compound token logic into an atomic, conditional sequence block
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.CONDITIONAL
-	fx_1.condition_type = CardData.ConditionType.OUTNUMBERING
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u_1.condition_type = CardData.ConditionType.OUTNUMBERING
 	
 	# Step 1 inside outnumber sequence: Gain 2 Offence Tokens
 	opt_a = CardEffect.new()
@@ -1256,8 +1256,8 @@ static func get_database() -> Dictionary:
 	opt_b.value = 2
 	opt_b.pool_type = CardData.DicePoolType.DEFENSE
 	
-	fx_1.choices = [opt_a, opt_b]
-	card.unit_ability.append(fx_1)
+	fx_u_1.choices = [opt_a, opt_b]
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -1275,12 +1275,12 @@ static func get_database() -> Dictionary:
 	# None
 	
 	# --- UNIT ABILITY ---
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS
-	fx_1.target_type = CardData.TargetType.SELF
-	fx_1.value = 3
-	fx_1.pool_type = CardData.DicePoolType.OFFENSE
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS
+	fx_u_1.target_type = CardData.TargetType.SELF
+	fx_u_1.value = 3
+	fx_u_1.pool_type = CardData.DicePoolType.OFFENSE
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -1299,11 +1299,11 @@ static func get_database() -> Dictionary:
 	# None
 	
 	# --- UNIT ABILITY ---
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.OPPONENT_DISCARDS_BEST_FACEUP_CARD
-	fx_1.target_type = CardData.TargetType.OPPONENT
-	fx_1.value = 1
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.OPPONENT_DISCARDS_BEST_FACEUP_CARD
+	fx_u_1.target_type = CardData.TargetType.OPPONENT
+	fx_u_1.value = 1
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
@@ -1322,10 +1322,10 @@ static func get_database() -> Dictionary:
 	# None
 	
 	# --- UNIT ABILITY ---
-	fx_1 = CardEffect.new()
-	fx_1.effect_type = CardData.EffectType.DESTROY_OR_SPEND_DICE_BASED_ON_TIER
-	fx_1.target_type = CardData.TargetType.OPPONENT
-	card.unit_ability.append(fx_1)
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.DESTROY_OR_SPEND_DICE_BASED_ON_TIER
+	fx_u_1.target_type = CardData.TargetType.OPPONENT
+	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
