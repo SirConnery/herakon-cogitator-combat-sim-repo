@@ -38,6 +38,8 @@ ROUT_LOWEST_TIER_OR_SPEND_DICE,
 SPAWN_UNIT,
 SPAWN_REINFORCEMENT_TOKEN,
 
+DESTROY_LOWEST_TIER,
+
 #SM
 DESTROY_ON_ROUT_OR_SPEND,  # Ambush
 PREVENT_ROUTING_THIS_ROUND, # Show No Fear
@@ -56,10 +58,14 @@ enum ConditionType {
 	ATTACKING,
 	DEFENDING,
 	HAS_MORALE_DICE,
-	OPPONENT_HAS_ROUTED_UNITS,
+	HAS_NO_MORALE_DICE,
 	HAS_MORE_MORALE_THAN_OPPONENT,
+	OPPONENT_HAS_ROUTED_UNITS,
 	OPPONENT_HAS_UNROUTED_UNITS,
+	OPPONENT_HAS_NO_ROUTED_UNITS,
 	OPPONENT_HAS_NO_UNROUTED_UNITS,
+	OPPONENT_HAS_ROUTED_UNITS_AND_DEFENSE_DICE,
+	OPPONENT_HAS_ROUTED_UNITS_AND_NO_DEFENSE_DICE,
 }
 
 enum UnitFilterMode {
@@ -71,6 +77,8 @@ enum UnitFilterMode {
 	TIER_3           # Counts only tier 3 figures
 }
 
+
+
 enum TargetType { SELF, OPPONENT, BOTH }
 enum DicePoolType { RANDOM, OFFENSE, DEFENSE, MORALE }
 enum TimingWindow {
@@ -79,6 +87,13 @@ enum TimingWindow {
 	DURING_DAMAGE,   # Resolves after raw damage numbers are calculated, before unit allocation
 	AFTER_DAMAGE     # Resolves after figures are safely routed or destroyed
 }
+
+enum DestructionMode {
+	ANY,
+	ROUTED,
+	UNROUTED
+}
+
 enum UnitType {
 	NONE,
 	

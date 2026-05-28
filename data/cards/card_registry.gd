@@ -25,6 +25,7 @@ enum CardID {
 	CSM_IMPURE_ZEAL              = 2003,
 	CSM_DARK_FAITH               = 2004,
 	CSM_LURE_OF_CHAOS            = 2005,
+	CSM_MARK_OF_KHORNE           = 2006,
 	
 	# --- ORKS (ORKS) ---
 	ORKS_GRETCHIN                = 3001,
@@ -42,7 +43,8 @@ enum CardID {
 	ORKS_SNAPPER_GARGANT         = 3013,
 	ORKS_SMASHER_GARGANT         = 3014,
 	
-	
+	# --- TESTING ---
+	TESTING                      = 9999,
 }
 
 static func get_database() -> Dictionary:
@@ -51,10 +53,14 @@ static func get_database() -> Dictionary:
 	
 	var fx: CardEffect
 	var fx_2: CardEffect
+	var fx_u1: CardEffect
+	var fx_u2: CardEffect
 	var node: CardEffect
 	var opt_a: CardEffect
 	var opt_b: CardEffect
 	var opt_c: CardEffect
+	var opt_u_a: CardEffect
+	var opt_u_b: CardEffect
 	
 	# ==========================================================================
 	# --- CARD 0000: Dummy Card ---
@@ -710,6 +716,7 @@ static func get_database() -> Dictionary:
 	card.morale_icons = 1
 	card.required_unit_types = [CardData.UnitType.CULTISTS, CardData.UnitType.ICONOCLAST_DESTROYERS]
 	
+	# --- GENERAL ABILITY ---
 	# Setup Branch 1: Opponent has unrouted units
 	fx = CardEffect.new()
 	fx.effect_type = CardData.EffectType.CONDITIONAL
@@ -744,6 +751,117 @@ static func get_database() -> Dictionary:
 	card.general_ability.append(fx_2) 
 	card.general_ability.append(fx)
 	
+	# --- UNIT ABILITY ---
+	# Choice: Gain 2 Offence tokens OR 2 Defence tokens
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.CHOICE
+	
+	opt_a = CardEffect.new()
+	opt_a.effect_type = CardData.EffectType.GAIN_COMBAT_TOKEN
+	opt_a.target_type = CardData.TargetType.SELF
+	opt_a.value = 2
+	opt_a.pool_type = CardData.DicePoolType.OFFENSE
+	
+	opt_b = CardEffect.new()
+	opt_b.effect_type = CardData.EffectType.GAIN_COMBAT_TOKEN
+	opt_b.target_type = CardData.TargetType.SELF
+	opt_b.value = 2
+	opt_b.pool_type = CardData.DicePoolType.DEFENSE
+	
+	fx.choices.append(opt_a)
+	fx.choices.append(opt_b)
+	card.unit_ability.append(fx)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 2006: Mark of Khorne ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.CSM_MARK_OF_KHORNE
+	card.card_name = "Mark of Khorne"
+	card.card_tier = CardData.CardTier.STARTER
+	card.offence_icons = 2
+	card.required_unit_types = [CardData.UnitType.CHAOS_SPACE_MARINES, CardData.UnitType.ICONOCLAST_DESTROYERS]
+	
+	# --- GENERAL ABILITY ---
+	# Setup Branch 1: Player has NO Morale dice -> Converts 1 Offence Die
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.CONDITIONAL
+	fx.condition_type = CardData.ConditionType.HAS_NO_MORALE_DICE
+	
+	opt_a = CardEffect.new()
+	opt_a.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKEN
+	opt_a.target_type = CardData.TargetType.SELF
+	opt_a.pool_type = CardData.DicePoolType.OFFENSE
+	opt_a.value = 3
+	opt_a.max_spend = 1
+	fx.choices.append(opt_a)
+	
+	# Setup Branch 2: Player HAS Morale dice -> Converts 1 Morale Die
+	fx_2 = CardEffect.new()
+	fx_2.effect_type = CardData.EffectType.CONDITIONAL
+	fx_2.condition_type = CardData.ConditionType.HAS_MORALE_DICE
+	
+	opt_b = CardEffect.new()
+	opt_b.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKEN
+	opt_b.target_type = CardData.TargetType.SELF
+	opt_b.pool_type = CardData.DicePoolType.MORALE
+	opt_b.value = 3
+	opt_b.max_spend = 1
+	fx_2.choices.append(opt_b)
+	
+	card.general_ability.append(fx)
+	card.general_ability.append(fx_2)
+	
+	# --- UNIT ABILITY ---
+	# Branch 1: Opponent HAS routed units BUT has NO Defence dice -> Force destruction
+	fx_u1 = CardEffect.new()
+	fx_u1.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u1.condition_type = CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS_AND_NO_DEFENSE_DICE
+	
+	opt_u_a = CardEffect.new()
+	opt_u_a.effect_type = CardData.EffectType.DESTROY_LOWEST_TIER
+	opt_u_a.target_type = CardData.TargetType.OPPONENT
+	opt_u_a.value = 1
+	opt_u_a.destruction_mode = CardData.DestructionMode.ROUTED 
+	fx_u1.choices.append(opt_u_a)
+	
+	# Branch 2: Opponent HAS routed units AND HAS Defence dice -> Tax 1 Defence die
+	fx_u2 = CardEffect.new()
+	fx_u2.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u2.condition_type = CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS_AND_DEFENSE_DICE
+	
+	opt_u_b = CardEffect.new()
+	opt_u_b.effect_type = CardData.EffectType.LOSE_SPECIFIC_DICE # Reused your primitive executor perfectly!
+	opt_u_b.target_type = CardData.TargetType.OPPONENT
+	opt_u_b.pool_type = CardData.DicePoolType.DEFENSE
+	opt_u_b.value = 1
+	fx_u2.choices.append(opt_u_b)
+	
+	card.unit_ability.append(fx_u1)
+	card.unit_ability.append(fx_u2)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 9999: Testing ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.TESTING
+	card.card_name = "Testing"
+	card.card_tier = CardData.CardTier.STARTER
+	card.offence_icons = 1
+	card.required_unit_types = [] 
+	
+	# --- GENERAL ABILITY ---
+	fx = CardEffect.new()
+	fx.effect_type = CardData.EffectType.DESTROY_LOWEST_TIER
+	fx.target_type = CardData.TargetType.OPPONENT
+	fx.value = 1
+	fx.destruction_mode = CardData.DestructionMode.ROUTED # Passing perfectly through index 8 now!
+	
+	card.general_ability.append(fx)
 	db[card.card_id] = card
 	
 	# ==========================================================================

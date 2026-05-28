@@ -1050,6 +1050,8 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.SPAWN_UNIT: _execute_spawn_unit,
 	CardData.EffectType.SPAWN_REINFORCEMENT_TOKEN: _execute_spawn_reinforcement_token,
 	
+	CardData.EffectType.DESTROY_LOWEST_TIER: _execute_destroy_lowest_tier,
+	
 	CardData.EffectType.GAIN_TOKENS_IF_MORE_UNITS_THAN_OPPONENT: _execute_gain_tokens_if_more_units_than_opponent,
 	
 	# SM
@@ -1202,14 +1204,22 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 			condition_passed = not is_attacker
 		CardData.ConditionType.HAS_MORALE_DICE:
 			condition_passed = _has_specific_dice(side_data, 3, 1)
+		CardData.ConditionType.HAS_NO_MORALE_DICE:
+			condition_passed = not _has_specific_dice(side_data, 3, 1)
 		CardData.ConditionType.HAS_MORE_MORALE_THAN_OPPONENT:
 			condition_passed = _has_more_specific_dice_than_opponent(side_data, opp_side_data, 3)
 		CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS:
 			condition_passed = _has_any_routed_units(opp_side_data)
+		CardData.ConditionType.OPPONENT_HAS_NO_ROUTED_UNITS:
+			condition_passed = not _has_any_routed_units(opp_side_data)
 		CardData.ConditionType.OPPONENT_HAS_UNROUTED_UNITS:
 			condition_passed = _has_any_unrouted_units(opp_side_data)
 		CardData.ConditionType.OPPONENT_HAS_NO_UNROUTED_UNITS:
 			condition_passed = not _has_any_unrouted_units(opp_side_data)
+		CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS_AND_DEFENSE_DICE:
+			condition_passed = _has_any_routed_units(opp_side_data) and opp_side_data[Stat.DEFENCE] > 0
+		CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS_AND_NO_DEFENSE_DICE:
+			condition_passed = _has_any_routed_units(opp_side_data) and opp_side_data[Stat.DEFENCE] <= 0
 		_:
 			condition_passed = true
 			
@@ -1397,6 +1407,7 @@ static func _execute_lose_specific_dice(fx: Array, _token_pools: Array, side_dat
 	# Broadcast a master state updates call log if changes occurred
 	if (lost_offence + lost_defence + lost_morale) > 0 and on_event.is_valid():
 		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
+
 
 static func _execute_convert_dice_to_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var max_to_convert: int = fx[2]
@@ -2258,6 +2269,65 @@ static func _execute_opponent_discards_best_faceup_card(_fx: Array, _token_pools
 #endregion
 
 #region Generic Destroy unit functions
+
+static func _execute_destroy_lowest_tier(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var target_type: int = fx[1]
+	var count_to_destroy: int = fx[2]
+	var target_mode: int = fx[8] if fx.size() > 8 else CardData.DestructionMode.ANY
+
+	# --- 1. LEAN SYSTEM ROUTING ---
+	var target_side_data := side_data
+	var target_role := role
+	
+	if target_type != 0: # 0 = Self, anything else = Opponent
+		target_role = "Defender" if role == "Attacker" else "Attacker"
+		target_side_data = side_data.get("parent_state", {}).get(Side.DEFENDER if role == "Attacker" else Side.ATTACKER, {})
+		
+	if target_side_data.is_empty():
+		return
+
+	# --- 2. DESTRUCTION PROCESSING ---
+	var destroyed_count := 0
+	var victim_names: Array[String] = []
+
+	while destroyed_count < count_to_destroy:
+		var target_squad: Dictionary = {}
+		var target_fig_idx: int = -1
+		var lowest_tier: int = 999
+		
+		for squad in target_side_data["squads"]:
+			var squad_tier: int = squad.get("tier", 0)
+			
+			for i in range(squad["alive_figures"].size()):
+				if squad["alive_figures"][i] <= 0:
+					continue
+					
+				# Tight filter screens: drop out early if status conditions mismatch
+				var is_routed: bool = squad["figures_routed"][i]
+				if target_mode == CardData.DestructionMode.ROUTED and not is_routed: continue
+				if target_mode == CardData.DestructionMode.UNROUTED and is_routed: continue
+					
+				if squad_tier < lowest_tier:
+					lowest_tier = squad_tier
+					target_squad = squad
+					target_fig_idx = i
+					
+		if not target_squad.is_empty() and target_fig_idx != -1:
+			victim_names.append(target_squad["name"])
+			_destroy_figure(target_squad, target_fig_idx, target_role, on_event)
+			destroyed_count += 1
+		else:
+			break # Loop breaks safely on its own if no valid targets match criteria
+
+	# --- 3. CONSOLIDATED TELEMETRY PASS ---
+	if on_event.is_valid():
+		if not victim_names.is_empty():
+			var list_string := ", ".join(victim_names)
+			on_event.call("ability_triggered", [card_id, "↳ 💀 Destroyed %s lowest-tier unit(s): [%s]" % [target_role, list_string]])
+		elif target_mode == CardData.DestructionMode.ROUTED:
+			# Replaces the expensive pre-scan guard clause with a zero-cost post check
+			on_event.call("ability_triggered", [card_id, "↳ 💨 Effect skipped: No routed units found on %s's board." % target_role])
+
 
 #endregion
 
