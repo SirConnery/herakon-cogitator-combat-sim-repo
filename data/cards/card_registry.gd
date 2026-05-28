@@ -26,6 +26,14 @@ enum CardID {
 	CSM_DARK_FAITH               = 2004,
 	CSM_LURE_OF_CHAOS            = 2005,
 	CSM_MARK_OF_KHORNE           = 2006,
+	CSM_MARK_OF_NURGLE           = 2007,
+	CSM_MARK_OF_SLAANESH         = 2008,
+	CSM_MARK_OF_TZEENTCH         = 2009,
+	CSM_INHUMAN_STRENGTH         = 2010,
+	CSM_DAEMONIC_RESILIENCE      = 2011,
+	CSM_CHAOS_UNITED             = 2012,
+	CSM_DEATH_AND_DESPAIR        = 2013,
+	CSM_CHAOS_VICTORIOUS         = 2014,
 	
 	# --- ORKS (ORKS) ---
 	ORKS_GRETCHIN                = 3001,
@@ -859,7 +867,413 @@ static func get_database() -> Dictionary:
 	
 	db[card.card_id] = card
 	
+	# ==========================================================================
+	# --- CARD 2007: Mark of Nurgle ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.CSM_MARK_OF_NURGLE
+	card.card_name = "Mark of Nurgle"
+	card.card_tier = CardData.CardTier.TIER_0
+	card.defence_icons = 2
+	card.required_unit_types = [CardData.UnitType.CHAOS_SPACE_MARINES, CardData.UnitType.ICONOCLAST_DESTROYERS]
 	
+	# --- GENERAL ABILITY ---
+	# Setup Branch 1: Player has NO Morale dice -> Converts 1 Defence Die to 3 Defence Tokens
+	fx_1 = CardEffect.new()
+	fx_1.effect_type = CardData.EffectType.CONDITIONAL
+	fx_1.condition_type = CardData.ConditionType.HAS_NO_MORALE_DICE
+	
+	opt_a = CardEffect.new()
+	opt_a.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKENS
+	opt_a.target_type = CardData.TargetType.SELF
+	opt_a.pool_type = CardData.DicePoolType.DEFENSE
+	opt_a.value = 3
+	opt_a.max_spend = 1
+	fx_1.choices.append(opt_a)
+	
+	# Setup Branch 2: Player HAS Morale dice -> Converts 1 Morale Die to 3 Defence Tokens
+	fx_2 = CardEffect.new()
+	fx_2.effect_type = CardData.EffectType.CONDITIONAL
+	fx_2.condition_type = CardData.ConditionType.HAS_MORALE_DICE
+	
+	opt_b = CardEffect.new()
+	opt_b.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKENS
+	opt_b.target_type = CardData.TargetType.SELF
+	opt_b.pool_type = CardData.DicePoolType.MORALE
+	opt_b.value = 3
+	opt_b.max_spend = 1
+	fx_2.choices.append(opt_b)
+	
+	# Appending the negative check first prevents the state mutation side-effect cascade
+	card.general_ability.append(fx_1)
+	card.general_ability.append(fx_2)
+	
+	# --- UNIT ABILITY ---
+	# Condition Check: If opponent has routed units gain 2 defence tokens
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u_1.condition_type = CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS
+	
+	# Payout Node: Gain 2 Defence (Shield) dice
+	opt_u_a = CardEffect.new()
+	opt_u_a.effect_type = CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS
+	opt_u_a.target_type = CardData.TargetType.SELF
+	opt_u_a.value = 2
+	opt_u_a.pool_type = CardData.DicePoolType.DEFENSE
+	
+	fx_u_1.choices.append(opt_u_a)
+	card.unit_ability.append(fx_u_1)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 2008: Mark of Slaanesh ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.CSM_MARK_OF_SLAANESH
+	card.card_name = "Mark of Slaanesh"
+	card.card_tier = CardData.CardTier.TIER_0
+	card.offence_icons = 1
+	card.defence_icons = 1
+	card.required_unit_types = [CardData.UnitType.CHAOS_SPACE_MARINES]
+	
+	# --- GENERAL ABILITY ---
+	# Part 1: Unconditional +1 Dice allocation
+	fx_1 = CardEffect.new()
+	fx_1.effect_type = CardData.EffectType.GAIN_DICE
+	fx_1.target_type = CardData.TargetType.SELF
+	fx_1.value = 1
+	card.general_ability.append(fx_1)
+	
+	# Part 2: High Morale condition checking
+	fx_2 = CardEffect.new()
+	fx_2.effect_type = CardData.EffectType.CONDITIONAL
+	fx_2.condition_type = CardData.ConditionType.HAS_MORE_MORALE_THAN_OPPONENT
+	
+	node = CardEffect.new()
+	node.effect_type = CardData.EffectType.ROUT_LOWEST_TIER
+	node.target_type = CardData.TargetType.OPPONENT
+	node.value = 1
+	
+	fx_2.choices.append(node)
+	card.general_ability.append(fx_2)
+	
+	# --- UNIT ABILITY ---
+	# Condition Check: If opponent has routed units, execute reinforcement spawn
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u_1.condition_type = CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS
+	
+	# Spawn Node: Place 1 reinforcement token on self side
+	opt_u_a = CardEffect.new()
+	opt_u_a.effect_type = CardData.EffectType.SPAWN_REINFORCEMENT_TOKEN
+	opt_u_a.target_type = CardData.TargetType.SELF
+	opt_u_a.value = 1
+	
+	fx_u_1.choices.append(opt_u_a)
+	card.unit_ability.append(fx_u_1)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 2009: Mark of Tzeentch ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.CSM_MARK_OF_TZEENTCH
+	card.card_name = "Mark of Tzeentch"
+	card.card_tier = CardData.CardTier.TIER_0
+	card.morale_icons = 2
+	card.required_unit_types = [CardData.UnitType.CHAOS_SPACE_MARINES, CardData.UnitType.ICONOCLAST_DESTROYERS]
+	
+	# --- GENERAL ABILITY ---
+	# Part 1: Gain 1 morale dice
+	fx_1 = CardEffect.new()
+	fx_1.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
+	fx_1.target_type = CardData.TargetType.SELF
+	fx_1.value = 1
+	fx_1.pool_type = CardData.DicePoolType.MORALE
+	card.general_ability.append(fx_1)
+	
+	# Part 2: Nested Conditional Evaluation (HAS_MORE_MORALE AND HAS_CULTIST)
+	fx_2 = CardEffect.new()
+	fx_2.effect_type = CardData.EffectType.CONDITIONAL
+	fx_2.condition_type = CardData.ConditionType.HAS_MORE_MORALE_THAN_OPPONENT
+	
+	# Inner Check: Evaluated only if the player has higher morale
+	var inner_cond = CardEffect.new()
+	inner_cond.effect_type = CardData.EffectType.CONDITIONAL
+	inner_cond.condition_type = CardData.ConditionType.HAS_CULTISTS
+	
+	# Payout Node A: Spawn 1 Chaos Space Marine
+	var spawn_fx = CardEffect.new()
+	spawn_fx.effect_type = CardData.EffectType.SPAWN_UNIT
+	spawn_fx.target_type = CardData.TargetType.SELF
+	spawn_fx.value = 1
+	@warning_ignore("int_as_enum_without_match")
+	spawn_fx.pool_type = CardData.UnitType.CHAOS_SPACE_MARINES as CardData.DicePoolType
+	
+	# Payout Node B: Sacrifices your own lowest-tier unit (the Cultist)
+	var sacrifice_fx = CardEffect.new()
+	sacrifice_fx.effect_type = CardData.EffectType.DESTROY_LOWEST_TIER
+	sacrifice_fx.target_type = CardData.TargetType.SELF
+	sacrifice_fx.value = 1
+	
+	# Build the hierarchical evaluation tree
+	inner_cond.choices.append(spawn_fx)
+	inner_cond.choices.append(sacrifice_fx)
+	fx_2.choices.append(inner_cond)
+	card.general_ability.append(fx_2)
+	
+	# --- UNIT ABILITY ---
+	# Spend up to 2 Morale Dice. For each spent, convert to a random different type.
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CONVERT_DICE_TO_RANDOM_DIFFERENT_DICE
+	fx_u_1.target_type = CardData.TargetType.SELF
+	fx_u_1.value = 2
+	fx_u_1.pool_type = CardData.DicePoolType.MORALE
+	card.unit_ability.append(fx_u_1)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 2010: Inhuman Strength ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.CSM_INHUMAN_STRENGTH
+	card.card_name = "Inhuman Strength"
+	card.card_tier = CardData.CardTier.TIER_2
+	card.offence_icons = 2
+	card.morale_icons = 1
+	card.required_unit_types = [CardData.UnitType.HELBRUTES, CardData.UnitType.REPULSIVE_GRAND_CRUISERS]
+	
+	# --- GENERAL ABILITY ---
+	# Modal Choice Selection: Player selects 1 Offence OR 1 Morale Die allocation
+	fx_1 = CardEffect.new()
+	fx_1.effect_type = CardData.EffectType.CHOICE
+	
+	# Option A: +1 Offence Dice
+	opt_a = CardEffect.new()
+	opt_a.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
+	opt_a.target_type = CardData.TargetType.SELF
+	opt_a.value = 1
+	opt_a.pool_type = CardData.DicePoolType.OFFENSE
+	
+	# Option B: +1 Morale Dice
+	opt_b = CardEffect.new()
+	opt_b.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
+	opt_b.target_type = CardData.TargetType.SELF
+	opt_b.value = 1
+	opt_b.pool_type = CardData.DicePoolType.MORALE
+	
+	fx_1.choices.append(opt_a)
+	fx_1.choices.append(opt_b)
+	card.general_ability.append(fx_1)
+	
+	# --- UNIT ABILITY ---
+	# Condition Check: Evaluate if the player controls any living units remaining
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u_1.condition_type = CardData.ConditionType.HAS_UNITS
+	
+	# Payout Node A: Sacrifice your own lowest-tier unit on the board
+	var sac_fx = CardEffect.new()
+	sac_fx.effect_type = CardData.EffectType.DESTROY_LOWEST_TIER
+	sac_fx.target_type = CardData.TargetType.SELF
+	sac_fx.value = 1
+	
+	# Payout Node B: Gain +4 Offence Combat Tokens
+	var token_fx = CardEffect.new()
+	token_fx.effect_type = CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS
+	token_fx.target_type = CardData.TargetType.SELF
+	token_fx.value = 4
+	token_fx.pool_type = CardData.DicePoolType.OFFENSE
+	
+	# Append sequential steps to the conditional waterfall
+	fx_u_1.choices.append(sac_fx)
+	fx_u_1.choices.append(token_fx)
+	card.unit_ability.append(fx_u_1)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 2011: Daemonic Resilience ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.CSM_DAEMONIC_RESILIENCE
+	card.card_name = "Daemonic Resilience"
+	card.card_tier = CardData.CardTier.TIER_2
+	card.defence_icons = 2
+	card.morale_icons = 1
+	card.required_unit_types = [CardData.UnitType.HELBRUTES, CardData.UnitType.REPULSIVE_GRAND_CRUISERS]
+	
+	# --- GENERAL ABILITY ---
+	# Modal Choice Selection: Player selects 1 Defence (Shield) OR 1 Morale Die allocation
+	fx_1 = CardEffect.new()
+	fx_1.effect_type = CardData.EffectType.CHOICE
+	
+	# Option A: +1 Defence Dice
+	opt_a = CardEffect.new()
+	opt_a.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
+	opt_a.target_type = CardData.TargetType.SELF
+	opt_a.value = 1
+	opt_a.pool_type = CardData.DicePoolType.DEFENSE
+	
+	# Option B: +1 Morale Dice
+	opt_b = CardEffect.new()
+	opt_b.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
+	opt_b.target_type = CardData.TargetType.SELF
+	opt_b.value = 1
+	opt_b.pool_type = CardData.DicePoolType.MORALE
+	
+	fx_1.choices.append(opt_a)
+	fx_1.choices.append(opt_b)
+	card.general_ability.append(fx_1)
+	
+	# --- UNIT ABILITY ---
+	# Gain 4 Defence Combat Tokens
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS
+	fx_u_1.target_type = CardData.TargetType.SELF
+	fx_u_1.value = 4
+	fx_u_1.pool_type = CardData.DicePoolType.DEFENSE
+	card.unit_ability.append(fx_u_1)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 2012: Chaos United ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.CSM_CHAOS_UNITED
+	card.card_name = "Chaos United"
+	card.card_tier = CardData.CardTier.TIER_2
+	card.offence_icons = 1
+	card.defence_icons = 1
+	card.morale_icons = 1
+	card.required_unit_types = [CardData.UnitType.CULTISTS, CardData.UnitType.CHAOS_SPACE_MARINES, CardData.UnitType.HELBRUTES]
+	
+	# --- GENERAL ABILITY ---
+	# Gain 1 dice
+	fx_1 = CardEffect.new()
+	fx_1.effect_type = CardData.EffectType.GAIN_DICE
+	fx_1.target_type = CardData.TargetType.SELF
+	fx_1.value = 1
+	card.general_ability.append(fx_1)
+	
+	# --- UNIT ABILITY ---
+	# Custom ability
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CHAOS_UNITED_UNIT_ABILITY
+	card.unit_ability.append(fx_u_1)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 2013: Death And Despair ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.CSM_DEATH_AND_DESPAIR
+	card.card_name = "Death And Despair"
+	card.card_tier = CardData.CardTier.TIER_3
+	card.offence_icons = 2
+	card.morale_icons = 1
+	card.required_unit_types = [CardData.UnitType.CHAOS_REAVER_TITANS, CardData.UnitType.REPULSIVE_GRAND_CRUISERS]
+	
+	# --- GENERAL ABILITY ---
+	# Ability 1: Modal Choice Selection (Player selects +2 Offence OR +2 Morale Dice)
+	fx_1 = CardEffect.new()
+	fx_1.effect_type = CardData.EffectType.CHOICE
+	
+	# Option A: +2 Offence Dice
+	opt_a = CardEffect.new()
+	opt_a.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
+	opt_a.target_type = CardData.TargetType.SELF
+	opt_a.value = 2
+	opt_a.pool_type = CardData.DicePoolType.OFFENSE
+	
+	# Option B: +2 Morale Dice
+	opt_b = CardEffect.new()
+	opt_b.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
+	opt_b.target_type = CardData.TargetType.SELF
+	opt_b.value = 2
+	opt_b.pool_type = CardData.DicePoolType.MORALE
+	
+	fx_1.choices.append(opt_a)
+	fx_1.choices.append(opt_b)
+	card.general_ability.append(fx_1)
+	
+	# Ability 2: Custom execution node for the optimized Morale-spend destruction loop
+	fx_2 = CardEffect.new()
+	fx_2.effect_type = CardData.EffectType.DEATH_AND_DESPAIR_GENERAL_ABILITY_2
+	card.general_ability.append(fx_2)
+	
+	# --- UNIT ABILITY ---
+	# Condition Check: Validate both relative morale value superiority and opponent rout states
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u_1.condition_type = CardData.ConditionType.HAS_MORE_MORALE_THAN_OPPONENT_AND_OPPONENT_HAS_ROUTED_UNITS
+	
+	# Payout Node: Destroy 1 Opponent Highest-Tier Routed Unit if condition is met
+	var destroy_routed_fx = CardEffect.new()
+	destroy_routed_fx.effect_type = CardData.EffectType.DESTROY_HIGHEST_TIER_ROUTED_UNIT
+	destroy_routed_fx.target_type = CardData.TargetType.OPPONENT
+	destroy_routed_fx.value = 1
+	
+	# Append the target payout payload to the conditional sequence waterfall
+	fx_u_1.choices.append(destroy_routed_fx)
+	card.unit_ability.append(fx_u_1)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 2014: Chaos Victorious ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.CSM_CHAOS_VICTORIOUS
+	card.card_name = "Chaos Victorious"
+	card.card_tier = CardData.CardTier.TIER_3
+	card.offence_icons = 1
+	card.defence_icons = 1
+	card.morale_icons = 1
+	card.required_unit_types = [CardData.UnitType.CHAOS_REAVER_TITANS, CardData.UnitType.REPULSIVE_GRAND_CRUISERS]
+	
+	# --- GENERAL ABILITY ---
+	# Ability 1: Gain 2 random combat dice rolled directly into pools
+	fx_1 = CardEffect.new()
+	fx_1.effect_type = CardData.EffectType.GAIN_DICE
+	fx_1.target_type = CardData.TargetType.SELF
+	fx_1.value = 2
+	card.general_ability.append(fx_1)
+	
+	# Ability 2: Conditional Morale check to force-rout all enemy Tier 0 units
+	fx_2 = CardEffect.new()
+	fx_2.effect_type = CardData.EffectType.CONDITIONAL
+	fx_2.condition_type = CardData.ConditionType.HAS_MORE_MORALE_THAN_OPPONENT
+	
+	# Payout Node: Route all Command Level 0 units for the opponent
+	var rout_all_fx = CardEffect.new()
+	rout_all_fx.effect_type = CardData.EffectType.ROUT_ALL_COMMAND_LEVEL_0_UNITS
+	rout_all_fx.target_type = CardData.TargetType.OPPONENT
+	
+	fx_2.choices.append(rout_all_fx)
+	card.general_ability.append(fx_2)
+	
+	# --- UNIT ABILITY ---
+	# Condition Check: Verify if the opponent currently has any unrouted units left on the board
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u_1.condition_type = CardData.ConditionType.OPPONENT_HAS_UNROUTED_UNITS
+	
+	# Payout Node: Unconditionally rout the enemy's highest-tier unrouted unit
+	var rout_highest_fx = CardEffect.new()
+	rout_highest_fx.effect_type = CardData.EffectType.ROUT_HIGHEST_TIER
+	rout_highest_fx.target_type = CardData.TargetType.OPPONENT
+	
+	# Append the target routing payload to the unit ability cascade
+	fx_u_1.choices.append(rout_highest_fx)
+	card.unit_ability.append(fx_u_1)
+	
+	db[card.card_id] = card
 	
 	# ==========================================================================
 	# --- CARD 3001: Gretchin ---

@@ -134,7 +134,7 @@ func engine_callback(event_type: String, data: Array) -> void:
 				current_panel.update_dice_displays(is_attacker, data[1], data[2], data[3], "damage_step")
 		
 		"bonus_dice_rolled":
-			var msg := "🎲 -> %s bonus roll results: +%d ⚔️ | +%d 🛡️ | +%d 🎖️" % [data[0], data[1], data[2], data[3]]
+			var msg := "🎲 -> %s dice results: +%d ⚔️ | +%d 🛡️ | +%d 🎖️" % [data[0], data[1], data[2], data[3]]
 			print(msg)
 			
 			if current_panel:

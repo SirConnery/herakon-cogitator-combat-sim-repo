@@ -787,6 +787,12 @@ static func _is_mutual_annihilation(state: Dictionary) -> bool:
 	var def_survivors: int = _count_living_units(state[Side.DEFENDER])
 	return atk_survivors == 0 and def_survivors == 0
 
+static func _has_units(side_data: Dictionary) -> bool:
+	for squad in side_data.get("squads", []):
+		for hp in squad.get("alive_figures", []):
+			if hp > 0:
+				return true
+	return false
 
 static func _has_active_unit_type(side_data: Dictionary, required_types: Array) -> bool:
 	if required_types.is_empty():
@@ -887,7 +893,39 @@ static func add_specific_card_to_combat_deck(target_side_data: Dictionary, card_
 	deck.append(card_id)
 	deck.shuffle()
 
+static func has_specific_unit(side_data: Dictionary, unit_type: int) -> bool:
+	for squad in side_data.get("squads", []):
+		if int(squad.get("unit_type", -1)) == unit_type:
+			for hp in squad.get("alive_figures", []):
+				if hp > 0:
+					return true
+	return false
 
+static func get_specific_unit_amount_in_this_combat(side_data: Dictionary, unit_type: int) -> int:
+	var count := 0
+	for squad in side_data.get("squads", []):
+		if int(squad.get("unit_type", -1)) == unit_type:
+			for hp in squad.get("alive_figures", []):
+				if hp > 0:
+					count += 1
+	return count
+
+static func count_specific_dice_amount(side_data: Dictionary, stat_type: int) -> int:
+	return int(side_data.get(stat_type, 0))
+
+
+static func count_tier_0_units(side_data: Dictionary) -> int:
+	var count := 0
+	var squads = side_data.get("squads", [])
+	if squads is Array:
+		for squad in squads:
+			if squad is Dictionary and int(squad.get("tier", -1)) == 0:
+				var alive_figs = squad.get("alive_figures", [])
+				if alive_figs is Array:
+					for hp in alive_figs:
+						if int(hp) > 0:
+							count += 1
+	return count
 
 #endregion
 
@@ -1391,7 +1429,7 @@ static var EFFECT_RESOLVERS = {
 	
 	CardData.EffectType.ROUT_LOWEST_TIER: _execute_rout_lowest_tier,
 	CardData.EffectType.ROUT_LOWEST_TIER_OR_SPEND_DICE: _execute_rout_lowest_tier_or_spend_dice_unconditional,
-	
+	CardData.EffectType.ROUT_HIGHEST_TIER: _execute_rout_highest_tier,
 	
 	
 	CardData.EffectType.OPPONENT_DISCARDS_WORST_FACEUP_CARD: _execute_opponent_discards_worst_faceup_card,
@@ -1403,6 +1441,7 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.SPAWN_REINFORCEMENT_TOKEN: _execute_spawn_reinforcement_token,
 	
 	CardData.EffectType.DESTROY_LOWEST_TIER: _execute_destroy_lowest_tier,
+	CardData.EffectType.DESTROY_HIGHEST_TIER_ROUTED_UNIT: _execute_destroy_highest_tier_routed_unit,
 	
 	CardData.EffectType.GAIN_TOKENS_IF_MORE_UNITS_THAN_OPPONENT: _execute_gain_tokens_if_more_units_than_opponent,
 	
@@ -1410,6 +1449,11 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.PREVENT_ROUTING_THIS_ROUND: _execute_prevent_routing_this_round, # Show No Fear
 	CardData.EffectType.ADDITIONAL_ASSESS_DAMAGE_STEP_THIS_ROUND: _execute_additional_assess_damage_step_this_round, # Armoured Advance
 	CardData.EffectType.CONVERT_SAFE_DICE_TO_MORALE: _execute_convert_safe_dice_to_morale, # Emperor's Glory
+	
+	# CSM
+	CardData.EffectType.CHAOS_UNITED_UNIT_ABILITY: _execute_chaos_united_unit_ability, # Chaos United
+	CardData.EffectType.DEATH_AND_DESPAIR_GENERAL_ABILITY_2: _execute_death_and_despair_general_ability_2, # Death and Despair
+	CardData.EffectType.ROUT_ALL_COMMAND_LEVEL_0_UNITS: _execute_rout_all_command_level_0_units, # Chaos Victorious
 	
 	# ORK
 	CardData.EffectType.DESTROY_OR_SPEND_DICE_BASED_ON_TIER: _execute_destroy_or_spend_dice_based_on_tier, # Smasher Gargant
@@ -1595,9 +1639,11 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 		CardData.ConditionType.OPPONENT_HAS_NO_MORALE_DICE:
 			condition_passed = not _has_specific_dice(opp_side_data, 3, 1)
 		
-		
 		CardData.ConditionType.HAS_MORE_MORALE_THAN_OPPONENT:
 			condition_passed = _has_more_specific_dice_than_opponent(side_data, opp_side_data, 3)
+		
+		CardData.ConditionType.HAS_UNITS:
+			condition_passed = _has_units(side_data)
 		CardData.ConditionType.HAS_ROUTED_UNITS:
 			condition_passed = _has_any_routed_units(side_data)
 		CardData.ConditionType.HAS_NO_ROUTED_UNITS:
@@ -1614,14 +1660,23 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 			condition_passed = _has_any_unrouted_units(opp_side_data)
 		CardData.ConditionType.OPPONENT_HAS_NO_UNROUTED_UNITS:
 			condition_passed = not _has_any_unrouted_units(opp_side_data)
-		CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS_AND_DEFENSE_DICE:
-			condition_passed = _has_any_routed_units(opp_side_data) and _has_specific_dice(opp_side_data, 2, 1)
-		CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS_AND_NO_DEFENSE_DICE:
-			condition_passed = _has_any_routed_units(opp_side_data) and not _has_specific_dice(opp_side_data, 2, 1)
+		
+		# SM
 		CardData.ConditionType.OPPONENT_HAS_TWO_OR_MORE_DEFENSE_TOKENS:
 			condition_passed = get_token_amount(token_pools, opp_role, 2) >= 2
 		CardData.ConditionType.OPPONENT_HAS_FEWER_THAN_TWO_DEFENSE_TOKENS:
 			condition_passed = get_token_amount(token_pools, opp_role, 2) < 2
+		
+		# CSM
+		CardData.ConditionType.HAS_CULTISTS:
+			condition_passed = has_specific_unit(side_data, CardData.UnitType.CULTISTS)
+		CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS_AND_DEFENSE_DICE:
+			condition_passed = _has_any_routed_units(opp_side_data) and _has_specific_dice(opp_side_data, 2, 1)
+		CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS_AND_NO_DEFENSE_DICE:
+			condition_passed = _has_any_routed_units(opp_side_data) and not _has_specific_dice(opp_side_data, 2, 1)
+		CardData.ConditionType.HAS_MORE_MORALE_THAN_OPPONENT_AND_OPPONENT_HAS_ROUTED_UNITS:
+			condition_passed = _has_more_specific_dice_than_opponent(side_data, opp_side_data, 3) and _has_any_routed_units(opp_side_data)
+		
 		_:
 			condition_passed = true
 			
@@ -2177,6 +2232,37 @@ static func _execute_rout_lowest_tier(fx: Array, _token_pools: Array, side_data:
 			on_event.call("ability_triggered", [card_id, "↳ 🪓 Routing failed: Opponent has no unrouted units on the field."])
 
 
+static func _execute_rout_highest_tier(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	if parent_state.is_empty():
+		return
+		
+	var is_attacker := (role == "Attacker")
+	var opp_role := "Defender" if is_attacker else "Attacker"
+	var opp_side_data: Dictionary = parent_state.get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
+	
+	# Find the opponent's highest tier living, unrouted unit
+	var target_unit := _find_highest_tier_unrouted_unit(opp_side_data.get("squads", []))
+	
+	if not target_unit.is_empty():
+		var squad: Dictionary = target_unit["squad"]
+		var idx: int = target_unit["index"]
+		
+		# Unconditionally rout the unit figure
+		squad["figures_routed"][idx] = true
+		
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 🪓 Forced routing resolved on highest-tier unit: %s." % squad["name"]])
+			on_event.call("unit_routed", [opp_role, squad["name"], 0])
+		
+		# Update game log state safely
+		if typeof(parent_state) == TYPE_DICTIONARY:
+			log_current_army_statuses(parent_state, on_event, "damage_step")
+	else:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 🪓 Routing failed: Opponent has no unrouted units on the field."])
+
+
 static func _execute_rout_lowest_tier_or_spend_dice_unconditional(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var parent_state: Dictionary = side_data.get("parent_state", {})
 	if parent_state.is_empty():
@@ -2413,11 +2499,19 @@ static func _execute_destroy_lowest_tier(fx: Array, _token_pools: Array, side_da
 				if target_mode == CardData.DestructionMode.ROUTED and not is_routed: continue
 				if target_mode == CardData.DestructionMode.UNROUTED and is_routed: continue
 					
+				# Found a strictly lower tier unit -> Instant target upgrade
 				if squad_tier < lowest_tier:
 					lowest_tier = squad_tier
 					target_squad = squad
 					target_fig_idx = i
-					
+				
+				# Tier Tie-Breaker -> If tiers match and target mode allows either, prioritize the routed unit
+				elif squad_tier == lowest_tier and target_mode == CardData.DestructionMode.ANY:
+					var current_target_routed: bool = target_squad["figures_routed"][target_fig_idx]
+					if is_routed and not current_target_routed:
+						target_squad = squad
+						target_fig_idx = i
+						
 		if not target_squad.is_empty() and target_fig_idx != -1:
 			victim_names.append(target_squad["name"])
 			_destroy_figure(target_squad, target_fig_idx, target_role, on_event)
@@ -2431,9 +2525,54 @@ static func _execute_destroy_lowest_tier(fx: Array, _token_pools: Array, side_da
 			var list_string := ", ".join(victim_names)
 			on_event.call("ability_triggered", [card_id, "↳ 💀 Destroyed %s lowest-tier unit(s): [%s]" % [target_role, list_string]])
 		elif target_mode == CardData.DestructionMode.ROUTED:
-			# Replaces the expensive pre-scan guard clause with a zero-cost post check
 			on_event.call("ability_triggered", [card_id, "↳ 💨 Effect skipped: No routed units found on %s's board." % target_role])
 
+
+static func _execute_destroy_highest_tier_routed_unit(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var target_type: int = fx[1] if fx.size() > 1 else 1 # 0 = Self, 1 = Opponent
+	var count_to_destroy: int = fx[2] if fx.size() > 2 else 1
+
+	# --- 1. SYSTEM SIDE ROUTING ---
+	var target_side_data := side_data
+	var target_role := role
+	
+	if target_type != 0: 
+		target_role = "Defender" if role.to_lower() == "attacker" else "Attacker"
+		var opp_side = SimCombatEngine.Side.DEFENDER if role.to_lower() == "attacker" else SimCombatEngine.Side.ATTACKER
+		target_side_data = side_data.get("parent_state", {}).get(opp_side, {})
+		
+	if target_side_data.is_empty():
+		return
+
+	# --- 2. DESTRUCTION PROCESSING ---
+	var destroyed_count := 0
+	var victim_names: Array[String] = []
+
+	while destroyed_count < count_to_destroy:
+		# Dynamically look up the current highest-tier routed unit
+		var target_info := _find_highest_tier_routed_unit(target_side_data.get("squads", []))
+		
+		if not target_info.is_empty():
+			var target_squad: Dictionary = target_info["squad"]
+			var target_fig_idx: int = target_info["index"]
+			
+			victim_names.append(target_squad.get("name", "Unknown"))
+			_destroy_figure(target_squad, target_fig_idx, target_role, on_event)
+			destroyed_count += 1
+		else:
+			break # Exit cleanly if no routed targets remain mid-loop
+
+	# --- 3. CONSOLIDATED TELEMETRY PASS ---
+	if on_event.is_valid():
+		if not victim_names.is_empty():
+			var list_string := ", ".join(victim_names)
+			on_event.call("ability_triggered", [card_id, "↳ 💀 Destroyed %s highest-tier routed unit(s): [%s]" % [target_role, list_string]])
+			
+			var parent_state: Dictionary = side_data.get("parent_state", {})
+			if not parent_state.is_empty():
+				log_current_army_statuses(parent_state, on_event, "damage_step")
+		else:
+			on_event.call("ability_triggered", [card_id, "↳ 💨 Effect skipped: No routed units found on %s's board." % target_role])
 
 #endregion
 
@@ -2582,7 +2721,7 @@ static func _find_lethal_sacrifice_target(squads: Array, total_damage: int, roun
 
 #region Faction Instant Card abilities
 
-
+# SM Show No Fear general ability
 static func _execute_prevent_routing_this_round(fx: Array, _token_pools: Array, side_data: Dictionary, _role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var target_type: int = int(fx[1])
 	
@@ -2605,6 +2744,7 @@ static func _execute_prevent_routing_this_round(fx: Array, _token_pools: Array, 
 
 
 ## Unit Ability: Schedules an additional complete assess damage step to resolve this round.
+# SM Armoured Advance unit ability
 static func _execute_additional_assess_damage_step_this_round(_fx: Array, _token_pools: Array, side_data: Dictionary, _role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var parent_state: Dictionary = side_data.get("parent_state", {})
 	if parent_state.is_empty():
@@ -2620,6 +2760,7 @@ static func _execute_additional_assess_damage_step_this_round(_fx: Array, _token
 
 ## Converts all Offence dice and any excess surplus Defence dice into Morale.
 ## Only triggers on Round 3.
+# SM Emperor's Glory unit ability
 static func _execute_convert_safe_dice_to_morale(_fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var parent_state: Dictionary = side_data.get("parent_state", {})
 	var card_db: Dictionary = parent_state.get("card_db", {})
@@ -2686,7 +2827,7 @@ static func _execute_convert_safe_dice_to_morale(_fx: Array, token_pools: Array,
 	if on_event.is_valid():
 		on_event.call("ability_triggered", [card_id, "↳ ⚡ Strategic Reallocation: Converted %d safe dice into +%d Morale dice!" % [total_converted_yield, total_converted_yield]])
 
-
+# Orks Smasher Gargant unit ability
 static func _execute_destroy_or_spend_dice_based_on_tier(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var parent_state: Dictionary = side_data.get("parent_state", {})
 	if parent_state.is_empty():
@@ -2742,5 +2883,171 @@ static func _execute_destroy_or_spend_dice_based_on_tier(_fx: Array, _token_pool
 			
 		log_current_army_statuses(parent_state, on_event, "damage_step")
 
+# CSM Chaos United
+@warning_ignore("unused_parameter")
+static func _execute_chaos_united_unit_ability(fx: Array, token_pools: Array, side_data: Dictionary, role_label: String, active_card_id: int, has_valid_units: bool, on_event: Callable) -> void:
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	if parent_state.is_empty():
+		return
+		
+	# 1. Use the helper function to count the living Tier 0 units (Cultists)
+	var tier_0_count = get_specific_unit_amount_in_this_combat(side_data, CardData.UnitType.CULTISTS)
+
+	# 2. Map the tier count (capped at 3) directly to the corresponding UnitType Enum
+	var spawned_tier := mini(tier_0_count, 3)
+	var target_unit_type: int = CardData.UnitType.CULTISTS
+	
+	match spawned_tier:
+		0: target_unit_type = CardData.UnitType.CULTISTS
+		1: target_unit_type = CardData.UnitType.CHAOS_SPACE_MARINES
+		2: target_unit_type = CardData.UnitType.HELBRUTES
+		3: target_unit_type = CardData.UnitType.CHAOS_REAVER_TITANS
+
+	# 3. Query the FactionRegistry database exactly like your execute logic does
+	var faction_id: int = side_data.get("faction_id", 0)
+	var faction_data: Dictionary = FactionRegistry.get_database().get(faction_id, {})
+	var units_list: Array = faction_data.get("units", [])
+	
+	var blueprint: Dictionary = {}
+	for unit in units_list:
+		if unit.get("unit_type") == target_unit_type:
+			blueprint = unit
+			break
+			
+	if blueprint.is_empty():
+		return
+		
+	# 4. Spawns the unit dynamically using the database data
+	_spawn_unit(
+		side_data,
+		blueprint.get("unit_name", ""),
+		target_unit_type,
+		blueprint.get("tier", 0),
+		blueprint.get("combat_value", 1),
+		blueprint.get("health_value", 2),
+		blueprint.get("morale_value", 2),
+		blueprint.get("is_ship", false)
+	)
+	
+	# 5. Emit UI/Log notifications following your architecture's standard pattern
+	if on_event.is_valid():
+		on_event.call("ability_triggered", [
+			active_card_id, 
+			"↳ 🟢 Chaos United: Spawned Tier %d unit (%s) based on %d Cultists." % [
+				blueprint.get("tier", 0), 
+				blueprint.get("unit_name", ""), 
+				tier_0_count
+			]
+		])
+		log_current_army_statuses(parent_state, on_event, "damage_step")
+
+
+# CSM Death and Despair
+@warning_ignore("unused_parameter")
+static func _execute_death_and_despair_general_ability_2(fx: Array, token_pools: Array, side_data: Dictionary, role_label: String, active_card_id: int, has_valid_units: bool, on_event: Callable) -> void:
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	if parent_state.is_empty(): return
+
+	# 1. Direct Opponent Mapping via Enum removes the manual dictionary scan loop
+	var opp_side = SimCombatEngine.Side.DEFENDER if role_label.to_lower() == "attacker" else SimCombatEngine.Side.ATTACKER
+	var opponent_data: Dictionary = parent_state.get(opp_side, {})
+	if opponent_data.is_empty(): return
+		
+	# 2. Asset Evaluation
+	var morale_dice_available := count_specific_dice_amount(side_data, Stat.MORALE)
+	var opp_tier_0_count := count_tier_0_units(opponent_data)
+	var dice_to_spend := mini(morale_dice_available, opp_tier_0_count)
+	
+	if dice_to_spend <= 0:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [active_card_id, "↳ 🛑 Death and Despair skipped: Prerequisites not met."])
+		return
+
+	# 3. Spend resources through official framework channel (3 = Morale Pool Type)
+	_remove_dice_from_pool(side_data, role_label, dice_to_spend, 3, active_card_id, side_data, on_event)
+
+	# 4. Streamlined Processing: Linear progression tracking removes flag boilerplate
+	var destroyed_count := 0
+	for squad in opponent_data.get("squads", []):
+		if destroyed_count >= dice_to_spend: break
+		if int(squad.get("tier", -1)) == 0:
+			var alive_figures: Array = squad.get("alive_figures", [])
+			for idx in range(alive_figures.size()):
+				if destroyed_count >= dice_to_spend: break
+				if alive_figures[idx] > 0:
+					alive_figures[idx] = 0 
+					destroyed_count += 1
+
+	# 5. Pipeline Logs
+	if on_event.is_valid():
+		on_event.call("ability_triggered", [active_card_id, "↳ 💀 Death and Despair: Spent %d Morale dice to destroy %d opponent Tier 0 unit figure(s)." % [dice_to_spend, destroyed_count]])
+		log_current_army_statuses(parent_state, on_event, "damage_step")
+
+
+## CSM Chaos Victorious
+static func _execute_rout_all_command_level_0_units(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	if parent_state.is_empty():
+		return
+		
+	var target_type: int = fx[1] if fx.size() > 1 else 1 # 0 = SELF, 1 = OPPONENT, 2 = BOTH
+	
+	var self_side_enum = Side.ATTACKER if role.to_lower() == "attacker" else Side.DEFENDER
+	var opp_side_enum = Side.DEFENDER if role.to_lower() == "attacker" else Side.ATTACKER
+	
+	# --- 1. BUILD TARGET QUEUE BASED ON TARGET TYPE ---
+	var execution_queue: Array[Dictionary] = []
+	
+	if target_type == 0 or target_type == 2: # SELF or BOTH
+		execution_queue.append({
+			"side_data": parent_state.get(self_side_enum, side_data),
+			"role_label": "Attacker" if role.to_lower() == "attacker" else "Defender"
+		})
+		
+	if target_type == 1 or target_type == 2: # OPPONENT or BOTH
+		execution_queue.append({
+			"side_data": parent_state.get(opp_side_enum, {}),
+			"role_label": "Defender" if role.to_lower() == "attacker" else "Attacker"
+		})
+
+	# --- 2. DESTRUCTION PROCESSING ---
+	var total_routed_overall := 0
+	
+	for target in execution_queue:
+		var target_side: Dictionary = target["side_data"]
+		var target_role: String = target["role_label"]
+		
+		if target_side.is_empty():
+			continue
+			
+		var side_routed_count := 0
+		
+		for squad in target_side.get("squads", []):
+			# Match command level 0 units (Tier 0)
+			if int(squad.get("tier", -1)) == 0:
+				var alive_figures: Array = squad.get("alive_figures", [])
+				var figures_routed: Array = squad.get("figures_routed", [])
+				
+				for i in range(alive_figures.size()):
+					# Target living figures that aren't already routed
+					if alive_figures[i] > 0 and not figures_routed[i]:
+						figures_routed[i] = true
+						side_routed_count += 1
+						total_routed_overall += 1
+						
+						if on_event.is_valid():
+							on_event.call("unit_routed", [target_role, squad.get("name", "Unknown"), 0])
+		
+		# Log target side specific resolution
+		if side_routed_count > 0 and on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 🪓 Forced routing resolved on %s's Command Level 0 units (Count: %d)." % [target_role, side_routed_count]])
+
+	# --- 3. CONSOLIDATED TELEMETRY PASS ---
+	if total_routed_overall > 0:
+		if typeof(parent_state) == TYPE_DICTIONARY:
+			log_current_army_statuses(parent_state, on_event, "damage_step")
+	else:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 🪓 Routing skipped: No unrouted Command Level 0 units found on specified targets."])
 
 #endregion
