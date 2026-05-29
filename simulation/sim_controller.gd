@@ -315,6 +315,7 @@ func _flatten_card_database(raw_db: Dictionary) -> Dictionary:
 func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_types: Array) -> Array:
 	var raw_effect_type: int = int(fx.effect_type)
 	var value_slot: Variant = fx.value
+	var flattened_else_choices: Array = [] # 🎯 Scratchpad for fallback branch data
 	
 	# BOTH Choice and Conditional node blocks contain packed nested child arrays
 	if raw_effect_type == CardData.EffectType.CHOICE or raw_effect_type == CardData.EffectType.CONDITIONAL:
@@ -328,6 +329,13 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_t
 					flattened_choices.append(flat_sub)
 					
 		value_slot = flattened_choices
+		
+		# 🎯 RECURSIVE INTERCEPT: Flatten the false/else track for conditionals
+		if raw_effect_type == CardData.EffectType.CONDITIONAL and not fx.else_choices.is_empty():
+			for else_fx in fx.else_choices:
+				if else_fx != null:
+					var flat_else = _flatten_single_effect(else_fx, is_general_ability, req_unit_types)
+					flattened_else_choices.append(flat_else)
 	else:
 		if value_slot is Array:
 			value_slot = 1
@@ -339,14 +347,15 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_t
 	return [
 		fx.effect_type,          # Index 0
 		fx.target_type,          # Index 1
-		value_slot,              # Index 2
+		value_slot,              # Index 2 (Primary / True choices array)
 		fx.pool_type,            # Index 3 (Dice)
 		ability_block_type_id,   # Index 4
 		req_unit_types,          # Index 5
 		fx.max_spend,            # Index 6
 		fx.condition_type,       # Index 7
 		fx.destruction_mode,     # Index 8
-		fx.gain_token_type       # Index 9 (Strictly a CombatTokenType enum value)
+		fx.gain_token_type,      # Index 9 (Strictly a CombatTokenType enum value)
+		flattened_else_choices   # 🎯 Index 10: Fallback / Else choices array
 	]
 
 #endregion

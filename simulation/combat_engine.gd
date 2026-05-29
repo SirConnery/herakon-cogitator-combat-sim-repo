@@ -277,6 +277,13 @@ static func apply_damage(player_state: Dictionary, total_damage: int, round_inde
 	var side_name: String = player_state["name"]
 	var newly_routed_units: Array[Dictionary] = []
 	
+	# 🎯 THE IMMUNITY INTERCEPT: Check player state or parent state for the global immunity flag
+	var damage_immune: bool = player_state.get("all_units_damage_immune", false) or player_state.get("parent_state", {}).get("all_units_damage_immune", false)
+	if damage_immune:
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [hostile_card_id, "↳ 🛡️ Damage Immunity Active! All units on both sides are immune to damage this round."])
+		return newly_routed_units # Exit immediately with 0 units routed or damaged
+
 	# Fetch the round-scoped status flag directly from the state container
 	var routing_prevented: bool = player_state.get("cannot_route", false)
 	
@@ -956,6 +963,57 @@ static func _add_card_to_play_area(side_data: Dictionary, card_id: int, round_in
 		else:
 			play_area[play_area.size()] = card_id
 
+static func _draw_cards_from_combat_deck(target_side_data: Dictionary, amount: int) -> int:
+	var deck: Array = target_side_data.get("combat_deck", [])
+	var hand: Array = target_side_data.get("cards_in_hand", [])
+	var actual_drawn := 0
+	
+	for i in range(amount):
+		if not deck.is_empty():
+			hand.append(deck.pop_at(0))
+			actual_drawn += 1
+			
+	return actual_drawn
+
+static func _discard_random_card_from_hand(target_side_data: Dictionary) -> int:
+	var hand: Array = target_side_data.get("cards_in_hand", [])
+	var deck: Array = target_side_data.get("combat_deck", [])
+	
+	if hand.is_empty():
+		return -1
+		
+	# Extract a random card from hand safely
+	var rand_idx := randi() % hand.size()
+	var discarded_card_id: int = int(hand.pop_at(rand_idx))
+	
+	# Append back into the combat deck container and randomize the stack
+	deck.append(discarded_card_id)
+	deck.shuffle()
+	
+	return discarded_card_id
+
+static func _discard_and_recycle_faceup_card(target_side_data: Dictionary, target_idx: int) -> int:
+	var discarded_card_id: int = target_side_data["play_area"][target_idx]
+	target_side_data["play_area"][target_idx] = 0
+	
+	# Reuse your existing working helper to tuck it back in safely
+	add_specific_card_to_combat_deck(target_side_data, discarded_card_id)
+	return discarded_card_id
+
+## Safely extracts the active round tracker integer from the state structures
+static func _get_current_combat_round_index(side_data: Dictionary) -> int:
+	if side_data.is_empty():
+		return 0
+		
+	# Route automatically if passed side_data or the master match_state directly
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	if parent_state.is_empty():
+		return int(side_data.get("current_round_index", 0))
+		
+	return int(parent_state.get("current_round_index", 0))
+
+
+
 #endregion
 
 #region Passive helper functions
@@ -1478,9 +1536,10 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.ROUT_LOWEST_TIER_OR_SPEND_DICE: _execute_rout_lowest_tier_or_spend_dice_unconditional,
 	CardData.EffectType.ROUT_HIGHEST_TIER: _execute_rout_highest_tier,
 	
-	
-	CardData.EffectType.OPPONENT_DISCARDS_WORST_FACEUP_CARD: _execute_opponent_discards_worst_faceup_card,
-	CardData.EffectType.OPPONENT_DISCARDS_BEST_FACEUP_CARD: _execute_opponent_discards_best_faceup_card,
+	CardData.EffectType.DRAW_COMBAT_CARDS: _execute_draw_combat_cards,
+	CardData.EffectType.DISCARD_RANDOM_CARD_FROM_HAND: _execute_discard_random_card_from_hand,
+	CardData.EffectType.DISCARD_WORST_FACEUP_CARD: _execute_discard_worst_faceup_card,
+	CardData.EffectType.DISCARD_BEST_FACEUP_CARD: _execute_discard_best_faceup_card,
 	CardData.EffectType.DISCARD_STEAL_ICONS: _execute_discard_steal_icons,
 	CardData.EffectType.PLAY_RANDOM_CARD_DO_NOT_RESOLVE_ABILITIES: _execute_play_random_card_do_not_resolve_abilities,
 	
@@ -1491,7 +1550,6 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.DESTROY_LOWEST_TIER: _execute_destroy_lowest_tier,
 	CardData.EffectType.DESTROY_HIGHEST_TIER_ROUTED_UNIT: _execute_destroy_highest_tier_routed_unit,
 	
-	CardData.EffectType.GAIN_TOKENS_IF_MORE_UNITS_THAN_OPPONENT: _execute_gain_tokens_if_more_units_than_opponent,
 	
 	# SM
 	CardData.EffectType.PREVENT_ROUTING_THIS_ROUND: _execute_prevent_routing_this_round, # Show No Fear
@@ -1508,6 +1566,7 @@ static var EFFECT_RESOLVERS = {
 	
 	# Eldar
 	CardData.EffectType.PREVENT_OPPONENT_GAINING_DEFENSE_TOKENS_THIS_ROUND: _execute_prevent_opponent_gaining_defense_tokens_this_round,
+	CardData.EffectType.ALL_UNITS_GAIN_DAMAGE_IMMUNITY_THIS_ROUND: _execute_all_units_gain_damage_immunity_this_round,
 }
 
 #endregion
@@ -1630,6 +1689,7 @@ static func _execute_choice_selection(fx: Array, token_pools: Array, side_data: 
 static func _execute_generic_conditional(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
 	var sub_effects: Array = fx[2]
 	var condition_rule: int = fx[7] if fx.size() > 7 else 0
+	var else_effects: Array = fx[10] if fx.size() > 10 else [] # Grab our flattened fallback track
 	
 	var parent_state: Dictionary = side_data.get("parent_state", {})
 	if parent_state.is_empty():
@@ -1638,9 +1698,9 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 	var is_attacker := (role == "Attacker")
 	var opp_side_data: Dictionary = parent_state.get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
 	
-	# Pre-calculate opponent token index parameters for our new conditions
+	# Pre-calculate opponent token index parameters for our conditions
 	var opp_role := "Defender" if is_attacker else "Attacker"
-	var opp_base_idx := 0 if opp_role == "Attacker" else 2
+	var _opp_base_idx := 0 if opp_role == "Attacker" else 2
 
 	var condition_passed := false
 	match condition_rule:
@@ -1651,19 +1711,7 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 		CardData.ConditionType.IS_DEFENDING:
 			condition_passed = not is_attacker
 		
-		CardData.ConditionType.HAS_OFFENCE_DICE:
-			condition_passed = _has_specific_dice(side_data, 1, 1)
-		CardData.ConditionType.HAS_NO_OFFENCE_DICE:
-			condition_passed = not _has_specific_dice(side_data, 1, 1)
-		CardData.ConditionType.HAS_DEFENCE_DICE:
-			condition_passed = _has_specific_dice(side_data, 2, 1)
-		CardData.ConditionType.HAS_NO_DEFENCE_DICE:
-			condition_passed = not _has_specific_dice(side_data, 2, 1)
-		CardData.ConditionType.HAS_MORALE_DICE:
-			condition_passed = _has_specific_dice(side_data, 3, 1)
-		CardData.ConditionType.HAS_NO_MORALE_DICE:
-			condition_passed = not _has_specific_dice(side_data, 3, 1)
-		
+		# --- PLAYER DICE POOL CHECKS ---
 		CardData.ConditionType.HAS_OFFENCE_DICE:
 			condition_passed = _has_specific_dice(side_data, 1, 1)
 		CardData.ConditionType.HAS_NO_OFFENCE_DICE:
@@ -1677,6 +1725,7 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 		CardData.ConditionType.HAS_NO_MORALE_DICE:
 			condition_passed = not _has_specific_dice(side_data, 3, 1)
 			
+		# --- OPPONENT DICE POOL CHECKS ---
 		CardData.ConditionType.OPPONENT_HAS_OFFENCE_DICE:
 			condition_passed = _has_specific_dice(opp_side_data, 1, 1)
 		CardData.ConditionType.OPPONENT_HAS_NO_OFFENCE_DICE:
@@ -1693,6 +1742,7 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 		CardData.ConditionType.HAS_MORE_MORALE_THAN_OPPONENT:
 			condition_passed = _has_more_specific_dice_than_opponent(side_data, opp_side_data, 3)
 		
+		# --- PLAYER UNIT STATUS CHECKS ---
 		CardData.ConditionType.HAS_UNITS:
 			condition_passed = _has_units(side_data)
 		CardData.ConditionType.HAS_ROUTED_UNITS:
@@ -1703,6 +1753,8 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 			condition_passed = _has_any_unrouted_units(side_data)
 		CardData.ConditionType.HAS_NO_UNROUTED_UNITS:
 			condition_passed = not _has_any_unrouted_units(side_data)
+			
+		# --- OPPONENT UNIT STATUS CHECKS ---
 		CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS:
 			condition_passed = _has_any_routed_units(opp_side_data)
 		CardData.ConditionType.OPPONENT_HAS_NO_ROUTED_UNITS:
@@ -1712,48 +1764,46 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 		CardData.ConditionType.OPPONENT_HAS_NO_UNROUTED_UNITS:
 			condition_passed = not _has_any_unrouted_units(opp_side_data)
 		
-		# SM
+		# --- FACTION SPECIFIC ATOMIC CHECKS ---
 		CardData.ConditionType.OPPONENT_HAS_TWO_OR_MORE_DEFENSE_TOKENS:
 			condition_passed = get_token_amount(token_pools, opp_role, 2) >= 2
 		CardData.ConditionType.OPPONENT_HAS_FEWER_THAN_TWO_DEFENSE_TOKENS:
 			condition_passed = get_token_amount(token_pools, opp_role, 2) < 2
-		
-		# CSM
 		CardData.ConditionType.HAS_CULTISTS:
 			condition_passed = has_specific_unit(side_data, CardData.UnitType.CULTISTS)
-		CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS_AND_DEFENSE_DICE:
-			condition_passed = _has_any_routed_units(opp_side_data) and _has_specific_dice(opp_side_data, 2, 1)
-		CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS_AND_NO_DEFENSE_DICE:
-			condition_passed = _has_any_routed_units(opp_side_data) and not _has_specific_dice(opp_side_data, 2, 1)
-		CardData.ConditionType.HAS_MORE_MORALE_THAN_OPPONENT_AND_OPPONENT_HAS_ROUTED_UNITS:
-			condition_passed = _has_more_specific_dice_than_opponent(side_data, opp_side_data, 3) and _has_any_routed_units(opp_side_data)
-			
-		# Eldar
-		CardData.ConditionType.HAS_MORALE_DICE_AND_OPPONENT_HAS_UNROUTED_UNITS:
-			condition_passed = _has_specific_dice(side_data, 3, 1) and _has_any_unrouted_units(opp_side_data)
-		CardData.ConditionType.OPPONENT_HAS_MORALE_DICE_AND_OPPONENT_HAS_UNROUTED_UNITS:
-			condition_passed = _has_specific_dice(opp_side_data, 3, 1) and _has_any_unrouted_units(opp_side_data)
-		CardData.ConditionType.OPPONENT_HAS_NO_MORALE_DICE_AND_OPPONENT_HAS_UNROUTED_UNITS:
-			condition_passed = _has_specific_dice(opp_side_data, 3, 1) and _has_any_unrouted_units(opp_side_data)
 		CardData.ConditionType.CANNOT_GAIN_DEFENSE_TOKENS_THIS_ROUND_IS_ACTIVE:
 			condition_passed = _is_cannot_gain_defense_tokens_active(side_data)
 		CardData.ConditionType.CANNOT_GAIN_DEFENSE_TOKENS_THIS_ROUND_IS_NOT_ACTIVE:
 			condition_passed = not _is_cannot_gain_defense_tokens_active(side_data)
-		
+		CardData.ConditionType.IS_FIRST_COMBAT_ROUND:
+			condition_passed = (_get_current_combat_round_index(side_data) == 0)
+		CardData.ConditionType.IS_NOT_FIRST_COMBAT_ROUND:
+			condition_passed = not (_get_current_combat_round_index(side_data) == 0)
 		_:
 			condition_passed = true
 			
 	if condition_passed:
 		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 📈 Condition Passed: Executing inner abilities."])
+			on_event.call("ability_triggered", [card_id, "↳ 📈: Executing inner abilities."])
 		
 		for sub_fx in sub_effects:
 			var sub_effect_type: int = sub_fx[0]
 			if EFFECT_RESOLVERS.has(sub_effect_type):
 				EFFECT_RESOLVERS[sub_effect_type].call(sub_fx, token_pools, side_data, role, card_id, units_valid, on_event)
 	else:
-		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 🌊 Condition Bypassed: Requirements not matched."])
+		# 🎯 THE ELSE BRANCH PIPELINE
+		if not else_effects.is_empty():
+			if on_event.is_valid():
+				on_event.call("ability_triggered", [card_id, "↳ 🌊: Checking fallback conditions."])
+			
+			for else_fx in else_effects:
+				var else_effect_type: int = else_fx[0]
+				if EFFECT_RESOLVERS.has(else_effect_type):
+					EFFECT_RESOLVERS[else_effect_type].call(else_fx, token_pools, side_data, role, card_id, units_valid, on_event)
+		else:
+			# Default fallback when no else branch is provided
+			if on_event.is_valid():
+				on_event.call("ability_triggered", [card_id, "↳ ❌ Conditions not fulfilled. Ability skipped."])
 
 #endregion
 
@@ -2259,8 +2309,19 @@ static func _execute_rout_lowest_tier(fx: Array, _token_pools: Array, side_data:
 	var opp_role := "Defender" if is_attacker else "Attacker"
 	var opp_side_data: Dictionary = parent_state.get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
 	
-	# Find the opponent's lowest tier living, unrouted unit
-	var target_unit := _find_lowest_tier_unrouted_unit(opp_side_data.get("squads", []))
+	# 🎯 THE FIX: Read the target type from index 1 of the effect array
+	var target_type: int = fx[1] if fx.size() > 1 else CardData.TargetType.OPPONENT
+	
+	# Dynamically choose which side we are slicing into
+	var target_side_data := side_data
+	var target_role := role
+	
+	if target_type == CardData.TargetType.OPPONENT:
+		target_side_data = opp_side_data
+		target_role = opp_role
+	
+	# Find the selected target side's lowest tier living, unrouted unit
+	var target_unit := _find_lowest_tier_unrouted_unit(target_side_data.get("squads", []))
 	
 	if not target_unit.is_empty():
 		var squad: Dictionary = target_unit["squad"]
@@ -2271,14 +2332,14 @@ static func _execute_rout_lowest_tier(fx: Array, _token_pools: Array, side_data:
 		
 		if on_event.is_valid():
 			on_event.call("ability_triggered", [card_id, "↳ 🪓 Forced routing resolved on %s." % squad["name"]])
-			on_event.call("unit_routed", [opp_role, squad["name"], 0])
+			on_event.call("unit_routed", [target_role, squad["name"], 0]) # Tracks correctly for friendly or enemy logs
 		
-		# Update game log state if function exists in your engine scope
 		if typeof(parent_state) == TYPE_DICTIONARY:
 			log_current_army_statuses(parent_state, on_event, "damage_step")
 	else:
 		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 🪓 Routing failed: Opponent has no unrouted units on the field."])
+			var side_label := "Opponent" if target_type == CardData.TargetType.OPPONENT else "Friendly side"
+			on_event.call("ability_triggered", [card_id, "↳ 🪓 Routing failed: %s has no unrouted units on the field." % side_label])
 
 
 static func _execute_rout_highest_tier(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
@@ -2338,91 +2399,59 @@ static func _execute_rout_lowest_tier_or_spend_dice_unconditional(fx: Array, _to
 
 #endregion
 
-#region Generic has_more_units functions
-
-static func _execute_gain_tokens_if_more_units_than_opponent(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
-	var parent_state: Dictionary = side_data.get("parent_state", {})
-	if parent_state.is_empty():
-		return
-		
-	var is_attacker := (role == "Attacker")
-	var opp_side_data: Dictionary = parent_state.get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
-	
-	if on_event.is_valid():
-		on_event.call("ability_triggered", [card_id, "Resolved Outnumber check (Our Unrouted: %d vs Enemy: %d)" % [_count_unrouted_units(side_data), _count_unrouted_units(opp_side_data)]])
-		
-	# Utilize the centralized tactical presence helper
-	if _has_more_unrouted_units_than_opponent(side_data, opp_side_data):
-		var amount: int = int(fx[2])
-		
-		# Map tokens seamlessly to the round scratchpad tracking indices
-		# Attacker: [0] Offence, [1] Defence | Defender: [2] Offence, [3] Defence
-		var off_idx := 0 if is_attacker else 2
-		var def_idx := 1 if is_attacker else 3
-		
-		token_pools[off_idx] += amount
-		token_pools[def_idx] += amount
-		
-		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 🟢 Outnumber condition met! Gained +%d ⚔️ and +%d 🛡️ tokens." % [amount, amount]])
-			on_event.call("tokens_updated", [role, token_pools[off_idx], token_pools[def_idx]])
-	else:
-		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 🔴 Outnumber condition failed. No tokens awarded."])
-
-#endregion
-
 #region Generic Card functions
 
-static func _execute_discard_steal_icons(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
-	var is_attacker := (role == "Attacker")
-	var opp_role := "Defender" if is_attacker else "Attacker"
-	
+static func _execute_discard_steal_icons(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var parent_state: Dictionary = side_data.get("parent_state", {})
 	if parent_state.is_empty():
 		return
 		
-	var opp_side_data: Dictionary = parent_state.get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
-	
-	# 1. Unpack our shared flat card database reference
 	var card_db: Dictionary = parent_state.get("card_db", {})
 	if card_db.is_empty():
 		return
 
-	# 2. Extract and validate the target opponent's combat deck array
-	var opp_deck: Array = opp_side_data.get("combat_deck", [])
-	if opp_deck.is_empty():
+	# 🎯 Dynamic Target Routing (Who are we harvesting icons from?)
+	var target_type: int = fx[1] if fx.size() > 1 else CardData.TargetType.OPPONENT
+	var is_self := (target_type == CardData.TargetType.SELF)
+	
+	var target_side: Dictionary = side_data if is_self else parent_state.get(Side.DEFENDER if (role == "Attacker") else Side.ATTACKER, {})
+	var target_role: String = role if is_self else ("Defender" if (role == "Attacker") else "Attacker")
+	
+	# Extract and validate the target deck container
+	var deck: Array = target_side.get("combat_deck", [])
+	if deck.is_empty():
 		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 🎴 Theft Failed: Enemy %s combat deck is completely dry!" % opp_role])
+			on_event.call("ability_triggered", [card_id, "↳ 🎴 Harvest Failed: %s's combat deck is completely dry!" % target_role])
 		return
 
-	# 3. Strip the top Card ID off their active pile
-	var stolen_card_id: int = opp_deck.pop_front()
+	# Strip the top Card ID off their active pile
+	var stolen_card_id: int = deck.pop_front()
 	var flat_card_data = card_db.get(stolen_card_id)
 	
 	if flat_card_data == null or not flat_card_data is Array:
-		# Safety rewind: restore the deck order if it encounters a data mismatch
-		opp_deck.push_front(stolen_card_id)
+		deck.push_front(stolen_card_id) # Safety rewind rollback
 		return
 
 	# Parse flat profile fields: [0: Offence, 1: Defence, 2: Morale]
-	var stolen_offence: int = flat_card_data[0]
-	var stolen_defence: int = flat_card_data[1]
-	var stolen_morale: int = flat_card_data[2]
+	var stolen_offence: int = int(flat_card_data[0])
+	var stolen_defence: int = int(flat_card_data[1])
+	var stolen_morale: int = int(flat_card_data[2])
 	
-	# 4. Apply stolen stats straight into your temporary extra_icons array structure
-	if side_data.has("extra_icons") and side_data["extra_icons"] is Array:
-		side_data["extra_icons"][0] += stolen_offence
-		side_data["extra_icons"][1] += stolen_defence
-		side_data["extra_icons"][2] += stolen_morale
+	# Apply stolen metrics directly into the caster's extra_icons array structure
+	var extra_icons: Array = side_data.get("extra_icons", [0, 0, 0])
+	extra_icons[0] += stolen_offence
+	extra_icons[1] += stolen_defence
+	extra_icons[2] += stolen_morale
+	side_data["extra_icons"] = extra_icons # Re-assign to guarantee data synchronizations
 	
 	if on_event.is_valid():
-		on_event.call("ability_triggered", [card_id, "↳ ⚙️ Mek Salvage: Discarded top enemy card! Harvested temporary extra icons: +%d⚔️ | +%d🛡️ | +%d🎖️" % [stolen_offence, stolen_defence, stolen_morale]])
+		var source_label := "their own" if is_self else "top enemy"
+		on_event.call("ability_triggered", [card_id, "↳ ⚙️ Mek Salvage: Harvested %s card! Extra icons gained: +%d⚔️ | +%d🛡️ | +%d🎖️" % [source_label, stolen_offence, stolen_defence, stolen_morale]])
 
-	# 5. Recycling Rule: Route card straight through our updated deck helper
-	add_specific_card_to_combat_deck(opp_side_data, stolen_card_id)
+	# Recycling Rule: Route card safely straight back into its original deck
+	add_specific_card_to_combat_deck(target_side, stolen_card_id)
 
-	# 6. Pass the array structures directly through to the tracking helper
+	# Broadcast telemetry sync mapping pass
 	if on_event.is_valid():
 		var atk_side: Dictionary = parent_state.get(Side.ATTACKER, {})
 		var def_side: Dictionary = parent_state.get(Side.DEFENDER, {})
@@ -2430,7 +2459,6 @@ static func _execute_discard_steal_icons(_fx: Array, _token_pools: Array, side_d
 		if not atk_side.is_empty() and not def_side.is_empty():
 			var atk_ex: Array = atk_side.get("extra_icons", [0, 0, 0])
 			var def_ex: Array = def_side.get("extra_icons", [0, 0, 0])
-			
 			log_current_extra_icons(on_event, atk_ex, def_ex, "damage_step")
 
 
@@ -2457,78 +2485,115 @@ static func _execute_play_random_card_do_not_resolve_abilities(fx: Array, _token
 	if on_event.is_valid():
 		on_event.call("ability_triggered", [chosen_card_id, "↳ 🃏 Played from hand via ability. No abilities resolved for this card."])
 
-static func _execute_opponent_discards_worst_faceup_card(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+static func _execute_discard_worst_faceup_card(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var parent_state: Dictionary = side_data.get("parent_state", {})
 	if parent_state.is_empty():
 		return
 
-	# 1. Pull the explicit round tracker integer directly from the master match state
 	var current_round: int = parent_state.get("current_round_index", 0)
-
-	# 2. Locate the opponent's state data container
-	var opponent_key = Side.DEFENDER if role == "Attacker" else Side.ATTACKER
-	var opponent_side: Dictionary = parent_state.get(opponent_key, {})
 	var card_db: Dictionary = parent_state.get("card_db", {})
 
-	# 3. If Attacker, pass the current round index to ignore that specific slot
-	var ignored_idx := current_round if role == "Attacker" else -1
-
-	# 4. Find the target card index safely using our built-in filters
-	var target_idx: int = _find_faceup_card_with_least_icons(opponent_side, card_db, ignored_idx)
+	# 🎯 Dynamic target resolution
+	var target_type: int = fx[1] if fx.size() > 1 else CardData.TargetType.OPPONENT
+	var is_self := (target_type == CardData.TargetType.SELF)
 	
-	# 5. Universal Fallback: Catches empty fields or early rounds cleanly
+	var target_side: Dictionary = side_data if is_self else parent_state.get(Side.DEFENDER if (role == "Attacker") else Side.ATTACKER, {})
+	var target_role: String = role if is_self else ("Defender" if (role == "Attacker") else "Attacker")
+
+	# Safe index isolation: Protect active cards from self-discard
+	var ignored_idx := current_round if (is_self or role == "Attacker") else -1
+
+	# Find worst card using your built-in filter
+	var target_idx: int = _find_faceup_card_with_least_icons(target_side, card_db, ignored_idx)
+	
 	if target_idx == -1:
 		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 📇 Discard skipped: Opponent has no valid faceup combat cards available to target."])
+			on_event.call("ability_triggered", [card_id, "↳ 📇 Discard skipped: %s has no valid faceup combat cards to target." % target_role])
 		return
 
-	# 6. Perform the discard by clearing out the card slot
-	var discarded_card_id: int = opponent_side["play_area"][target_idx]
-	opponent_side["play_area"][target_idx] = 0
-	
-	# 7. Recycle back to deck
-	add_specific_card_to_combat_deck(opponent_side, discarded_card_id)
+	# Mutate and track
+	var discarded_card_id := _discard_and_recycle_faceup_card(target_side, target_idx)
 	
 	if on_event.is_valid():
-		var opp_role_label := "Defender" if role == "Attacker" else "Attacker"
-		on_event.call("opponent_card_discarded", [card_id, opp_role_label, discarded_card_id, target_idx])
+		on_event.call("opponent_card_discarded", [card_id, target_role, discarded_card_id, target_idx])
 
 
-static func _execute_opponent_discards_best_faceup_card(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+static func _execute_discard_best_faceup_card(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var parent_state: Dictionary = side_data.get("parent_state", {})
 	if parent_state.is_empty():
 		return
 
-	# 1. Pull the explicit round tracker integer directly from the master match state
 	var current_round: int = parent_state.get("current_round_index", 0)
-
-	# 2. Locate the opponent's state data container
-	var opponent_key = Side.DEFENDER if role == "Attacker" else Side.ATTACKER
-	var opponent_side: Dictionary = parent_state.get(opponent_key, {})
 	var card_db: Dictionary = parent_state.get("card_db", {})
 
-	# 3. If Attacker, pass the current round index to ignore that specific slot
-	var ignored_idx := current_round if role == "Attacker" else -1
-
-	# 4. Find the target card index safely using our premium-weight card scanner
-	var target_idx: int = _find_faceup_card_with_most_icons(opponent_side, card_db, ignored_idx)
+	# 🎯 Dynamic target resolution
+	var target_type: int = fx[1] if fx.size() > 1 else CardData.TargetType.OPPONENT
+	var is_self := (target_type == CardData.TargetType.SELF)
 	
-	# 5. Universal Fallback: Catches empty fields cleanly
+	var target_side: Dictionary = side_data if is_self else parent_state.get(Side.DEFENDER if (role == "Attacker") else Side.ATTACKER, {})
+	var target_role: String = role if is_self else ("Defender" if (role == "Attacker") else "Attacker")
+
+	# Safe index isolation: Protect active cards from self-discard
+	var ignored_idx := current_round if (is_self or role == "Attacker") else -1
+
+	# Find best card using your premium-weight card scanner
+	var target_idx: int = _find_faceup_card_with_most_icons(target_side, card_db, ignored_idx)
+	
 	if target_idx == -1:
 		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ 📇 Discard skipped: Opponent has no valid faceup combat cards available to target."])
+			on_event.call("ability_triggered", [card_id, "↳ 📇 Discard skipped: %s has no valid faceup combat cards to target." % target_role])
 		return
 
-	# 6. Perform the discard by clearing out the card slot
-	var discarded_card_id: int = opponent_side["play_area"][target_idx]
-	opponent_side["play_area"][target_idx] = 0
-	
-	# 7. Recycle back to deck
-	add_specific_card_to_combat_deck(opponent_side, discarded_card_id)
+	# Mutate and track
+	var discarded_card_id := _discard_and_recycle_faceup_card(target_side, target_idx)
 	
 	if on_event.is_valid():
-		var opp_role_label := "Defender" if role == "Attacker" else "Attacker"
-		on_event.call("opponent_card_discarded", [card_id, opp_role_label, discarded_card_id, target_idx])
+		on_event.call("opponent_card_discarded", [card_id, target_role, discarded_card_id, target_idx])
+
+
+static func _execute_draw_combat_cards(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	if parent_state.is_empty(): 
+		return
+		
+	# Determine target configurations instantly using flat checks
+	var target_type: int = fx[1] if fx.size() > 1 else CardData.TargetType.SELF
+	var is_self := (target_type == CardData.TargetType.SELF)
+	
+	var target_side: Dictionary = side_data if is_self else parent_state.get(Side.DEFENDER if (role == "Attacker") else Side.ATTACKER, {})
+	var target_role: String = role if is_self else ("Defender" if (role == "Attacker") else "Attacker")
+	
+	# Execute draw operation via the isolated helper pass
+	var draw_count: int = fx[2] if fx.size() > 2 else 1
+	var actual_drawn: int = _draw_cards_from_combat_deck(target_side, draw_count)
+	
+	if on_event.is_valid():
+		if actual_drawn > 0:
+			on_event.call("ability_triggered", [card_id, "↳ 🃏 %s draws %d card(s) into their hand." % [target_role, actual_drawn]])
+		else:
+			on_event.call("ability_triggered", [card_id, "↳ ❌ Draw failed: %s's combat deck is empty." % target_role])
+
+
+static func _execute_discard_random_card_from_hand(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	if parent_state.is_empty():
+		return
+		
+	# Instant target assignment using your flat layout pattern
+	var target_type: int = fx[1] if fx.size() > 1 else CardData.TargetType.OPPONENT
+	var is_self := (target_type == CardData.TargetType.SELF)
+	
+	var target_side: Dictionary = side_data if is_self else parent_state.get(Side.DEFENDER if (role == "Attacker") else Side.ATTACKER, {})
+	var target_role: String = role if is_self else ("Defender" if (role == "Attacker") else "Attacker")
+	
+	# Run the state mutation logic pass via the new helper
+	var discarded_id: int = _discard_random_card_from_hand(target_side)
+	
+	if on_event.is_valid():
+		if discarded_id != -1:
+			on_event.call("ability_triggered", [discarded_id, "was discarded by an effect."])
+		else:
+			on_event.call("ability_triggered", [card_id, "↳ ❌ Disruption failed: %s's hand is already empty." % target_role])
 
 #endregion
 
@@ -3141,5 +3206,16 @@ static func _execute_prevent_opponent_gaining_defense_tokens_this_round(fx: Arra
 	if on_event.is_valid():
 		var opp_role := "Defender" if is_attacker else "Attacker"
 		on_event.call("ability_triggered", [card_id, "↳ 🛡️ Suppression active: %s cannot gain Defence tokens this round." % opp_role])
+
+# Eldar Spiritseer Guidance
+static func _execute_all_units_gain_damage_immunity_this_round(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	if parent_state.is_empty():
+		return
+		
+	parent_state["all_units_damage_immune"] = true
+	
+	if on_event.is_valid():
+		on_event.call("ability_triggered", [card_id, "↳ 🛡️ All units on both sides gain total damage immunity!"])
 
 #endregion
