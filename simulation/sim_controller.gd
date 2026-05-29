@@ -15,13 +15,6 @@ var factions_to_sim: Array[FactionRegistry.FactionID] = [
 #endregion
 
 #region Single Combat variables
-# ─── SINGLE SANDBOX CONFIGURATION ───
-var attacker_is_random_in_single: bool = true
-var defender_is_random_in_single: bool = true
-var attacker_faction_in_single_combat: FactionRegistry.FactionID = FactionRegistry.FactionID.ORKS
-var defender_faction_in_single_combat: FactionRegistry.FactionID = FactionRegistry.FactionID.SPACE_MARINES
-
-
 # ─── ENVIRONMENT & FORMATS ───
 var is_random_stage := true
 var debug_stage: GameStageGenerator.Stage = GameStageGenerator.Stage.LATE
@@ -138,30 +131,15 @@ func run_single_logged_combat() -> void:
 	if random_combat_type:
 		active_ground_combat = (randi() % 2 == 0)
 		
-	# 2. RESOLVE CONFIGURABLE MATCHUP IDENTITIES (ANTI-MIRROR GUARANTEED)
-	var current_atk_id: FactionRegistry.FactionID
-	var current_def_id: FactionRegistry.FactionID
-	
+	# 2. RESOLVE MATCHUP IDENTITIES (ANTI-MIRROR GUARANTEED POOL)
 	var global_pool: Array = FactionRegistry.FactionID.values()
 	
-	if attacker_is_random_in_single and defender_is_random_in_single:
-		current_atk_id = global_pool.pick_random() as FactionRegistry.FactionID
-		var filtered_pool = global_pool.filter(func(f): return int(f) != int(current_atk_id))
-		current_def_id = filtered_pool.pick_random() as FactionRegistry.FactionID
-		
-	elif attacker_is_random_in_single and not defender_is_random_in_single:
-		current_def_id = defender_faction_in_single_combat
-		var allowed_attackers = global_pool.filter(func(f): return int(f) != int(current_def_id))
-		current_atk_id = allowed_attackers.pick_random() as FactionRegistry.FactionID
-		
-	elif not attacker_is_random_in_single and defender_is_random_in_single:
-		current_atk_id = attacker_faction_in_single_combat
-		var allowed_defenders = global_pool.filter(func(f): return int(f) != int(current_atk_id))
-		current_def_id = allowed_defenders.pick_random() as FactionRegistry.FactionID
-		
-	else:
-		current_atk_id = attacker_faction_in_single_combat
-		current_def_id = defender_faction_in_single_combat
+	# Pick a random attacker from the total pool
+	var current_atk_id: FactionRegistry.FactionID = global_pool.pick_random() as FactionRegistry.FactionID
+	
+	# Filter out the chosen attacker to guarantee the defender cannot be a mirror match
+	var filtered_pool: Array = global_pool.filter(func(f): return int(f) != int(current_atk_id))
+	var current_def_id: FactionRegistry.FactionID = filtered_pool.pick_random() as FactionRegistry.FactionID
 		
 	# 3. EXTRACT DATABASES & BLUEPRINTS
 	var raw_cards: Dictionary = CardRegistry.get_database()
@@ -268,6 +246,8 @@ func run_single_logged_combat() -> void:
 		"matchup_scale": _get_weighted_matchup_string(attacker_power, defender_power),
 		"attacker_composition": _format_squad_composition_string(match_state[SimCombatEngine.Side.ATTACKER]["squads"]),
 		"defender_composition": _format_squad_composition_string(match_state[SimCombatEngine.Side.DEFENDER]["squads"]),
+		"attacker_faction_id": current_atk_id,
+		"defender_faction_id": current_def_id,
 		"controller_ref": self
 	}
 	

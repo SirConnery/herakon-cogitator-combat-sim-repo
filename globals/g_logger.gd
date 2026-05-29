@@ -26,15 +26,17 @@ func initialize_battle_logger(initialization_context: Dictionary) -> void:
 	cached_atk_name = "Attacker"
 	cached_def_name = "Defender"
 	
-	var controller = context.get("controller_ref")
-	if controller != null:
-		var raw_factions = FactionRegistry.get_database()
-		
-		var atk_profile = raw_factions.get(controller.attacker_faction_in_single_combat)
+	var raw_factions = FactionRegistry.get_database()
+	
+	var atk_id = context.get("attacker_faction_id")
+	if atk_id != null:
+		var atk_profile = raw_factions.get(atk_id)
 		if atk_profile:
 			cached_atk_name = atk_profile.get("name", "Attacker")
 			
-		var def_profile = raw_factions.get(controller.defender_faction_in_single_combat)
+	var def_id = context.get("defender_faction_id")
+	if def_id != null:
+		var def_profile = raw_factions.get(def_id)
 		if def_profile:
 			cached_def_name = def_profile.get("name", "Defender")
 
