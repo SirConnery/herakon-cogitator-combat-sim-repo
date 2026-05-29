@@ -17,7 +17,6 @@ CONVERT_DICE_TO_RANDOM_DIFFERENT_DICE,
 REROLL,
 REROLL_ALL_SPECIFIC_DICE,
 REROLL_SPECIFIC_DICE_FOR_EACH_UNIT,
-SPEND_MORALE_TO_GAIN_SPECIFIC_DICE, 
 
 GAIN_OR_LOSE_COMBAT_TOKENS,
 GAIN_TOKEN_PER_SPECIFIC_DICE,
@@ -109,6 +108,8 @@ enum ConditionType {
 	
 	# Eldar
 	HAS_MORALE_DICE_AND_OPPONENT_HAS_UNROUTED_UNITS,
+	CANNOT_GAIN_DEFENSE_TOKENS_THIS_ROUND_IS_ACTIVE,
+	CANNOT_GAIN_DEFENSE_TOKENS_THIS_ROUND_IS_NOT_ACTIVE,
 	
 	 
 }
@@ -126,6 +127,11 @@ enum UnitFilterMode {
 
 enum TargetType { SELF, OPPONENT, BOTH }
 enum DicePoolType { RANDOM, OFFENSE, DEFENSE, MORALE }
+enum CombatTokenType {
+	OFFENSE = 1,
+	DEFENSE = 2
+}
+
 enum TimingWindow {
 	INSTANT,         # Resolves immediately when card is revealed (Stage 2)
 	BEFORE_DAMAGE,   # Resolves right before offense/defense values match up

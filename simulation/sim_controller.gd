@@ -340,13 +340,13 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_t
 		fx.effect_type,          # Index 0
 		fx.target_type,          # Index 1
 		value_slot,              # Index 2
-		fx.pool_type,            # Index 3 (Input/Spent Die Pool Type)
+		fx.pool_type,            # Index 3 (Dice)
 		ability_block_type_id,   # Index 4
 		req_unit_types,          # Index 5
 		fx.max_spend,            # Index 6
 		fx.condition_type,       # Index 7
 		fx.destruction_mode,     # Index 8
-		fx.gain_pool_type        # Index 9 (Output/Gained Token Pool Type)
+		fx.gain_token_type       # Index 9 (Strictly a CombatTokenType enum value)
 	]
 
 #endregion

@@ -16,7 +16,7 @@ static func get_database() -> Dictionary:
 	# =========================================================================
 	db[FactionID.SPACE_MARINES] = {
 		"name": "Space Marines",
-		"debug_deck": [], # place card number here. That card becomes your combat_deck with 10 copies. 
+		"debug_deck": [1002], # place card number here. That card becomes your combat_deck with 10 copies. 
 		"upgrade_deck": [1001,1002,1003,1004,1005,1006,1007,1008,1010,1011,1012,1013,1014],
 		"combat_deck": [],
 		"units": [
@@ -36,7 +36,7 @@ static func get_database() -> Dictionary:
 	# =========================================================================
 	db[FactionID.CHAOS] = {
 		"name": "Chaos",
-		"debug_deck": [2007],
+		"debug_deck": [2001],
 		"upgrade_deck": [2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014],
 		"combat_deck": [],
 		"units": [
@@ -76,7 +76,7 @@ static func get_database() -> Dictionary:
 	# =========================================================================
 	db[FactionID.ELDAR] = {
 		"name": "Eldar",
-		"debug_deck": [4005],
+		"debug_deck": [4007],
 		"upgrade_deck": [1001],
 		"combat_deck": [],
 		"units": [

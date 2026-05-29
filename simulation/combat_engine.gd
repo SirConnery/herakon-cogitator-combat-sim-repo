@@ -1008,6 +1008,12 @@ static func _check_weirdboyz_after_defender_resolves(state: Dictionary, round_in
 				on_event.call("ability_triggered", [3010, "↳ 🔮 Psychic Leech (Aura): Mirrored Defender instant tokens! Gained +%d ⚔️ and +%d 🛡️ tokens." % [def_delta_offence, def_delta_defence]])
 				on_event.call("tokens_updated", ["Attacker", token_pools[0], token_pools[1]])
 
+## Checks if the defense token suppression modifier is currently active on this side state
+static func _is_cannot_gain_defense_tokens_active(side_data: Dictionary) -> bool:
+	if side_data.is_empty():
+		return false
+	return side_data.get("cannot_gain_defense_tokens", false)
+
 #endregion
 
 #region Centralized Gain Dice and Gain tokens helpers
@@ -1335,27 +1341,28 @@ static func _reroll_dice_in_pool(target_side_data: Dictionary, target_role: Stri
 		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
 
 
-static func _get_token_index(role: String, effective_pool: int, target_opponent: bool) -> int:
+static func _get_token_index(role: String, token_type: int, target_opponent: bool) -> int:
 	var is_attacker := (role == "Attacker")
 	var subject_is_attacker := is_attacker if not target_opponent else not is_attacker
 	
 	var base_idx := 0 if subject_is_attacker else 2
-	var offset := 0 if effective_pool == CardData.DicePoolType.OFFENSE else 1
+	var offset := 0 if token_type == CardData.CombatTokenType.OFFENSE else 1
 	
 	return base_idx + offset
 
-static func _get_effective_token_type(pool_type: int) -> int:
-	assert(pool_type == CardData.DicePoolType.OFFENSE or pool_type == CardData.DicePoolType.DEFENSE,
-		"CRITICAL ENGINE ERROR: Attempted to process a token transaction with an unspecified or invalid pool type (%d). Tokens must explicitly be OFFENSE or DEFENSE!" % pool_type)
-	return pool_type
+static func _validate_token_type(token_type: int) -> int:
+	# 🛡️ STRICT EXPLICITNESS GUARD: Tokens must never map to dice pools like Morale
+	assert(token_type == CardData.CombatTokenType.OFFENSE or token_type == CardData.CombatTokenType.DEFENSE,
+		"CRITICAL ENGINE ERROR: Attempted to process a token transaction with an invalid token type (%d). Tokens must explicitly be CombatTokenType.OFFENSE or DEFENSE!" % token_type)
+	return token_type
 
 ## Centralized bottleneck for modifying token pools safely across both players
-static func _gain_or_lose_tokens(token_pools: Array, role: String, pool_type: int, amount: int, is_opponent: bool = false, parent_state: Dictionary = {}) -> void:
+static func _gain_or_lose_tokens(token_pools: Array, role: String, token_type: int, amount: int, is_opponent: bool = false, parent_state: Dictionary = {}) -> void:
 	# Enforce explicit token type validation immediately at the boundary door
-	var effective_pool := _get_effective_token_type(pool_type)
+	var verified_type := _validate_token_type(token_type)
 	
 	# 🛡️ SUPPRESSION GUARD
-	if amount > 0 and effective_pool == CardData.DicePoolType.DEFENSE and not parent_state.is_empty():
+	if amount > 0 and verified_type == CardData.CombatTokenType.DEFENSE and not parent_state.is_empty():
 		var is_attacker := (role == "Attacker")
 		var subject_is_attacker := is_attacker if not is_opponent else not is_attacker
 		var target_side_key = Side.ATTACKER if subject_is_attacker else Side.DEFENDER
@@ -1364,8 +1371,8 @@ static func _gain_or_lose_tokens(token_pools: Array, role: String, pool_type: in
 		if target_side_data.get("cannot_gain_defense_tokens", false):
 			return
 
-	# Pass the fully validated pool type downstream safely
-	var token_idx := _get_token_index(role, effective_pool, is_opponent)
+	# Pass the fully validated token type downstream safely
+	var token_idx := _get_token_index(role, verified_type, is_opponent)
 	
 	if token_idx >= 0 and token_idx < token_pools.size():
 		token_pools[token_idx] = max(0, token_pools[token_idx] + amount)
@@ -1453,7 +1460,6 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.REROLL: _execute_reroll,
 	CardData.EffectType.REROLL_ALL_SPECIFIC_DICE: _execute_reroll_all_specific_dice,
 	CardData.EffectType.REROLL_SPECIFIC_DICE_FOR_EACH_UNIT: _execute_reroll_specific_dice_for_each_unit,
-	CardData.EffectType.SPEND_MORALE_TO_GAIN_SPECIFIC_DICE: _execute_spend_morale_to_gain_specific_dice,
 	CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKENS: _execute_spend_specific_dice_to_gain_tokens,
 	
 	CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS: _execute_gain_or_lose_combat_tokens,
@@ -1720,6 +1726,10 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 		# Eldar
 		CardData.ConditionType.HAS_MORALE_DICE_AND_OPPONENT_HAS_UNROUTED_UNITS:
 			condition_passed = _has_specific_dice(side_data, 3, 1) and _has_any_unrouted_units(opp_side_data)
+		CardData.ConditionType.CANNOT_GAIN_DEFENSE_TOKENS_THIS_ROUND_IS_ACTIVE:
+			condition_passed = _is_cannot_gain_defense_tokens_active(side_data)
+		CardData.ConditionType.CANNOT_GAIN_DEFENSE_TOKENS_THIS_ROUND_IS_NOT_ACTIVE:
+			condition_passed = not _is_cannot_gain_defense_tokens_active(side_data)
 		
 		_:
 			condition_passed = true
@@ -1945,56 +1955,18 @@ static func _execute_reroll_specific_dice_for_each_unit(fx: Array, _token_pools:
 	# --- 2. PIPED THROUGH CENTRAL HELPER ---
 	_reroll_dice_in_pool(reroll_side_data, reroll_role, unit_count, pool_type, card_id, on_event)
 
-
-static func _execute_spend_morale_to_gain_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
-	# 1. Calculate dynamic spend cap based on current wallet contents vs card max value
-	var available_morale: int = side_data[Stat.MORALE]
-	var max_spend_allowed: int = int(fx[2])
-	var spend_amount: int = min(max_spend_allowed, available_morale)
-
-	if spend_amount <= 0:
-		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, "↳ ⚡ Conversion skipped: 0 Morale dice available."])
-		return
-
-	# 2. Consume the resource in-place using the standard helper bottleneck
-	if not _spend_die_to_continue(side_data, Stat.MORALE, spend_amount, role, on_event):
-		return
-
-	# 3. Read configuration style from the flat data array payload
-	var pool_type: int = int(fx[3])
-	var final_selection: int = pool_type
-
-	# If configured as RANDOM (0), pick ONE type globally for the entire batch up front
-	if pool_type == 0: # CardData.DicePoolType.RANDOM
-		final_selection = 1 if randi() % 2 == 0 else 2
-
-	var dice_type_label := ""
-
-	# 4. Modify the side's core dice pools directly based on the determined selection
-	if final_selection == 1: # CardData.DicePoolType.OFFENSE
-		side_data[Stat.OFFENCE] += spend_amount
-		dice_type_label = "Offence ⚔️"
-	else: # CardData.DicePoolType.DEFENSE
-		side_data[Stat.DEFENCE] += spend_amount
-		dice_type_label = "Defence 🛡️"
-
-	# 5. Telemetry logging
-	if on_event.is_valid():
-		on_event.call("ability_triggered", [card_id, "↳ ⚡ Spent %d Morale dice! Added +%d %s dice to the core pool." % [spend_amount, spend_amount, dice_type_label]])
-
 #endregion
 
 
 #region Generic Token functions
 
-static func _execute_gain_or_lose_combat_tokens(fx: Array, token_pools: Array, _side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+static func _execute_gain_or_lose_combat_tokens(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	if fx[2] is Array:
 		return
 		
 	var target_type: int = fx[1]   # fx[1] = target_type
 	var val: int = fx[2]           # fx[2] = value (Can be positive or negative!)
-	var pool_type: int = fx[3]     # fx[3] = pool_type
+	var pool_type: int = fx[3]     # fx[3] = pool_type (Maps to token enum value at Index 3)
 	
 	var is_opponent: bool = (target_type != 0)
 	
@@ -2003,9 +1975,9 @@ static func _execute_gain_or_lose_combat_tokens(fx: Array, token_pools: Array, _
 	if is_opponent:
 		target_role = "Defender" if role == "Attacker" else "Attacker"
 		
-	# 🎯 Resolve true underlying token type to align log outputs with backend routing rules
-	var effective_pool := _get_effective_token_type(pool_type)
-	var label := "Offence" if effective_pool == CardData.DicePoolType.OFFENSE else "Defence"
+	# 🎯 Type Validation: Align log outputs with strict CombatTokenType enum rules
+	var effective_token := _validate_token_type(pool_type)
+	var label := "Offence" if effective_token == CardData.CombatTokenType.OFFENSE else "Defence"
 	
 	# 2. Dynamic Telemetry formatting based on token sign direction
 	if on_event.is_valid():
@@ -2014,8 +1986,9 @@ static func _execute_gain_or_lose_combat_tokens(fx: Array, token_pools: Array, _
 		else:
 			on_event.call("ability_triggered", [card_id, "Resolved LOSE_COMBAT_TOKEN: %s lost %d %s Token(s)." % [target_role, abs(val), label]])
 		
-	# 3. Piped through your unified central helper
-	_gain_or_lose_tokens(token_pools, role, pool_type, val, is_opponent)
+	# 3. Piped through your central helper WITH the required parent state payload
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	_gain_or_lose_tokens(token_pools, role, effective_token, val, is_opponent, parent_state)
 
 	# 4. Broadcast master state update to sync visual UI counters
 	if on_event.is_valid():
@@ -2067,16 +2040,17 @@ static func _execute_gain_token_per_specific_dice(fx: Array, token_pools: Array,
 		return
 
 	# --- 3. PROCESS REWARD TOKEN ROUTING ---
-	var chosen_token_pool_type := target_token_type
-	if chosen_token_pool_type == 0: # RANDOM choice evaluation
-		chosen_token_pool_type = CardData.DicePoolType.OFFENSE if (randi() % 2 == 0) else CardData.DicePoolType.DEFENSE
+	var chosen_token_type := target_token_type
+	if chosen_token_type == 0: # RANDOM choice evaluation
+		chosen_token_type = CardData.CombatTokenType.OFFENSE if (randi() % 2 == 0) else CardData.CombatTokenType.DEFENSE
 		
-	# 🎯 Resolve true target pool type to protect string labels from printing invalid metadata
-	var effective_target_pool := _get_effective_token_type(chosen_token_pool_type)
-	var token_label := "Offence" if effective_target_pool == CardData.DicePoolType.OFFENSE else "Defence"
+	# 🎯 Type Validation: Protect telemetry layers from cross-enum garbage
+	var verified_token := _validate_token_type(chosen_token_type)
+	var token_label := "Offence" if verified_token == CardData.CombatTokenType.OFFENSE else "Defence"
 
-	# --- 4. PIPED THROUGH CENTRAL HELPER ---
-	_gain_or_lose_tokens(token_pools, role, chosen_token_pool_type, total_allocations, is_opponent)
+	# --- 4. PIPED THROUGH CENTRAL HELPER WITH PASSED STATE CONTEXT ---
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	_gain_or_lose_tokens(token_pools, role, verified_token, total_allocations, is_opponent, parent_state)
 
 	# --- 5. CONSOLIDATED TELEMETRY PASS ---
 	if on_event.is_valid():
@@ -2088,16 +2062,14 @@ static func _execute_gain_token_per_specific_dice(fx: Array, token_pools: Array,
 
 
 ## Consumes all available dice of a specified type to generate tokens.
-## Unit Ability: Consumes all available dice of a specified stat type to generate tokens.
 static func _execute_spend_specific_dice_to_gain_tokens(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	# --- 1. STRICT SPECIFICATION CHECK (FAIL FAST) ---
-	# Asserts that Index 9 exists and has been assigned a valid target pool type.
-	assert(fx.size() > 9 and fx[9] > 0, "CRITICAL ARCHITECTURE ERROR: Card ID %d executed 'SPEND_SPECIFIC_DICE_TO_GAIN_TOKENS' but forgot to specify an explicit payout token type at Index 9 (gain_pool_type)!" % card_id)
+	assert(fx.size() > 9 and fx[9] > 0, "CRITICAL ARCHITECTURE ERROR: Card ID %d executed 'SPEND_SPECIFIC_DICE_TO_GAIN_TOKENS' but forgot to specify an explicit payout token type at Index 9 (gain_token_type)!" % card_id)
 	
 	var token_multiplier: int = fx[2]
 	var pool_type: int = fx[3]
 	var max_spend: int = fx[6] if fx.size() > 6 else -1
-	var gain_pool_type: int = fx[9]
+	var gain_token_type: int = fx[9]
 	
 	var source_stat := Stat.OFFENCE
 	var stat_label := "⚔️"
@@ -2125,18 +2097,18 @@ static func _execute_spend_specific_dice_to_gain_tokens(fx: Array, token_pools: 
 	# --- 2. CALCULATE YIELD & COMMIT DETERMINISTIC TOKENS ---
 	var tokens_gained := spend_amount * token_multiplier
 	var parent_state: Dictionary = side_data.get("parent_state", {})
-	_gain_or_lose_tokens(token_pools, role, gain_pool_type, tokens_gained, false, parent_state)
+	_gain_or_lose_tokens(token_pools, role, gain_token_type, tokens_gained, false, parent_state)
 
 	# --- 3. DYNAMIC TELEMETRY MATCHING ---
 	if on_event.is_valid():
-		var effective_pool := _get_effective_token_type(gain_pool_type)
-		var token_label := "🛡️" if effective_pool == CardData.DicePoolType.DEFENSE else "⚔️"
+		var verified_token := _validate_token_type(gain_token_type)
+		var token_label := "🛡️" if verified_token == CardData.CombatTokenType.DEFENSE else "⚔️"
 		on_event.call("ability_triggered", [card_id, "↳ ⚡ Converted %d %s dice into +%d %s tokens!" % [spend_amount, stat_label, tokens_gained, token_label]])
 
 
 static func _execute_gain_token_per_unrouted_unit(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var multiplier: int = int(fx[2])
-	var pool_type: int = int(fx[3])
+	var token_type: int = int(fx[3])  # Maps directly to your type-safe CombatTokenType enum now
 	var filter_mode: int = int(fx[4]) # Extracted from card effect configuration
 	
 	# Safe extraction: Reads allowed types from payload array slot 5 if available
@@ -2183,13 +2155,14 @@ static func _execute_gain_token_per_unrouted_unit(fx: Array, token_pools: Array,
 	var tokens_to_gain = matching_unit_count * multiplier
 	var base_idx := 0 if role == "Attacker" else 2
 	
-	_gain_or_lose_tokens(token_pools, role, pool_type, tokens_to_gain, false)
+	# 🛡️ Forward side state context down to intercept passive suppression blocks during unit scaling
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	_gain_or_lose_tokens(token_pools, role, token_type, tokens_to_gain, false, parent_state)
 	
 	# 4. Dispatch completely generic event logging without card-specific flavors
 	if on_event.is_valid():
-		# 🎯 Resolve true underlying token type to protect lookups from potential abstract pool allocations (like Morale)
-		var effective_pool := _get_effective_token_type(pool_type)
-		var pool_label := "Offence ⚔️" if effective_pool == CardData.DicePoolType.OFFENSE else "Defence 🛡️"
+		var verified_token := _validate_token_type(token_type)
+		var pool_label := "Offence ⚔️" if verified_token == CardData.CombatTokenType.OFFENSE else "Defence 🛡️"
 		var units_list_string := ", ".join(counted_names)
 		
 		on_event.call("ability_triggered", [card_id, "↳ 🟢 Scaling: Found %d unrouted figures (%s). Gained +%d %s tokens." % [matching_unit_count, units_list_string, tokens_to_gain, pool_label]])
@@ -3153,7 +3126,7 @@ static func _execute_prevent_opponent_gaining_defense_tokens_this_round(fx: Arra
 	if opp_side_data.is_empty():
 		return
 		
-	# Apply the passive suppression restriction to the opponent
+	# Apply the passive suppression restriction directly to the opponent's reference state
 	opp_side_data["cannot_gain_defense_tokens"] = true
 	
 	if on_event.is_valid():
