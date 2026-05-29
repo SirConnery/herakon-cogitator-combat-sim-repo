@@ -1135,7 +1135,7 @@ static func _remove_dice_from_pool(target_side_data: Dictionary, target_role: St
 		if not atk_side.is_empty() and not def_side.is_empty():
 			log_current_dice_pools(on_event, atk_side, def_side, "Dice Loss")
 
-static func _convert_dice_in_pool(target_side_data: Dictionary, target_role: String, max_to_convert: int, target_pool_type: int, card_id: int, original_side_data: Dictionary, on_event: Callable) -> void:
+static func _convert_dice_in_pool(target_side_data: Dictionary, target_role: String, max_to_convert: int, target_pool_type: int, card_id: int, original_side_data: Dictionary, on_event: Callable, source_pool_type: int = -1) -> void:
 	var stat_map := {1: Stat.OFFENCE, 2: Stat.DEFENCE, 3: Stat.MORALE}
 	if not target_pool_type in stat_map:
 		return
@@ -1147,16 +1147,25 @@ static func _convert_dice_in_pool(target_side_data: Dictionary, target_role: Str
 	# --- CORE CONVERSION LOOP ---
 	for conversion in range(max_to_convert):
 		var best_source_stat := -1
-		var max_available_dice := 0
 		
-		for src_stat in [Stat.OFFENCE, Stat.DEFENCE, Stat.MORALE]:
-			if src_stat == target_stat:
-				continue
-			if target_side_data[src_stat] > max_available_dice:
-				max_available_dice = target_side_data[src_stat]
-				best_source_stat = src_stat
-				
-		if best_source_stat == -1 or max_available_dice <= 0:
+		# 🎯 Path A: Strict Source Pool Constraint Mode (e.g., Wraithguard Advance)
+		if source_pool_type in stat_map:
+			var constrained_stat = stat_map[source_pool_type]
+			if target_side_data[constrained_stat] > 0 and constrained_stat != target_stat:
+				best_source_stat = constrained_stat
+		
+		# 🎯 Path B: Generic Scavenger Mode (e.g., Blessed Power Armour)
+		else:
+			var max_available_dice := 0
+			for src_stat in [Stat.OFFENCE, Stat.DEFENCE, Stat.MORALE]:
+				if src_stat == target_stat:
+					continue
+				if target_side_data[src_stat] > max_available_dice:
+					max_available_dice = target_side_data[src_stat]
+					best_source_stat = src_stat
+					
+		# If no dice are left or source constraints aren't met, break out gracefully (handles 1-die scenarios)
+		if best_source_stat == -1 or target_side_data[best_source_stat] <= 0:
 			break
 			
 		target_side_data[best_source_stat] -= 1
@@ -1167,7 +1176,6 @@ static func _convert_dice_in_pool(target_side_data: Dictionary, target_role: Str
 
 	# --- TELEMETRY AND STATE SYNCHRONIZATION ---
 	if converted_count > 0 and on_event.is_valid():
-		# Mapping clean visual icon states for scannable log lines
 		var icons := {Stat.OFFENCE: "⚔️", Stat.DEFENCE: "🛡️", Stat.MORALE: "🎖️"}
 		var breakdown_parts: Array[String] = []
 		
@@ -1175,7 +1183,6 @@ static func _convert_dice_in_pool(target_side_data: Dictionary, target_role: Str
 			if stripped_counts[stat_key] > 0:
 				breakdown_parts.append("%d %s" % [stripped_counts[stat_key], icons[stat_key]])
 				
-		# 1. Sleek, high-visibility visual log string transformation
 		var summary_msg := "↳ 🔄 Dice Conversion (%s): Converted %s into %d %s" % [
 			target_role, 
 			", ".join(breakdown_parts), 
@@ -1184,10 +1191,8 @@ static func _convert_dice_in_pool(target_side_data: Dictionary, target_role: Str
 		]
 		on_event.call("ability_triggered", [card_id, summary_msg])
 		
-		# 2. Informs visual container widgets to update their graphics counters immediately!
 		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
 		
-		# 3. Complete system matrix terminal dump print statement
 		var parent_state: Dictionary = original_side_data.get("parent_state", {})
 		if not parent_state.is_empty():
 			var atk_side: Dictionary = parent_state.get(Side.ATTACKER, {})
@@ -1726,6 +1731,10 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 		# Eldar
 		CardData.ConditionType.HAS_MORALE_DICE_AND_OPPONENT_HAS_UNROUTED_UNITS:
 			condition_passed = _has_specific_dice(side_data, 3, 1) and _has_any_unrouted_units(opp_side_data)
+		CardData.ConditionType.OPPONENT_HAS_MORALE_DICE_AND_OPPONENT_HAS_UNROUTED_UNITS:
+			condition_passed = _has_specific_dice(opp_side_data, 3, 1) and _has_any_unrouted_units(opp_side_data)
+		CardData.ConditionType.OPPONENT_HAS_NO_MORALE_DICE_AND_OPPONENT_HAS_UNROUTED_UNITS:
+			condition_passed = _has_specific_dice(opp_side_data, 3, 1) and _has_any_unrouted_units(opp_side_data)
 		CardData.ConditionType.CANNOT_GAIN_DEFENSE_TOKENS_THIS_ROUND_IS_ACTIVE:
 			condition_passed = _is_cannot_gain_defense_tokens_active(side_data)
 		CardData.ConditionType.CANNOT_GAIN_DEFENSE_TOKENS_THIS_ROUND_IS_NOT_ACTIVE:
@@ -1825,6 +1834,7 @@ static func _execute_convert_dice_to_specific_dice(fx: Array, _token_pools: Arra
 	var target_type: int = fx[1]      # fx[1] = target_type (0 = SELF, 1 = OPPONENT)
 	var max_to_convert: int = fx[2]   # fx[2] = count values limit
 	var target_pool_type: int = fx[3] # fx[3] = pool target category type
+	var source_pool_type: int = fx[6] if fx.size() > 6 else -1 # 🎯 Index 6 extracts strict source constraints
 	
 	var is_attacker := (role == "Attacker")
 	var targets_self := (target_type == 0)
@@ -1838,10 +1848,9 @@ static func _execute_convert_dice_to_specific_dice(fx: Array, _token_pools: Arra
 		
 	if target_side_data.is_empty():
 		return
-	# ----------------------
 
-	# Handoff operations entirely to the decoupled central tracking manager
-	_convert_dice_in_pool(target_side_data, target_role, max_to_convert, target_pool_type, card_id, side_data, on_event)
+	# Handoff operations along with the source restriction configuration downstream
+	_convert_dice_in_pool(target_side_data, target_role, max_to_convert, target_pool_type, card_id, side_data, on_event, source_pool_type)
 
 static func _execute_convert_dice_to_random_different_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	if fx[2] is Array: return

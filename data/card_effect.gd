@@ -10,3 +10,4 @@ class_name CardEffect
 @export var choices: Array[CardEffect] = []
 @export var destruction_mode: int = CardData.DestructionMode.ANY
 @export var gain_token_type: int = 0 # Defaults to crashing if unset
+@export var else_choices: Array[CardEffect] = []

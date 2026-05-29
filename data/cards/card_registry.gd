@@ -58,6 +58,8 @@ enum CardID {
 	ELDAR_COMMAND_OF_THE_AUTARCH = 4005,
 	ELDAR_FIRE_DRAGONS_VENGEANCE = 4006,
 	ELDAR_SWOOPING_HAWKS         = 4007,
+	ELDAR_WRAITHGUARD_ADVANCE    = 4008,
+	
 	
 	# --- TESTING ---
 }
@@ -1964,7 +1966,7 @@ static func get_database() -> Dictionary:
 	fx_u_1.effect_type = CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS
 	fx_u_1.target_type = CardData.TargetType.SELF
 	fx_u_1.value = 2
-	fx_u_1.pool_type = CardData.CombatTokenType.DEFENSE # 🎯 Target Token Type
+	fx_u_1.pool_type = CardData.CombatTokenType.DEFENSE
 	
 	card.unit_ability.append(fx_u_1)
 	
@@ -1990,7 +1992,7 @@ static func get_database() -> Dictionary:
 	opt_a = CardEffect.new()
 	opt_a.effect_type = CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS
 	opt_a.target_type = CardData.TargetType.OPPONENT
-	opt_a.pool_type = CardData.CombatTokenType.OFFENSE # 🎯 Target Token Type
+	opt_a.pool_type = CardData.CombatTokenType.OFFENSE
 	opt_a.value = -3
 	
 	fx_1.choices.append(opt_a)
@@ -2002,13 +2004,88 @@ static func get_database() -> Dictionary:
 	fx_u_1.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKENS
 	fx_u_1.target_type = CardData.TargetType.SELF
 	fx_u_1.pool_type = CardData.DicePoolType.MORALE          # Source asset consumed
-	fx_u_1.gain_token_type = CardData.CombatTokenType.OFFENSE # 🎯 Target Token Type
+	fx_u_1.gain_token_type = CardData.CombatTokenType.OFFENSE
 	fx_u_1.value = 2
 	
 	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
 	
+	# ==========================================================================
+	# --- CARD 4008: Wraithguard Advance ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ELDAR_WRAITHGUARD_ADVANCE
+	card.card_name = "Wraithguard Advance"
+	card.card_tier = CardData.CardTier.TIER_0
+	card.offence_icons = 1
+	card.morale_icons = 1
+	card.required_unit_types = [
+		CardData.UnitType.WRAITHGUARDS, 
+		CardData.UnitType.HELLEBORE_FRIGATES, 
+		CardData.UnitType.VOID_STALKERS
+	]
 	
+	# --- GENERAL ABILITY 1 ---
+	# Choice Selection: Gain 1 random combat die OR 1 explicit Morale die
+	fx_1 = CardEffect.new()
+	fx_1.effect_type = CardData.EffectType.CHOICE
+	fx_1.target_type = CardData.TargetType.SELF
+	
+	# Option A: Roll 1 completely random combat die into pools
+	opt_a = CardEffect.new()
+	opt_a.effect_type = CardData.EffectType.GAIN_DICE
+	opt_a.target_type = CardData.TargetType.SELF
+	opt_a.value = 1
+	
+	# Option B: Allocate 1 specific Morale die directly
+	opt_b = CardEffect.new()
+	opt_b.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
+	opt_b.target_type = CardData.TargetType.SELF
+	opt_b.value = 1
+	opt_b.pool_type = CardData.DicePoolType.MORALE
+	
+	fx_1.choices = [opt_a, opt_b]
+	card.general_ability.append(fx_1)
+	
+	# --- GENERAL ABILITY 2 ---
+	# Conversion Node: Convert up to 2 Defence dice into Offence dice
+	fx_2 = CardEffect.new()
+	fx_2.effect_type = CardData.EffectType.CONVERT_DICE_TO_SPECIFIC_DICE
+	fx_2.target_type = CardData.TargetType.SELF
+	fx_2.value = 2
+	fx_2.pool_type = CardData.DicePoolType.OFFENSE # Target/Destination type (fx[3])
+	fx_2.max_spend = CardData.DicePoolType.DEFENSE # Strict Source Constraint type (fx[6])
+	card.general_ability.append(fx_2)
+	
+	# --- UNIT ABILITY ---
+	# Branch A: Opponent has Morale dice AND unrouted units -> Strip 1 Morale die
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u_1.condition_type = CardData.ConditionType.OPPONENT_HAS_MORALE_DICE_AND_OPPONENT_HAS_UNROUTED_UNITS
+	
+	opt_u_a = CardEffect.new()
+	opt_u_a.effect_type = CardData.EffectType.LOSE_SPECIFIC_DICE
+	opt_u_a.target_type = CardData.TargetType.OPPONENT
+	opt_u_a.value = 1
+	opt_u_a.pool_type = CardData.DicePoolType.MORALE # Targets dice
+	
+	fx_u_1.choices.append(opt_u_a)
+	card.unit_ability.append(fx_u_1)
+	
+	# Branch B (Otherwise): Opponent has NO Morale dice BUT has unrouted units -> Rout lowest tier
+	fx_u_2 = CardEffect.new()
+	fx_u_2.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u_2.condition_type = CardData.ConditionType.OPPONENT_HAS_NO_MORALE_DICE_AND_OPPONENT_HAS_UNROUTED_UNITS
+	
+	opt_u_b = CardEffect.new()
+	opt_u_b.effect_type = CardData.EffectType.ROUT_LOWEST_TIER
+	opt_u_b.target_type = CardData.TargetType.OPPONENT
+	opt_u_b.value = 1
+	
+	fx_u_2.choices.append(opt_u_b)
+	card.unit_ability.append(fx_u_2)
+	
+	db[card.card_id] = card
 	
 	return db
