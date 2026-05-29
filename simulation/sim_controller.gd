@@ -121,7 +121,8 @@ func run_mass_combat_simulation() -> void:
 #region Single Combat simulation
 
 ## Runs a single, highly configurable battle sandbox with full step-by-step logging telemetry
-func run_single_logged_combat() -> void:
+## Config comes from single_combat_view.gd start_new_combat_btn_pressed
+func run_single_logged_combat(config: Dictionary) -> void:
 	print("🚨 run_single_logged_battle() is executing!")
 	
 	# 1. RESOLVE CONFIGURABLE ENVIRONMENT RULES
@@ -131,15 +132,41 @@ func run_single_logged_combat() -> void:
 	if random_combat_type:
 		active_ground_combat = (randi() % 2 == 0)
 		
-	# 2. RESOLVE MATCHUP IDENTITIES (ANTI-MIRROR GUARANTEED POOL)
+	# 2. RESOLVE MATCHUP IDENTITIES FROM CONFIG ENVELOPE (ANTI-MIRROR SECURE)
 	var global_pool: Array = FactionRegistry.FactionID.values()
 	
-	# Pick a random attacker from the total pool
-	var current_atk_id: FactionRegistry.FactionID = global_pool.pick_random() as FactionRegistry.FactionID
+	# Extract parameters with safe fallbacks to RANDOM_ID (999)
+	var input_atk_id: int = config.get("attacker_id", 999)
+	var input_def_id: int = config.get("defender_id", 999)
 	
-	# Filter out the chosen attacker to guarantee the defender cannot be a mirror match
-	var filtered_pool: Array = global_pool.filter(func(f): return int(f) != int(current_atk_id))
-	var current_def_id: FactionRegistry.FactionID = filtered_pool.pick_random() as FactionRegistry.FactionID
+	var current_atk_id: FactionRegistry.FactionID
+	var current_def_id: FactionRegistry.FactionID
+	
+	var is_atk_random: bool = (input_atk_id == 999)
+	var is_def_random: bool = (input_def_id == 999)
+	
+	if is_atk_random and is_def_random:
+		# Both are random: Pick an attacker, then pick a different defender
+		current_atk_id = global_pool.pick_random() as FactionRegistry.FactionID
+		var filtered_pool = global_pool.filter(func(f): return int(f) != int(current_atk_id))
+		current_def_id = filtered_pool.pick_random() as FactionRegistry.FactionID
+		
+	elif is_atk_random and not is_def_random:
+		# Defender is fixed, Attacker is random: Filter out the defender
+		current_def_id = input_def_id as FactionRegistry.FactionID
+		var allowed_attackers = global_pool.filter(func(f): return int(f) != int(current_def_id))
+		current_atk_id = allowed_attackers.pick_random() as FactionRegistry.FactionID
+		
+	elif not is_atk_random and is_def_random:
+		# Attacker is fixed, Defender is random: Filter out the attacker
+		current_atk_id = input_atk_id as FactionRegistry.FactionID
+		var allowed_defenders = global_pool.filter(func(f): return int(f) != int(current_atk_id))
+		current_def_id = allowed_defenders.pick_random() as FactionRegistry.FactionID
+		
+	else:
+		# Both are fixed: Direct extraction step pass
+		current_atk_id = input_atk_id as FactionRegistry.FactionID
+		current_def_id = input_def_id as FactionRegistry.FactionID
 		
 	# 3. EXTRACT DATABASES & BLUEPRINTS
 	var raw_cards: Dictionary = CardRegistry.get_database()

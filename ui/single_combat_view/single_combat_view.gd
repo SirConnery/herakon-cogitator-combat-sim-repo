@@ -31,9 +31,13 @@ class_name SingleCombatView
 
 @onready var ui: UI = owner
 
-# Localized UI View States
+# Localized UI View States (Completely Isolated from SimController)
 var attacker_is_random_faction: bool = true
 var defender_is_random_faction: bool = true
+
+# Local State Tracking Variables for Explicit non-random Choices
+var attacker_selected_faction_id: int = 0 
+var defender_selected_faction_id: int = 1 
 
 const RANDOM_ID: int = 999
 const CLEAR_DECK_ID: int = 998
@@ -70,19 +74,23 @@ func init_connections() -> void:
 func start_new_combat_btn_pressed() -> void:
 	if ui == null or ui.sim_controller == null: 
 		return
-		
-	var sim = ui.sim_controller
 	
-	# Evaluate custom rules validation branches
-	var attacker_is_custom: bool = (not attacker_is_random_faction and not attacker_uses_default_deck.button_pressed)
-	var defender_is_custom: bool = (not defender_is_random_faction and not defender_uses_default_deck.button_pressed)
+	# Unpack layout realities into a generic configuration envelope
+	var combat_config := {
+		"attacker_id": faction_select_attacker_btn.get_selected_id(),
+		"defender_id": faction_select_defender_btn.get_selected_id(),
+		"attacker_is_custom_deck": (not attacker_is_random_faction and not attacker_uses_default_deck.button_pressed),
+		"defender_is_custom_deck": (not defender_is_random_faction and not defender_uses_default_deck.button_pressed)
+	}
 	
-	sim.use_custom_combat_decks = (attacker_is_custom or defender_is_custom)
+	# Set up the simulation controller's deck override flag
+	ui.sim_controller.use_custom_combat_decks = (combat_config.attacker_is_custom_deck or combat_config.defender_is_custom_deck)
 	
 	G_Logger.clear_session()
 	_build_and_register_combat_panels()
 	
-	sim.run_single_logged_combat()
+	# 🎯 Pass the decoupled configuration object
+	ui.sim_controller.run_single_logged_combat(combat_config)
 	
 	update_headers()
 	header_panel.show()
@@ -133,8 +141,9 @@ func _sync_ui_to_controller_states() -> void:
 	
 	is_ground_combat_btn.button_pressed = sim.is_ground_combat
 	
-	_select_dropdown_by_id(faction_select_attacker_btn, RANDOM_ID if attacker_is_random_faction else sim.attacker_faction_in_single_combat)
-	_select_dropdown_by_id(faction_select_defender_btn, RANDOM_ID if defender_is_random_faction else sim.defender_faction_in_single_combat)
+	# 🎯 Fixed references to read cleanly directly out of local script tracker properties
+	_select_dropdown_by_id(faction_select_attacker_btn, RANDOM_ID if attacker_is_random_faction else attacker_selected_faction_id)
+	_select_dropdown_by_id(faction_select_defender_btn, RANDOM_ID if defender_is_random_faction else defender_selected_faction_id)
 	_select_dropdown_by_id(stage_select_btn, RANDOM_ID if sim.is_random_stage else sim.debug_stage)
 	
 	_update_deck_drafting_interfaces()
@@ -147,11 +156,12 @@ func _on_attacker_selected(index: int) -> void:
 	var id = faction_select_attacker_btn.get_item_id(index)
 	attacker_is_random_faction = (id == RANDOM_ID)
 	
-	# 🎯 FIX: Automatically flush previous custom deck choices to prevent cross-faction layout bugs
+	# Flush previous custom deck choices to prevent cross-faction allocation bugs
 	ui.sim_controller.custom_attacker_combat_deck.clear()
 	
+	# 🎯 Fixed: Assigns ID safely directly onto your newly declared UI variable tracker
 	if id != RANDOM_ID:
-		ui.sim_controller.attacker_faction_in_single_combat = id as FactionRegistry.FactionID
+		attacker_selected_faction_id = id
 		
 	_update_deck_drafting_interfaces()
 
@@ -163,11 +173,12 @@ func _on_defender_selected(index: int) -> void:
 	var id = faction_select_defender_btn.get_item_id(index)
 	defender_is_random_faction = (id == RANDOM_ID)
 	
-	# 🎯 FIX: Automatically flush previous custom deck choices to prevent cross-faction layout bugs
+	# Flush previous custom deck choices to prevent cross-faction allocation bugs
 	ui.sim_controller.custom_defender_combat_deck.clear()
 	
+	# 🎯 Fixed: Assigns ID safely directly onto your newly declared UI variable tracker
 	if id != RANDOM_ID:
-		ui.sim_controller.defender_faction_in_single_combat = id as FactionRegistry.FactionID
+		defender_selected_faction_id = id
 		
 	_update_deck_drafting_interfaces()
 
@@ -255,9 +266,10 @@ func _update_deck_drafting_interfaces() -> void:
 			sim.custom_attacker_combat_deck.clear()
 		else:
 			cards_select_attacker_btn.disabled = false
+			# 🎯 Fixed reference to populate based on local tracker values instead of missing sim properties
 			_populate_card_dropdown(
 				cards_select_attacker_btn, 
-				sim.attacker_faction_in_single_combat, 
+				attacker_selected_faction_id, 
 				sim.custom_attacker_combat_deck
 			)
 
@@ -281,14 +293,15 @@ func _update_deck_drafting_interfaces() -> void:
 			sim.custom_defender_combat_deck.clear()
 		else:
 			cards_select_defender_btn.disabled = false
+			# 🎯 Fixed reference to populate based on local tracker values instead of missing sim properties
 			_populate_card_dropdown(
 				cards_select_defender_btn, 
-				sim.defender_faction_in_single_combat, 
+				defender_selected_faction_id, 
 				sim.custom_defender_combat_deck
 			)
 
 	# ----------------------------------------------------
-	# STEP 3: RUN ANTI-MIRROR LOCKOUT CHECKS & VALIDATE READINESS
+	# STEP 3: RUN SECURITY TASKS
 	# ----------------------------------------------------
 	_enforce_no_mirror_options()
 	_validate_execution_readiness()
@@ -377,7 +390,7 @@ func _select_dropdown_by_id(dropdown: OptionButton, target_id: int) -> void:
 			id_found = true
 			break
 			
-	# 🎯 Safety Fallback: If looking up an invalid historical state ID, default to item 0 safely
+	# Safety Fallback: If looking up an invalid state ID, default to item 0 safely
 	if not id_found and dropdown.item_count > 0:
 		dropdown.select(0)
 
