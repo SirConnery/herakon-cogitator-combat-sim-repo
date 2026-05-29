@@ -51,6 +51,12 @@ enum CardID {
 	ORKS_SNAPPER_GARGANT         = 3013,
 	ORKS_SMASHER_GARGANT         = 3014,
 	
+	ELDAR_HIT_AND_RUN            = 4001,
+	ELDAR_HOWLING_BANSHEES       = 4002,
+	ELDAR_STRIKING_SCORPIONS     = 4003,
+	ELDAR_RANGER_SUPPORT         = 4004,
+	ELDAR_COMMAND_OF_THE_AUTARCH = 4005,
+	
 	# --- TESTING ---
 }
 
@@ -297,7 +303,7 @@ static func get_database() -> Dictionary:
 	# Part 2: Rally if defending
 	fx_1 = CardEffect.new()
 	fx_1.effect_type = CardData.EffectType.CONDITIONAL
-	fx_1.condition_type = CardData.ConditionType.DEFENDING
+	fx_1.condition_type = CardData.ConditionType.IS_DEFENDING
 	
 	node = CardEffect.new()
 	node.effect_type = CardData.EffectType.RALLY
@@ -353,7 +359,7 @@ static func get_database() -> Dictionary:
 	# Part 2: Rally if attacking
 	fx_1 = CardEffect.new()
 	fx_1.effect_type = CardData.EffectType.CONDITIONAL
-	fx_1.condition_type = CardData.ConditionType.ATTACKING
+	fx_1.condition_type = CardData.ConditionType.IS_ATTACKING
 	
 	node = CardEffect.new()
 	node.effect_type = CardData.EffectType.RALLY
@@ -572,6 +578,7 @@ static func get_database() -> Dictionary:
 	fx_u_1.target_type = CardData.TargetType.SELF
 	fx_u_1.value = 2 # Multiplier: Tokens gained per single die consumed
 	fx_u_1.pool_type = CardData.DicePoolType.OFFENSE
+	fx_u_1.gain_pool_type = CardData.DicePoolType.OFFENSE # Explicitly map the token target type!
 	card.unit_ability.append(fx_u_1)
 	
 	db[card.card_id] = card
@@ -808,7 +815,7 @@ static func get_database() -> Dictionary:
 	card.required_unit_types = [CardData.UnitType.CHAOS_SPACE_MARINES, CardData.UnitType.ICONOCLAST_DESTROYERS]
 	
 	# --- GENERAL ABILITY ---
-	# Setup Branch 1: Player has NO Morale dice -> Converts 1 Offence Die
+	# Setup Branch 1: Player has NO Morale dice -> Converts 1 Offence Die to 3 Offence Tokens
 	fx_1 = CardEffect.new()
 	fx_1.effect_type = CardData.EffectType.CONDITIONAL
 	fx_1.condition_type = CardData.ConditionType.HAS_NO_MORALE_DICE
@@ -817,11 +824,12 @@ static func get_database() -> Dictionary:
 	opt_a.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKENS
 	opt_a.target_type = CardData.TargetType.SELF
 	opt_a.pool_type = CardData.DicePoolType.OFFENSE
+	opt_a.gain_pool_type = CardData.DicePoolType.OFFENSE # Explicitly request Offence tokens
 	opt_a.value = 3
 	opt_a.max_spend = 1
 	fx_1.choices.append(opt_a)
 	
-	# Setup Branch 2: Player HAS Morale dice -> Converts 1 Morale Die
+	# Setup Branch 2: Player HAS Morale dice -> Converts 1 Morale Die to 3 Offence Tokens
 	fx_2 = CardEffect.new()
 	fx_2.effect_type = CardData.EffectType.CONDITIONAL
 	fx_2.condition_type = CardData.ConditionType.HAS_MORALE_DICE
@@ -830,6 +838,7 @@ static func get_database() -> Dictionary:
 	opt_b.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKENS
 	opt_b.target_type = CardData.TargetType.SELF
 	opt_b.pool_type = CardData.DicePoolType.MORALE
+	opt_b.gain_pool_type = CardData.DicePoolType.OFFENSE # Explicitly request Offence tokens
 	opt_b.value = 3
 	opt_b.max_spend = 1
 	fx_2.choices.append(opt_b)
@@ -887,6 +896,7 @@ static func get_database() -> Dictionary:
 	opt_a.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKENS
 	opt_a.target_type = CardData.TargetType.SELF
 	opt_a.pool_type = CardData.DicePoolType.DEFENSE
+	opt_a.gain_pool_type = CardData.DicePoolType.DEFENSE # Explicitly request Defence tokens
 	opt_a.value = 3
 	opt_a.max_spend = 1
 	fx_1.choices.append(opt_a)
@@ -900,6 +910,7 @@ static func get_database() -> Dictionary:
 	opt_b.effect_type = CardData.EffectType.SPEND_SPECIFIC_DICE_TO_GAIN_TOKENS
 	opt_b.target_type = CardData.TargetType.SELF
 	opt_b.pool_type = CardData.DicePoolType.MORALE
+	opt_b.gain_pool_type = CardData.DicePoolType.DEFENSE # Explicitly request Defence tokens
 	opt_b.value = 3
 	opt_b.max_spend = 1
 	fx_2.choices.append(opt_b)
@@ -914,7 +925,7 @@ static func get_database() -> Dictionary:
 	fx_u_1.effect_type = CardData.EffectType.CONDITIONAL
 	fx_u_1.condition_type = CardData.ConditionType.OPPONENT_HAS_ROUTED_UNITS
 	
-	# Payout Node: Gain 2 Defence (Shield) dice
+	# Payout Node: Gain 2 Defence Tokens
 	opt_u_a = CardEffect.new()
 	opt_u_a.effect_type = CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS
 	opt_u_a.target_type = CardData.TargetType.SELF
@@ -1743,7 +1754,182 @@ static func get_database() -> Dictionary:
 	
 	db[card.card_id] = card
 	
+	# ==========================================================================
+	# --- CARD 4001: Hit and Run ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ELDAR_HIT_AND_RUN
+	card.card_name = "Hit and Run"
+	card.card_tier = CardData.CardTier.STARTER
+	card.offence_icons = 1
+	card.required_unit_types = [CardData.UnitType.ASPECT_WARRIORS, CardData.UnitType.HELLEBORE_FRIGATES]
 	
+	# --- GENERAL ABILITY ---
+	# Ability 1: Gain 2 Offence Combat Tokens
+	fx_1 = CardEffect.new()
+	fx_1.effect_type = CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS
+	fx_1.target_type = CardData.TargetType.SELF
+	fx_1.value = 2
+	fx_1.pool_type = CardData.DicePoolType.OFFENSE
+	card.general_ability.append(fx_1)
 	
+	# --- UNIT ABILITY ---
+	# Pending custom logic implementation
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 4002: Howling Banshees ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ELDAR_HOWLING_BANSHEES
+	card.card_name = "Howling Banshees"
+	card.card_tier = CardData.CardTier.STARTER
+	card.offence_icons = 1
+	card.required_unit_types = [CardData.UnitType.ASPECT_WARRIORS, CardData.UnitType.HELLEBORE_FRIGATES]
+	
+	# --- GENERAL ABILITY ---
+	# Ability 1: Gain 1 dice
+	fx_1 = CardEffect.new()
+	fx_1.effect_type = CardData.EffectType.GAIN_DICE
+	fx_1.target_type = CardData.TargetType.SELF
+	fx_1.value = 1
+	card.general_ability.append(fx_1)
+	
+	# --- UNIT ABILITY ---
+	# If you have morale dice and opponent has unrouted units, opponent routs his unit
+	fx_u_1 = CardEffect.new()
+	fx_u_1.effect_type = CardData.EffectType.CONDITIONAL
+	fx_u_1.condition_type = CardData.ConditionType.HAS_MORALE_DICE_AND_OPPONENT_HAS_UNROUTED_UNITS
+	
+	# Payout Node: Rout the lowest-tier living unrouted unit on the enemy side
+	var rout_lowest_fx = CardEffect.new()
+	rout_lowest_fx.effect_type = CardData.EffectType.ROUT_LOWEST_TIER
+	rout_lowest_fx.target_type = CardData.TargetType.OPPONENT
+	
+	# Append payout token into the conditional branching cascade
+	fx_u_1.choices.append(rout_lowest_fx)
+	card.unit_ability.append(fx_u_1)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 4003: Striking Scorpions ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ELDAR_STRIKING_SCORPIONS
+	card.card_name = "Striking Scorpions"
+	card.card_tier = CardData.CardTier.STARTER
+	card.defence_icons = 1
+	card.required_unit_types = [CardData.UnitType.ASPECT_WARRIORS, CardData.UnitType.HELLEBORE_FRIGATES]
+	
+	# --- GENERAL ABILITY ---
+	# Ability 1: Gain 1 random combat die rolled directly into pools
+	fx_1 = CardEffect.new()
+	fx_1.effect_type = CardData.EffectType.GAIN_DICE
+	fx_1.target_type = CardData.TargetType.SELF
+	fx_1.value = 1
+	card.general_ability.append(fx_1)
+	
+	# --- UNIT ABILITY ---
+	# Ability 1: Opponent loses 1 random combat die (pool_type = 0 specifies random loss)
+	var fx_u = CardEffect.new()
+	fx_u.effect_type = CardData.EffectType.LOSE_DICE
+	fx_u.target_type = CardData.TargetType.OPPONENT
+	fx_u.value = 1
+	card.unit_ability.append(fx_u)
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 4004: Ranger Support ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = CardID.ELDAR_RANGER_SUPPORT
+	card.card_name = "Ranger Support"
+	card.card_tier = CardData.CardTier.STARTER
+	card.defence_icons = 1
+	card.morale_icons = 1
+	card.required_unit_types = []
+	
+	# --- GENERAL ABILITY ---
+	# Condition Check: Evaluate if the active side is the attacker in this matchup
+	fx_1 = CardEffect.new()
+	fx_1.effect_type = CardData.EffectType.CONDITIONAL
+	fx_1.condition_type = CardData.ConditionType.IS_ATTACKING
+	
+	# Payout Node A: Gain 1 Offence Combat Token
+	var token_off = CardEffect.new()
+	token_off.effect_type = CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS
+	token_off.target_type = CardData.TargetType.SELF
+	token_off.value = 1
+	token_off.pool_type = CardData.DicePoolType.OFFENSE
+	
+	# Payout Node B: Gain 1 Defence Combat Token
+	var token_def = CardEffect.new()
+	token_def.effect_type = CardData.EffectType.GAIN_OR_LOSE_COMBAT_TOKENS
+	token_def.target_type = CardData.TargetType.SELF
+	token_def.value = 1
+	token_def.pool_type = CardData.DicePoolType.DEFENSE
+	
+	# Append sequential combat token payout items to the conditional gate
+	fx_1.choices.append(token_off)
+	fx_1.choices.append(token_def)
+	card.general_ability.append(fx_1)
+	
+	# --- UNIT ABILITY ---
+	# None
+	
+	db[card.card_id] = card
+	
+	# ==========================================================================
+	# --- CARD 4005: Command of the Autarch ---
+	# ==========================================================================
+	card = CardData.new()
+	card.card_id = 4005
+	card.card_name = "Command of the Autarch"
+	card.card_tier = CardData.CardTier.STARTER
+	card.required_unit_types = []
+	
+	# --- GENERAL ABILITY ---
+	# Ability 1 - Branch 1: Player has NO routed units -> Gain 1 Morale Die
+	fx_1 = CardEffect.new()
+	fx_1.effect_type = CardData.EffectType.CONDITIONAL
+	fx_1.condition_type = CardData.ConditionType.HAS_NO_ROUTED_UNITS
+	
+	var morale_node = CardEffect.new()
+	morale_node.effect_type = CardData.EffectType.GAIN_SPECIFIC_DICE
+	morale_node.target_type = CardData.TargetType.SELF
+	morale_node.value = 1
+	morale_node.pool_type = CardData.DicePoolType.MORALE
+	
+	fx_1.choices = [morale_node]
+	
+	# Ability 1 - Branch 2: Player HAS routed units -> Execute Rally sequence
+	fx_2 = CardEffect.new()
+	fx_2.effect_type = CardData.EffectType.CONDITIONAL
+	fx_2.condition_type = CardData.ConditionType.HAS_ROUTED_UNITS
+	
+	var rally_node = CardEffect.new()
+	rally_node.effect_type = CardData.EffectType.RALLY
+	rally_node.target_type = CardData.TargetType.SELF
+	rally_node.value = 1
+	
+	fx_2.choices = [rally_node]
+	
+	# Appending the negative check first prevents the state mutation side-effect cascade
+	card.general_ability.append(fx_1)
+	card.general_ability.append(fx_2)
+	
+	# Ability 2: Deploy a random card to the play area without executing its logic steps
+	fx_3 = CardEffect.new()
+	fx_3.effect_type = CardData.EffectType.PLAY_RANDOM_CARD_DO_NOT_RESOLVE_ABILITIES
+	fx_3.target_type = CardData.TargetType.SELF
+	card.general_ability.append(fx_3)
+	
+	# --- UNIT ABILITY ---
+	# Pending implementation details
+	
+	db[card.card_id] = card
 	
 	return db

@@ -110,8 +110,13 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		atk["extra_icons"] = [0, 0, 0]
 		def["extra_icons"] = [0, 0, 0]
 		
+		#region Special ability round variables
 		atk["cannot_route"] = false
 		def["cannot_route"] = false
+		
+		atk["cannot_gain_defense_tokens"] = false
+		def["cannot_gain_defense_tokens"] = false
+		#endregion Special ability round variables end
 
 		for squad in atk["squads"]:
 			for i in range(squad["alive_figures"].size()):
@@ -537,8 +542,9 @@ static func _get_live_card_icons(side_data: Dictionary, card_db: Dictionary, up_
 	var totals: Array[int] = [0, 0, 0] # [Offence, Defence, Morale]
 	var play_area: Array = side_data.get("play_area", [])
 	
-	for i in range(up_to_round + 1):
-		if i < play_area.size():
+	# Loop through every single card currently in the play area to capture dynamic additions!
+	for i in range(play_area.size()):
+		if play_area[i] != null:
 			var card_id = play_area[i]
 			var card_entry = card_db.get(card_id, [0, 0, 0])
 			totals[0] += card_entry[0]
@@ -927,6 +933,29 @@ static func count_tier_0_units(side_data: Dictionary) -> int:
 							count += 1
 	return count
 
+
+static func _add_card_to_play_area(side_data: Dictionary, card_id: int, round_index: int = -1) -> void:
+	if not side_data.has("play_area"):
+		side_data["play_area"] = []
+		
+	var play_area = side_data["play_area"]
+	
+	if play_area is Array:
+		if round_index >= 0:
+			# Ensure the array is sized appropriately for explicit round slotting
+			if play_area.size() <= round_index:
+				play_area.resize(round_index + 1)
+			play_area[round_index] = card_id
+		else:
+			# Dynamic injection via card ability (appends to the end of the timeline)
+			play_area.append(card_id)
+			
+	elif play_area is Dictionary:
+		if round_index >= 0:
+			play_area[round_index] = card_id
+		else:
+			play_area[play_area.size()] = card_id
+
 #endregion
 
 #region Passive helper functions
@@ -1306,33 +1335,39 @@ static func _reroll_dice_in_pool(target_side_data: Dictionary, target_role: Stri
 		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
 
 
-static func _get_token_index(role: String, pool_type: int, target_opponent: bool) -> int:
+static func _get_token_index(role: String, effective_pool: int, target_opponent: bool) -> int:
 	var is_attacker := (role == "Attacker")
 	var subject_is_attacker := is_attacker if not target_opponent else not is_attacker
 	
 	var base_idx := 0 if subject_is_attacker else 2
-	
-	# Resolve abstract pools to a concrete token type upfront
-	var effective_pool := _get_effective_token_type(pool_type)
 	var offset := 0 if effective_pool == CardData.DicePoolType.OFFENSE else 1
 	
 	return base_idx + offset
 
 static func _get_effective_token_type(pool_type: int) -> int:
-	if pool_type == CardData.DicePoolType.MORALE:
-		# 🎯 Centralized Rule: Right now your code defaults Morale to Defense.
-		# If specific cards or factions convert Morale to Offense instead, 
-		# you can easily expand this logic right here!
-		return CardData.DicePoolType.DEFENSE 
+	assert(pool_type == CardData.DicePoolType.OFFENSE or pool_type == CardData.DicePoolType.DEFENSE,
+		"CRITICAL ENGINE ERROR: Attempted to process a token transaction with an unspecified or invalid pool type (%d). Tokens must explicitly be OFFENSE or DEFENSE!" % pool_type)
 	return pool_type
 
 ## Centralized bottleneck for modifying token pools safely across both players
-static func _gain_or_lose_tokens(token_pools: Array, role: String, pool_type: int, amount: int, is_opponent: bool = false) -> void:
-	var token_idx := _get_token_index(role, pool_type, is_opponent)
+static func _gain_or_lose_tokens(token_pools: Array, role: String, pool_type: int, amount: int, is_opponent: bool = false, parent_state: Dictionary = {}) -> void:
+	# Enforce explicit token type validation immediately at the boundary door
+	var effective_pool := _get_effective_token_type(pool_type)
 	
-	# Guard clause to ensure safety if indexing boundaries are adjusted
+	# 🛡️ SUPPRESSION GUARD
+	if amount > 0 and effective_pool == CardData.DicePoolType.DEFENSE and not parent_state.is_empty():
+		var is_attacker := (role == "Attacker")
+		var subject_is_attacker := is_attacker if not is_opponent else not is_attacker
+		var target_side_key = Side.ATTACKER if subject_is_attacker else Side.DEFENDER
+		var target_side_data: Dictionary = parent_state.get(target_side_key, {})
+		
+		if target_side_data.get("cannot_gain_defense_tokens", false):
+			return
+
+	# Pass the fully validated pool type downstream safely
+	var token_idx := _get_token_index(role, effective_pool, is_opponent)
+	
 	if token_idx >= 0 and token_idx < token_pools.size():
-		# 🛡️ Underflow Guard: Keeps the pool value from ever dropping below 0
 		token_pools[token_idx] = max(0, token_pools[token_idx] + amount)
 
 #endregion
@@ -1411,6 +1446,7 @@ static var EFFECT_RESOLVERS = {
 	
 	CardData.EffectType.GAIN_DICE: _execute_gain_dice,
 	CardData.EffectType.GAIN_SPECIFIC_DICE: _execute_gain_specific_dice,
+	CardData.EffectType.LOSE_DICE: _execute_lose_dice,
 	CardData.EffectType.LOSE_SPECIFIC_DICE: _execute_lose_specific_dice,
 	CardData.EffectType.CONVERT_DICE_TO_SPECIFIC_DICE: _execute_convert_dice_to_specific_dice,
 	CardData.EffectType.CONVERT_DICE_TO_RANDOM_DIFFERENT_DICE: _execute_convert_dice_to_random_different_dice,
@@ -1435,6 +1471,7 @@ static var EFFECT_RESOLVERS = {
 	CardData.EffectType.OPPONENT_DISCARDS_WORST_FACEUP_CARD: _execute_opponent_discards_worst_faceup_card,
 	CardData.EffectType.OPPONENT_DISCARDS_BEST_FACEUP_CARD: _execute_opponent_discards_best_faceup_card,
 	CardData.EffectType.DISCARD_STEAL_ICONS: _execute_discard_steal_icons,
+	CardData.EffectType.PLAY_RANDOM_CARD_DO_NOT_RESOLVE_ABILITIES: _execute_play_random_card_do_not_resolve_abilities,
 	
 	
 	CardData.EffectType.SPAWN_UNIT: _execute_spawn_unit,
@@ -1457,6 +1494,9 @@ static var EFFECT_RESOLVERS = {
 	
 	# ORK
 	CardData.EffectType.DESTROY_OR_SPEND_DICE_BASED_ON_TIER: _execute_destroy_or_spend_dice_based_on_tier, # Smasher Gargant
+	
+	# Eldar
+	CardData.EffectType.PREVENT_OPPONENT_GAINING_DEFENSE_TOKENS_THIS_ROUND: _execute_prevent_opponent_gaining_defense_tokens_this_round,
 }
 
 #endregion
@@ -1595,9 +1635,9 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 	match condition_rule:
 		CardData.ConditionType.OUTNUMBERING:
 			condition_passed = _has_more_unrouted_units_than_opponent(side_data, opp_side_data)
-		CardData.ConditionType.ATTACKING:
+		CardData.ConditionType.IS_ATTACKING:
 			condition_passed = is_attacker
-		CardData.ConditionType.DEFENDING:
+		CardData.ConditionType.IS_DEFENDING:
 			condition_passed = not is_attacker
 		
 		CardData.ConditionType.HAS_OFFENCE_DICE:
@@ -1676,6 +1716,10 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 			condition_passed = _has_any_routed_units(opp_side_data) and not _has_specific_dice(opp_side_data, 2, 1)
 		CardData.ConditionType.HAS_MORE_MORALE_THAN_OPPONENT_AND_OPPONENT_HAS_ROUTED_UNITS:
 			condition_passed = _has_more_specific_dice_than_opponent(side_data, opp_side_data, 3) and _has_any_routed_units(opp_side_data)
+			
+		# Eldar
+		CardData.ConditionType.HAS_MORALE_DICE_AND_OPPONENT_HAS_UNROUTED_UNITS:
+			condition_passed = _has_specific_dice(side_data, 3, 1) and _has_any_unrouted_units(opp_side_data)
 		
 		_:
 			condition_passed = true
@@ -1731,6 +1775,22 @@ static func _execute_gain_specific_dice(fx: Array, _token_pools: Array, side_dat
 
 	# Passes the exact requested pool_type directly through
 	_add_dice_to_pool(target_side_data, target_role, requested_val, pool_type, card_id, side_data, on_event)
+
+static func _execute_lose_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	if fx[2] is Array: return
+	var target_type: int = fx[1]
+	var requested_val: int = fx[2]
+	
+	var target_side_data := side_data
+	var target_role := role
+	if target_type != 0:
+		target_role = "Defender" if role == "Attacker" else "Attacker"
+		target_side_data = side_data.get("parent_state", {}).get(Side.DEFENDER if role == "Attacker" else Side.ATTACKER, {})
+		
+	if target_side_data.is_empty(): return
+
+	# Pass '0' as pool_type to trigger the random lottery loss branch safely!
+	_remove_dice_from_pool(target_side_data, target_role, requested_val, 0, card_id, side_data, on_event)
 
 static func _execute_lose_specific_dice(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	if fx[2] is Array: return
@@ -2030,9 +2090,14 @@ static func _execute_gain_token_per_specific_dice(fx: Array, token_pools: Array,
 ## Consumes all available dice of a specified type to generate tokens.
 ## Unit Ability: Consumes all available dice of a specified stat type to generate tokens.
 static func _execute_spend_specific_dice_to_gain_tokens(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	# --- 1. STRICT SPECIFICATION CHECK (FAIL FAST) ---
+	# Asserts that Index 9 exists and has been assigned a valid target pool type.
+	assert(fx.size() > 9 and fx[9] > 0, "CRITICAL ARCHITECTURE ERROR: Card ID %d executed 'SPEND_SPECIFIC_DICE_TO_GAIN_TOKENS' but forgot to specify an explicit payout token type at Index 9 (gain_pool_type)!" % card_id)
+	
 	var token_multiplier: int = fx[2]
 	var pool_type: int = fx[3]
 	var max_spend: int = fx[6] if fx.size() > 6 else -1
+	var gain_pool_type: int = fx[9]
 	
 	var source_stat := Stat.OFFENCE
 	var stat_label := "⚔️"
@@ -2057,15 +2122,17 @@ static func _execute_spend_specific_dice_to_gain_tokens(fx: Array, token_pools: 
 	if not _spend_die_to_continue(side_data, source_stat, spend_amount, role, on_event):
 		return
 
-	# Calculate token yield and pass it directly to your refactored handler
+	# --- 2. CALCULATE YIELD & COMMIT DETERMINISTIC TOKENS ---
 	var tokens_gained := spend_amount * token_multiplier
-	_gain_or_lose_tokens(token_pools, role, pool_type, tokens_gained, false)
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	_gain_or_lose_tokens(token_pools, role, gain_pool_type, tokens_gained, false, parent_state)
 
-	# Peek at your centralized rule to print the accurate emoji indicator
+	# --- 3. DYNAMIC TELEMETRY MATCHING ---
 	if on_event.is_valid():
-		var effective_pool := _get_effective_token_type(pool_type)
+		var effective_pool := _get_effective_token_type(gain_pool_type)
 		var token_label := "🛡️" if effective_pool == CardData.DicePoolType.DEFENSE else "⚔️"
 		on_event.call("ability_triggered", [card_id, "↳ ⚡ Converted %d %s dice into +%d %s tokens!" % [spend_amount, stat_label, tokens_gained, token_label]])
+
 
 static func _execute_gain_token_per_unrouted_unit(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var multiplier: int = int(fx[2])
@@ -2384,6 +2451,29 @@ static func _execute_discard_steal_icons(_fx: Array, _token_pools: Array, side_d
 			
 			log_current_extra_icons(on_event, atk_ex, def_ex, "damage_step")
 
+
+static func _execute_play_random_card_do_not_resolve_abilities(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	if parent_state.is_empty():
+		return
+		
+	var hand: Array = side_data.get("cards_in_hand", [])
+	if hand.is_empty():
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [card_id, "↳ 🃏 Play failed: No cards remaining in hand."])
+		return
+		
+	# --- 1. EXTRACT RANDOM CARD FROM HAND ---
+	var rand_idx := randi() % hand.size()
+	var chosen_card_id: int = hand.pop_at(rand_idx)
+	
+	# --- 2. INJECT INTO PLAY AREA VIA HELPER ---
+	_add_card_to_play_area(side_data, chosen_card_id, -1)
+	
+	# --- 3. TELEMETRY LOG PASS ---
+	# Passing chosen_card_id lets the backend resolve its real name automatically!
+	if on_event.is_valid():
+		on_event.call("ability_triggered", [chosen_card_id, "↳ 🃏 Played from hand via ability. No abilities resolved for this card."])
 
 static func _execute_opponent_discards_worst_faceup_card(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var parent_state: Dictionary = side_data.get("parent_state", {})
@@ -3049,5 +3139,25 @@ static func _execute_rout_all_command_level_0_units(fx: Array, _token_pools: Arr
 	else:
 		if on_event.is_valid():
 			on_event.call("ability_triggered", [card_id, "↳ 🪓 Routing skipped: No unrouted Command Level 0 units found on specified targets."])
+
+## Eldar Fire Dragon's Vengeance general ability
+static func _execute_prevent_opponent_gaining_defense_tokens_this_round(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+	var parent_state: Dictionary = side_data.get("parent_state", {})
+	if parent_state.is_empty():
+		return
+		
+	var is_attacker := (role == "Attacker")
+	var opp_side = Side.DEFENDER if is_attacker else Side.ATTACKER
+	var opp_side_data: Dictionary = parent_state.get(opp_side, {})
+	
+	if opp_side_data.is_empty():
+		return
+		
+	# Apply the passive suppression restriction to the opponent
+	opp_side_data["cannot_gain_defense_tokens"] = true
+	
+	if on_event.is_valid():
+		var opp_role := "Defender" if is_attacker else "Attacker"
+		on_event.call("ability_triggered", [card_id, "↳ 🛡️ Suppression active: %s cannot gain Defence tokens this round." % opp_role])
 
 #endregion

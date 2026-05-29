@@ -159,17 +159,24 @@ layout_mode = 2
 [node name="AttackerDrawnCardsTitle" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=899910493]
 layout_mode = 2
 size_flags_vertical = 0
-text = "Attacker Cards drawn at start: "
+text = "Attacker Cards 
+drawn at start: "
+vertical_alignment = 1
+uppercase = true
 
 [node name="AttackerDrawnCardsValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=2032794372]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
+autowrap_mode = 1
 
-[node name="DefenderDrawnCardsTitle" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=1795880344]
+[node name="DefenderDrawnCardsTitle" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=1291985439]
 layout_mode = 2
 size_flags_vertical = 0
-text = "Defender Cards drawn at start;"
+text = "Defender Cards 
+drawn at start: "
+vertical_alignment = 1
+uppercase = true
 
 [node name="DefenderDrawnCardsValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=831402059]
 layout_mode = 2
