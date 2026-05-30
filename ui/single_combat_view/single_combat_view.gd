@@ -250,8 +250,8 @@ func _on_attacker_card_drafted(index: int) -> void:
 	var id = cards_select_attacker_btn.get_item_id(index)
 	var deck = sim.custom_attacker_combat_deck
 	
-	if id == CLEAR_DECK_ID: deck.clear()
-	elif deck.size() < 10: deck.append(id)
+	if deck.size() < 10: 
+		deck.append(id)
 	_update_deck_drafting_interfaces()
 
 
@@ -260,8 +260,8 @@ func _on_defender_card_drafted(index: int) -> void:
 	var id = cards_select_defender_btn.get_item_id(index)
 	var deck = sim.custom_defender_combat_deck
 	
-	if id == CLEAR_DECK_ID: deck.clear()
-	elif deck.size() < 10: deck.append(id)
+	if deck.size() < 10: 
+		deck.append(id)
 	_update_deck_drafting_interfaces()
 
 
@@ -270,8 +270,8 @@ func _on_attacker_unit_drafted(index: int) -> void:
 	var tier_val = units_select_attacker_btn.get_item_id(index)
 	var units_list = sim.custom_attacker_units
 	
-	if tier_val == CLEAR_UNITS_ID: units_list.clear()
-	elif units_list.size() < 5: units_list.append(tier_val)
+	if units_list.size() < 5: 
+		units_list.append(tier_val)
 	_update_deck_drafting_interfaces()
 
 
@@ -280,8 +280,8 @@ func _on_defender_unit_drafted(index: int) -> void:
 	var tier_val = units_select_defender_btn.get_item_id(index)
 	var units_list = sim.custom_defender_units
 	
-	if tier_val == CLEAR_UNITS_ID: units_list.clear()
-	elif units_list.size() < 5: units_list.append(tier_val)
+	if units_list.size() < 5: 
+		units_list.append(tier_val)
 	_update_deck_drafting_interfaces()
 
 
@@ -458,7 +458,16 @@ func update_headers() -> void:
 	update_game_stage_header(sim.current_stage)
 	update_starting_cards_header(sim)
 	update_combat_participants_header(sim)
+	update_combat_area_header(sim)
 
+func update_combat_area_header(active_sim: SimController) -> void:
+	if combat_area_value == null: return
+	
+	# Determine theater string text based on simulation state properties
+	var area_string := "World" if active_sim.is_ground_combat else "Void"
+	
+	# Assign the text using your exact layout configuration contract
+	combat_area_value.text = "Combat Area: %s" % area_string
 
 func update_combat_participants_header(active_sim: SimController) -> void:
 	if combat_participants_value == null: return
