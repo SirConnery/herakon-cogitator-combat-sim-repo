@@ -2,7 +2,8 @@ extends Control
 class_name DiagnosticsView
 
 # --- SCENE REFERENCES ---
-@onready var faction_bar_scene := preload("res://ui/diagnostics_view/faction_bar_row.tscn")
+const FACTION_BAR_SCENE := preload("uid://lxbnnqywg5un")
+const MATCHUP_OVERALL_PANEL_SCENE = preload("uid://cu1crqrtqyfop")
 
 # --- UI ELEMENT NODES (Scene Unique Names) ---
 @export_group("Global Win Rates")
@@ -25,6 +26,9 @@ class_name DiagnosticsView
 @onready var attacker_late_stage_win_rates: VBoxContainer = %AttackerLateStageWinRates
 @onready var defender_late_stage_win_rates: VBoxContainer = %DefenderLateStageWinRates
 
+# -- MATCHUP NODES ---
+@onready var matchups_overall_values: VBoxContainer = %MatchupsOverallValues
+
 # --- CONTROLLER REFS ---
 @onready var ui: UI = owner
 var sim_controller: SimController
@@ -44,14 +48,17 @@ func populate_diagnostics_dashboard() -> void:
 		return
 		
 	sim_controller = ui.sim_controller
-	var binary_path := "user://simulation_raw_data.dat"
 	
-	# 1. PURGE ALL 12 CONTAINERS CLEANLY
+	# 💡 UPDATED: Points to our dedicated ground dataset by default (or update as needed)
+	var binary_path := "user://simulation_ground_data.dat"
+	
+	# 1. PURGE ALL 13 CONTAINERS CLEANLY
 	var all_containers: Array[VBoxContainer] = [
 		overall_faction_winrates, attacker_win_rates, defender_win_rates,
 		overall_early_stage_win_rates, attacker_early_stage_win_rates, defender_early_stage_win_rates,
 		overall_middle_stage_win_rates, attacker_middle_stage_win_rates, defender_middle_stage_win_rates,
-		overall_late_stage_win_rates, attacker_late_stage_win_rates, defender_late_stage_win_rates
+		overall_late_stage_win_rates, attacker_late_stage_win_rates, defender_late_stage_win_rates,
+		matchups_overall_values # Purge old matchup skyscrapers
 	]
 	for container in all_containers:
 		UI_Utils.clear_children(container)
@@ -59,8 +66,7 @@ func populate_diagnostics_dashboard() -> void:
 	if not FileAccess.file_exists(binary_path):
 		return
 
-	# 2. INITIALIZE TRACKING DATA STRUCTURE FOR ALL STAGES
-	# Map Keys: -1 = Global, 0 = Early, 1 = Middle, 2 = Late
+	# 2. INITIALIZE TRACKING DATA STRUCTURE FOR LEADBOARDS
 	var matrix_cache := {}
 	for stage_idx in [-1, 0, 1, 2]:
 		matrix_cache[stage_idx] = {}
@@ -69,6 +75,17 @@ func populate_diagnostics_dashboard() -> void:
 				"atk_wins": 0, "atk_games": 0,
 				"def_wins": 0, "def_games": 0
 			}
+
+	# 🎯 NEW: Initialize 2D Cross-Faction Data Structure for Matchups Matrix
+	var head_to_head_matrix := {}
+	for f_id in sim_controller.factions_to_sim:
+		head_to_head_matrix[f_id] = {}
+		for enemy_id in sim_controller.factions_to_sim:
+			if f_id != enemy_id:
+				head_to_head_matrix[f_id][enemy_id] = {
+					"atk_wins": 0, "atk_games": 0,
+					"def_wins": 0, "def_games": 0
+				}
 
 	# 3. HIGH-SPEED SINGLE PASS BINARY STREAM PARSER
 	var file = FileAccess.open(binary_path, FileAccess.READ)
@@ -90,6 +107,14 @@ func populate_diagnostics_dashboard() -> void:
 				else:
 					matrix_cache[-1][def_id]["def_wins"] += 1
 				
+				# 🎯 NEW: Populate cross-faction interaction matrix profiles
+				head_to_head_matrix[atk_id][def_id]["atk_games"] += 1
+				head_to_head_matrix[def_id][atk_id]["def_games"] += 1
+				if atk_won:
+					head_to_head_matrix[atk_id][def_id]["atk_wins"] += 1
+				else:
+					head_to_head_matrix[def_id][atk_id]["def_wins"] += 1
+				
 				# Append to Specific Stage Data Pool (0, 1, or 2)
 				if matrix_cache.has(stage_id):
 					matrix_cache[stage_id][atk_id]["atk_games"] += 1
@@ -108,6 +133,9 @@ func populate_diagnostics_dashboard() -> void:
 	_process_and_render_group(matrix_cache[0], overall_early_stage_win_rates, attacker_early_stage_win_rates, defender_early_stage_win_rates, raw_factions)
 	_process_and_render_group(matrix_cache[1], overall_middle_stage_win_rates, attacker_middle_stage_win_rates, defender_middle_stage_win_rates, raw_factions)
 	_process_and_render_group(matrix_cache[2], overall_late_stage_win_rates, attacker_late_stage_win_rates, defender_late_stage_win_rates, raw_factions)
+
+	# 🎯 NEW: Process and deploy the custom interactive matchup matrix feed
+	_render_matchup_skyline_feed(head_to_head_matrix, raw_factions)
 
 
 ## De-duplicated crunching and rendering pipeline engine
@@ -155,6 +183,52 @@ func _process_and_render_group(stage_data: Dictionary, overall_box: VBoxContaine
 ## Helper utility instantiation wrapper loop
 func _spawn_leaderboard_bars(sorted_data: Array[Dictionary], target_container: VBoxContainer) -> void:
 	for faction in sorted_data:
-		var bar_instance = faction_bar_scene.instantiate()
+		var bar_instance = FACTION_BAR_SCENE.instantiate()
 		target_container.add_child(bar_instance)
 		bar_instance.populate_bar(faction["name"], faction["rate"], faction["wins"])
+
+
+func _render_matchup_skyline_feed(head_to_head_matrix: Dictionary, raw_factions: Dictionary) -> void:
+	for focus_id in sim_controller.factions_to_sim:
+		var focus_profile = raw_factions.get(focus_id)
+		var focus_name: String = focus_profile.get("name", FactionRegistry.FactionID.keys()[focus_id])
+		
+		# Instantiate a master horizontal row panel
+		var row_instance = MATCHUP_OVERALL_PANEL_SCENE.instantiate()
+		matchups_overall_values.add_child(row_instance)
+		
+		# Build a calculated list tracking how this specific faction handles every opponent
+		var compiled_matchups_list: Array[Dictionary] = []
+		
+		for enemy_id in sim_controller.factions_to_sim:
+			if focus_id == enemy_id:
+				continue # Handled dynamically inside the row layout loop
+				
+			var enemy_profile = raw_factions.get(enemy_id)
+			var enemy_name: String = enemy_profile.get("name", FactionRegistry.FactionID.keys()[enemy_id])
+			
+			var stats: Dictionary = head_to_head_matrix[focus_id][enemy_id]
+			
+			# Extract percentages from raw values, guarding against division by zero
+			var atk_rate := 0.0
+			if stats["atk_games"] > 0:
+				atk_rate = (float(stats["atk_wins"]) / float(stats["atk_games"])) * 100.0
+				
+			var def_rate := 0.0
+			if stats["def_games"] > 0:
+				def_rate = (float(stats["def_wins"]) / float(stats["def_games"])) * 100.0
+				
+			var overall_rate := 0.0
+			var total_games: int = stats["atk_games"] + stats["def_games"]
+			if total_games > 0:
+				overall_rate = (float(stats["atk_wins"] + stats["def_wins"]) / float(total_games)) * 100.0
+				
+			compiled_matchups_list.append({
+				"enemy_name": enemy_name,
+				"overall_rate": overall_rate,
+				"atk_rate": atk_rate,
+				"def_rate": def_rate
+			})
+			
+		# Feed the verified data array straight into the row panel node
+		row_instance.initialize_real_matchup_row(focus_name, compiled_matchups_list)

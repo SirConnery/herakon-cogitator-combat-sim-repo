@@ -4,12 +4,14 @@ class_name SimController
 
 #region Mass Combat Sim variables
 # ─── RUN MODE CONFIGURATION ───
-var iterations_per_matchup: int = 1000
+var iterations_per_matchup: int = 10
 
 # ─── MATRIX BATCH CONFIGURATION ───
 var factions_to_sim: Array[FactionRegistry.FactionID] = [
+	FactionRegistry.FactionID.SPACE_MARINES,
+	FactionRegistry.FactionID.CHAOS_SPACE_MARINES,
 	FactionRegistry.FactionID.ORKS,
-	FactionRegistry.FactionID.SPACE_MARINES
+	FactionRegistry.FactionID.ELDAR
 ]
 
 #endregion
@@ -58,7 +60,7 @@ func run_mass_combat_simulation() -> void:
 	var flat_card_db: Dictionary = _flatten_card_database(raw_cards)
 
 	var exporter := SimDataExporter.new()
-	exporter.clear_previous_data()
+	# 💡 MOVED: clear_previous_data() is now handled per-theater inside the loop
 
 	var global_match_index := 0
 
@@ -66,56 +68,112 @@ func run_mass_combat_simulation() -> void:
 	print("Pool Size: %d factions  |  Matches per pairing: %d" % [factions_to_sim.size(), iterations_per_matchup])
 	print("Streaming raw records to disk stream...")
 
-	for atk_id in factions_to_sim:
-		for def_id in factions_to_sim:
-			if atk_id == def_id:
-				continue
-				
-			var atk_profile = raw_factions.get(atk_id)
-			var def_profile = raw_factions.get(def_id)
-			var atk_name_string: String = atk_profile.get("name", FactionRegistry.FactionID.keys()[atk_id])
-			var def_name_string: String = def_profile.get("name", FactionRegistry.FactionID.keys()[def_id])
+	# 🎯 THEATER BLOCK SEPARATION: Forces clean execution blocks for Ground first, then Void
+	for active_ground_combat in [true, false]:
+		var theater_string := "GROUND COMBAT" if active_ground_combat else "VOID COMBAT"
+		var file_suffix := "ground" if active_ground_combat else "void"
+		
+		# 🎯 CHANGE 1: Dynamically isolate target data file paths per theater block
+		exporter.file_path_binary = "user://simulation_%s_data.dat" % file_suffix
+		exporter.clear_previous_data() # Wipes ONLY this specific target file before the run
+		
+		print("\n====================================================")
+		print("INITIALIZING BLOCK RUN: %s" % theater_string)
+		print("Target Destination: %s" % exporter.file_path_binary)
+		print("====================================================")
 
-			print(" -> Simulating Pairing Matrix Block: [Atk] %s vs [Def] %s..." % [atk_name_string, def_name_string])
-
-			for i in range(iterations_per_matchup):
-				current_stage = get_current_stage()
-				
-				var att_count := randi_range(1, 5)
-				var def_count := randi_range(1, 5)
-				
-				var attacker_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(atk_id, current_stage, att_count, is_ground_combat, raw_factions)
-				var defender_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(def_id, current_stage, def_count, is_ground_combat, raw_factions)
-				
-				var atk_initial_hand: Array = attacker_blueprint["cards_in_hand"].duplicate()
-				var def_initial_hand: Array = defender_blueprint["cards_in_hand"].duplicate()
-				
-				var match_state: Dictionary = _instantiate_match_state(attacker_blueprint, defender_blueprint)
-				
-				match_state["card_db"] = flat_card_db
-				match_state["is_ground_combat"] = is_ground_combat
-				
-				match_state[SimCombatEngine.Side.ATTACKER]["faction_id"] = atk_id
-				match_state[SimCombatEngine.Side.DEFENDER]["faction_id"] = def_id
-				match_state[SimCombatEngine.Side.ATTACKER]["name"] = atk_name_string
-				match_state[SimCombatEngine.Side.DEFENDER]["name"] = def_name_string
-				
-				var attacker_won: bool = SimCombatEngine.run_full_match(match_state, flat_card_db, Callable())
-				
-				exporter.log_match(
-					global_match_index, 
-					int(current_stage), 
-					atk_id,
-					def_id,
-					attacker_won, 
-					atk_initial_hand, 
-					def_initial_hand
-				)
-				
-				global_match_index += 1
+		for atk_id in factions_to_sim:
+			for def_id in factions_to_sim:
+				if atk_id == def_id:
+					continue
 					
-	exporter.flush_to_disk()
-	print("============ MATRIX SIMULATION COMPLETE ============")
+				var atk_profile: Dictionary = raw_factions.get(atk_id, {})
+				var def_profile: Dictionary = raw_factions.get(def_id, {})
+				var atk_name_string: String = atk_profile.get("name", FactionRegistry.FactionID.keys()[atk_id])
+				var def_name_string: String = def_profile.get("name", FactionRegistry.FactionID.keys()[def_id])
+
+				print(" -> [%s] Pairing Matrix: [Atk] %s vs [Def] %s..." % [theater_string, atk_name_string, def_name_string])
+
+				for i in range(iterations_per_matchup):
+					# 1. RESOLVE CONFIGURABLE ENVIRONMENT RULES
+					current_stage = get_current_stage()
+					
+					# 2. GENERATE COMPOSITION SCALE
+					var att_count := randi_range(1, 5)
+					var def_count := randi_range(1, 5)
+					
+					var attacker_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(atk_id, current_stage, att_count, active_ground_combat, raw_factions)
+					var defender_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(def_id, current_stage, def_count, active_ground_combat, raw_factions)
+					
+					# 3. RESOLVE FACTION-SPECIFIC DEBUG DECKS OVERRIDES
+					var atk_debug_deck: Array = atk_profile.get("debug_deck", [])
+					if not atk_debug_deck.is_empty():
+						var target_card: int = atk_debug_deck[0]
+						var new_deck: Array = []
+						new_deck.resize(10)
+						new_deck.fill(target_card)
+						new_deck.shuffle()
+						
+						var new_hand: Array = []
+						var draw_count: int = min(5, new_deck.size())
+						for h in range(draw_count):
+							new_hand.append(new_deck.pop_back())
+							
+						attacker_blueprint["combat_deck"] = new_deck
+						attacker_blueprint["cards_in_hand"] = new_hand
+
+					var def_debug_deck: Array = def_profile.get("debug_deck", [])
+					if not def_debug_deck.is_empty():
+						var target_card: int = def_debug_deck[0]
+						var new_deck: Array = []
+						new_deck.resize(10)
+						new_deck.fill(target_card)
+						new_deck.shuffle()
+						
+						var new_hand: Array = []
+						var draw_count: int = min(5, new_deck.size())
+						for h in range(draw_count):
+							new_hand.append(new_deck.pop_back())
+							
+						defender_blueprint["combat_deck"] = new_deck
+						defender_blueprint["cards_in_hand"] = new_hand
+					
+					# Extract hand states AFTER debug deck overrides are finalized
+					var atk_initial_hand: Array = attacker_blueprint["cards_in_hand"].duplicate()
+					var def_initial_hand: Array = defender_blueprint["cards_in_hand"].duplicate()
+					
+					# 4. INSTANTIATE SIMULATION STATE FRAME
+					var match_state: Dictionary = _instantiate_match_state(attacker_blueprint, defender_blueprint)
+					
+					match_state["card_db"] = flat_card_db
+					match_state["is_ground_combat"] = active_ground_combat
+					
+					match_state[SimCombatEngine.Side.ATTACKER]["faction_id"] = atk_id
+					match_state[SimCombatEngine.Side.DEFENDER]["faction_id"] = def_id
+					match_state[SimCombatEngine.Side.ATTACKER]["name"] = atk_name_string
+					match_state[SimCombatEngine.Side.DEFENDER]["name"] = def_name_string
+					
+					# 5. EXECUTE MATCH ENTIRELY WITHOUT TELEMETRY OR VISUAL OVERHEAD CALLBACKS
+					var attacker_won: bool = SimCombatEngine.run_full_match(match_state, flat_card_db, Callable())
+					
+					# 6. STREAM RAW CSV METRICS RECORD DIRECTLY TO EXPORTER
+					exporter.log_match(
+						global_match_index, 
+						int(current_stage), 
+						atk_id,
+						def_id,
+						attacker_won, 
+						atk_initial_hand, 
+						def_initial_hand
+					)
+					
+					global_match_index += 1
+		
+		# 🎯 CHANGE 2: Force-flush residual RAM blocks BEFORE switching combat theaters!
+		exporter.flush_to_disk()
+		print(">> Successfully committed all %s records to disk stream." % theater_string)
+						
+	print("\n============ MATRIX SIMULATION COMPLETE ============")
 	print("Total Global Matches Run across All Matrices: %d" % global_match_index)
 
 #endregion
@@ -130,14 +188,12 @@ func run_single_logged_combat(config: Dictionary) -> void:
 	# 1. RESOLVE CONFIGURABLE ENVIRONMENT RULES
 	current_stage = get_current_stage()
 	
+	# 🎯 FIXED: Relies strictly on the UI-selected combat theater state variable now
 	var active_ground_combat := is_ground_combat
-	if random_combat_type:
-		active_ground_combat = (randi() % 2 == 0)
 		
 	# 2. RESOLVE MATCHUP IDENTITIES FROM CONFIG ENVELOPE (ANTI-MIRROR SECURE)
 	var global_pool: Array = FactionRegistry.FactionID.values()
 	
-	# Extract parameters with safe fallbacks to RANDOM_ID (999)
 	var input_atk_id: int = config.get("attacker_id", 999)
 	var input_def_id: int = config.get("defender_id", 999)
 	
@@ -148,25 +204,21 @@ func run_single_logged_combat(config: Dictionary) -> void:
 	var is_def_random: bool = (input_def_id == 999)
 	
 	if is_atk_random and is_def_random:
-		# Both are random: Pick an attacker, then pick a different defender
 		current_atk_id = global_pool.pick_random() as FactionRegistry.FactionID
 		var filtered_pool = global_pool.filter(func(f): return int(f) != int(current_atk_id))
 		current_def_id = filtered_pool.pick_random() as FactionRegistry.FactionID
 		
 	elif is_atk_random and not is_def_random:
-		# Defender is fixed, Attacker is random: Filter out the defender
 		current_def_id = input_def_id as FactionRegistry.FactionID
 		var allowed_attackers = global_pool.filter(func(f): return int(f) != int(current_def_id))
 		current_atk_id = allowed_attackers.pick_random() as FactionRegistry.FactionID
 		
 	elif not is_atk_random and is_def_random:
-		# Attacker is fixed, Defender is random: Filter out the attacker
 		current_atk_id = input_atk_id as FactionRegistry.FactionID
 		var allowed_defenders = global_pool.filter(func(f): return int(f) != int(current_atk_id))
 		current_def_id = allowed_defenders.pick_random() as FactionRegistry.FactionID
 		
 	else:
-		# Both are fixed: Direct extraction step pass
 		current_atk_id = input_atk_id as FactionRegistry.FactionID
 		current_def_id = input_def_id as FactionRegistry.FactionID
 		
@@ -188,7 +240,6 @@ func run_single_logged_combat(config: Dictionary) -> void:
 		var custom_atk_blueprints: Array = []
 		var faction_units: Array = raw_factions[current_atk_id].get("units", [])
 		
-		# Unpack specific tier figures matching selected unit rosters
 		for tier in custom_attacker_units:
 			for unit_data in faction_units:
 				if unit_data["tier"] == tier and active_ground_combat != unit_data.get("is_ship", false):
@@ -200,7 +251,6 @@ func run_single_logged_combat(config: Dictionary) -> void:
 		var custom_def_blueprints: Array = []
 		var faction_units: Array = raw_factions[current_def_id].get("units", [])
 		
-		# Unpack specific tier figures matching selected unit rosters
 		for tier in custom_defender_units:
 			for unit_data in faction_units:
 				if unit_data["tier"] == tier and active_ground_combat != unit_data.get("is_ship", false):
@@ -214,14 +264,16 @@ func run_single_logged_combat(config: Dictionary) -> void:
 	if not atk_debug_deck.is_empty():
 		var target_card: int = atk_debug_deck[0]
 		var new_deck: Array = []
-		for i in range(10):
-			new_deck.append(target_card)
+		# ⚡ OPTIMIZED: Pre-allocating and filling memory allocation footprints directly
+		new_deck.resize(10)
+		new_deck.fill(target_card)
 		new_deck.shuffle()
 		
 		var new_hand: Array = []
 		var draw_count: int = min(5, new_deck.size())
 		for i in range(draw_count):
-			new_hand.append(new_deck.pop_at(0))
+			# ⚡ OPTIMIZED: Constant time O(1) back popping operation prevents data array shifting loops
+			new_hand.append(new_deck.pop_back())
 			
 		attacker_blueprint["combat_deck"] = new_deck
 		attacker_blueprint["cards_in_hand"] = new_hand
@@ -231,14 +283,16 @@ func run_single_logged_combat(config: Dictionary) -> void:
 	if not def_debug_deck.is_empty():
 		var target_card: int = def_debug_deck[0]
 		var new_deck: Array = []
-		for i in range(10):
-			new_deck.append(target_card)
+		# ⚡ OPTIMIZED: Pre-allocating and filling memory allocation footprints directly
+		new_deck.resize(10)
+		new_deck.fill(target_card)
 		new_deck.shuffle()
 		
 		var new_hand: Array = []
 		var draw_count: int = min(5, new_deck.size())
 		for i in range(draw_count):
-			new_hand.append(new_deck.pop_at(0))
+			# ⚡ OPTIMIZED: Constant time O(1) back popping operation prevents data array shifting loops
+			new_hand.append(new_deck.pop_back())
 			
 		defender_blueprint["combat_deck"] = new_deck
 		defender_blueprint["cards_in_hand"] = new_hand
@@ -252,7 +306,8 @@ func run_single_logged_combat(config: Dictionary) -> void:
 			var custom_atk_hand: Array = []
 			var draw_count: int = min(5, custom_atk_deck.size())
 			for i in range(draw_count):
-				custom_atk_hand.append(custom_atk_deck.pop_at(0))
+				# ⚡ OPTIMIZED: Back popping operation update
+				custom_atk_hand.append(custom_atk_deck.pop_back())
 				
 			attacker_blueprint["combat_deck"] = custom_atk_deck
 			attacker_blueprint["cards_in_hand"] = custom_atk_hand
@@ -264,7 +319,8 @@ func run_single_logged_combat(config: Dictionary) -> void:
 			var custom_def_hand: Array = []
 			var draw_count: int = min(5, custom_def_deck.size())
 			for i in range(draw_count):
-				custom_def_hand.append(custom_def_deck.pop_at(0))
+				# ⚡ OPTIMIZED: Back popping operation update
+				custom_def_hand.append(custom_def_deck.pop_back())
 				
 			defender_blueprint["combat_deck"] = custom_def_deck
 			defender_blueprint["cards_in_hand"] = custom_def_hand
@@ -316,6 +372,7 @@ func run_single_logged_combat(config: Dictionary) -> void:
 	
 	var attacker_won: bool = SimCombatEngine.run_full_match(match_state, flat_card_db, G_Logger.engine_callback)
 	G_Logger.finalize_battle_logger(attacker_won)
+
 
 #endregion
 

@@ -6,9 +6,10 @@ class_name SingleCombatView
 
 # --- UI ELEMENT NODES ---
 @onready var header_panel: PanelContainer = $MainLayout/HeaderPanel
-@onready var game_stage_value: Label = $MainLayout/HeaderPanel/HeaderContainer/HLayout/GameStageValue
-@onready var combat_area_value: Label = $MainLayout/HeaderPanel/HeaderContainer/HLayout/CombatAreaValue
-@onready var combat_participants_value: Label = $MainLayout/HeaderPanel/HeaderContainer/HLayout/CombatParticipantsValue
+@onready var combat_area_value: Label = %CombatAreaValue
+@onready var combat_participants_value: Label = %CombatParticipantsValue
+@onready var game_stage_value: Label = %GameStageValue
+
 
 @onready var attacker_drawn_cards_value: Label = $MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart/AttackerDrawnCardsValue
 @onready var defender_drawn_cards_value: Label = $MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart/DefenderDrawnCardsValue

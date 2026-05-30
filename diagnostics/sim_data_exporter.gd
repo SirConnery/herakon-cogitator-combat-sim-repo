@@ -4,6 +4,7 @@ extends RefCounted
 var _buffer: Array[Array] = []
 var _buffer_limit := 10000
 
+# Default fallback path, dynamically overwritten by the simulation controller
 var file_path_binary := "user://simulation_raw_data.dat"
 
 func clear_previous_data() -> void:
@@ -52,7 +53,7 @@ func export_current_to_csv(csv_destination_path: String) -> void:
 	flush_to_disk() # Pull down outstanding cache blocks first
 	
 	if not FileAccess.file_exists(file_path_binary):
-		push_error("Export Failed: No source raw simulation data file found.")
+		push_error("Export Failed: No source raw simulation data file found at: " + file_path_binary)
 		return
 		
 	var read_file = FileAccess.open(file_path_binary, FileAccess.READ)
@@ -64,12 +65,22 @@ func export_current_to_csv(csv_destination_path: String) -> void:
 	# Write updated CSV Header line with new identity columns
 	write_file.store_line("MatchIndex,Stage,AttackerID,DefenderID,AttackerWon,AttackerHand,DefenderHand")
 	
+	print("Converting binary data stream [%s] to CSV..." % file_path_binary.get_file())
+	
 	while read_file.get_position() < read_file.get_length():
 		var data = read_file.get_var()
-		if data is Array:
-			# Shift index mapping over to align with updated record architecture
-			var atk_hand_str = ";".join(data[5]) # Semi-colons keep arrays safe inside individual cells
-			var def_hand_str = ";".join(data[6])
+		if data is Array and data.size() >= 7:
+			
+			var atk_string_array: PackedStringArray = []
+			for card_id in data[5]:
+				atk_string_array.append(str(card_id))
+				
+			var def_string_array: PackedStringArray = []
+			for card_id in data[6]:
+				def_string_array.append(str(card_id))
+			
+			var atk_hand_str = ";".join(atk_string_array) # Semi-colons keep arrays safe inside cells
+			var def_hand_str = ";".join(def_string_array)
 			
 			var line := "%d,%d,%d,%d,%d,%s,%s" % [
 				data[0], # MatchIndex

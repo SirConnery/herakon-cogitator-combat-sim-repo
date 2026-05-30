@@ -23,8 +23,7 @@ grow_vertical = 2
 
 [node name="UserControls" type="HBoxContainer" parent="MainLayout" unique_id=1971477260]
 layout_mode = 2
-size_flags_vertical = 3
-size_flags_stretch_ratio = 0.1
+size_flags_stretch_ratio = 0.2
 
 [node name="GenericControls" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1690471369]
 layout_mode = 2
@@ -188,6 +187,7 @@ size_flags_horizontal = 4
 
 [node name="HeaderPanel" type="PanelContainer" parent="MainLayout" unique_id=668278624]
 layout_mode = 2
+size_flags_vertical = 0
 size_flags_stretch_ratio = 0.1
 
 [node name="HeaderContainer" type="VBoxContainer" parent="MainLayout/HeaderPanel" unique_id=1160828375]
@@ -198,6 +198,7 @@ theme_override_constants/separation = 4
 layout_mode = 2
 
 [node name="CombatAreaValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/HLayout" unique_id=2064207568]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -205,6 +206,7 @@ text = "Combat Area: World"
 horizontal_alignment = 1
 
 [node name="CombatParticipantsValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/HLayout" unique_id=1921772805]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -212,6 +214,7 @@ text = "Space Marines vs Orks"
 horizontal_alignment = 1
 
 [node name="GameStageValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/HLayout" unique_id=1604020925]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -250,7 +253,6 @@ size_flags_vertical = 0
 
 [node name="CentralCombatView" type="HBoxContainer" parent="MainLayout" unique_id=117080739]
 layout_mode = 2
-size_flags_vertical = 3
 
 [node name="RoundsContainer" type="VBoxContainer" parent="MainLayout/CentralCombatView" unique_id=100639815]
 layout_mode = 2

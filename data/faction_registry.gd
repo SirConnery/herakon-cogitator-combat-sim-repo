@@ -1,9 +1,12 @@
 class_name FactionRegistry
 extends RefCounted
 
+static func get_faction_count() -> int:
+	return FactionID.size()
+
 enum FactionID {
 	SPACE_MARINES,
-	CHAOS,
+	CHAOS_SPACE_MARINES,
 	ORKS,
 	ELDAR,
 }
@@ -17,7 +20,8 @@ static func get_database() -> Dictionary:
 	db[FactionID.SPACE_MARINES] = {
 		"name": "Space Marines",
 		"debug_deck": [], # place card number here. That card becomes your combat_deck with 10 copies. 
-		"upgrade_deck": [1001,1002,1003,1004,1005,1006,1007,1008,1010,1011,1012,1013,1014],
+		"upgrade_deck": [1006,1007,1008,1010,1011,1012,1013,1014],
+		"starting_combat_deck": [1001,1001,1002,1002,1003,1003,1004,1004,1005,1005],
 		"combat_deck": [],
 		"units": [
 			# Ground Units
@@ -34,10 +38,11 @@ static func get_database() -> Dictionary:
 	# =========================================================================
 	# --- CHAOS SPACE MARINES (CSM) ---
 	# =========================================================================
-	db[FactionID.CHAOS] = {
+	db[FactionID.CHAOS_SPACE_MARINES] = {
 		"name": "Chaos",
 		"debug_deck": [],
-		"upgrade_deck": [2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014],
+		"upgrade_deck": [2006,2007,2008,2009,2010,2011,2012,2013,2014],
+		"starting_combat_deck": [2001,2001,2002,2002,2003,2003,2004,2004,2005,2005],
 		"combat_deck": [],
 		"units": [
 			# Ground Units
@@ -57,7 +62,8 @@ static func get_database() -> Dictionary:
 	db[FactionID.ORKS] = {
 		"name": "Orks",
 		"debug_deck": [],
-		"upgrade_deck": [3001,3002,3003,3004,3005,3006,3007,3008,3009,3010,3011,3012,3013,3014],
+		"upgrade_deck": [3006,3007,3008,3009,3010,3011,3012,3013,3014],
+		"starting_combat_deck": [3001,3001,3002,3002,3003,3003,3004,3004,3005,3005],
 		"combat_deck": [],
 		"units": [
 			# Ground Units
@@ -76,8 +82,9 @@ static func get_database() -> Dictionary:
 	# =========================================================================
 	db[FactionID.ELDAR] = {
 		"name": "Eldar",
-		"debug_deck": [4014],
-		"upgrade_deck": [1001],
+		"debug_deck": [],
+		"upgrade_deck": [4006,4007,4008,4009,4010,4011,4012,4013,4014],
+		"starting_combat_deck": [4001,4001,4002,4002,4003,4003,4004,4004,4005,4005],
 		"combat_deck": [],
 		"units": [
 			# Ground Units

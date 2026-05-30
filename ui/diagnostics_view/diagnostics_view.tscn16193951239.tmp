@@ -390,18 +390,11 @@ text = "Matchups Overall View"
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="MatchupsOverallValues" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Overall/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock" unique_id=1969033493]
-unique_name_in_owner = true
+[node name="VLayout" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Overall/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock" unique_id=1969033493]
 layout_mode = 2
 
-[node name="WinratesByFaction" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Overall/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsOverallValues" unique_id=1089035554]
+[node name="WinratesByFaction" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Overall/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/VLayout" unique_id=1089035554]
 layout_mode = 2
 size_flags_vertical = 1
 text = "Win Rates in Faction Matchups"
-horizontal_alignment = 1
-
-[node name="Explanation" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Overall/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsOverallValues" unique_id=104362399]
-layout_mode = 2
-size_flags_vertical = 1
-text = "O = Overall, A = Attacking against, D = Defending against"
 horizontal_alignment = 1

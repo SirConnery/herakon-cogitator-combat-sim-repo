@@ -15,4 +15,3 @@ func populate_bar(faction_name: String, rate: float, total_wins: int) -> void:
 	
 	# Formats the text cell nicely, e.g., "54.2% (542 Wins)"
 	win_count_label.text = "(%d Wins)" % [total_wins]
-	print("populated")

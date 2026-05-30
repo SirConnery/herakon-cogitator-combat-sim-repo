@@ -1,0 +1,39 @@
+[gd_scene format=3 uid="uid://cu1crqrtqyfop"]
+
+[ext_resource type="Script" uid="uid://du6jhbk2dpwpf" path="res://ui/diagnostics_view/matchups/matchup_overall_panel.gd" id="1_85l3j"]
+
+[node name="MatchupOverallPanel" type="PanelContainer" unique_id=1792283330]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+script = ExtResource("1_85l3j")
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1873016332]
+layout_mode = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 50
+
+[node name="HLayout" type="HBoxContainer" parent="MarginContainer" unique_id=657774876]
+layout_mode = 2
+
+[node name="FactionTitle" type="Label" parent="MarginContainer/HLayout" unique_id=339599657]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 1
+text = "Faction"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/HLayout" unique_id=746094469]
+layout_mode = 2
+theme_override_constants/margin_left = 200
+
+[node name="MatchupRow" type="HBoxContainer" parent="MarginContainer/HLayout" unique_id=1098794687]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://lxbnnqywg5un"]
 
-[ext_resource type="Script" uid="uid://c262obcyaaje1" path="res://ui/diagnostics_view/faction_bar_row.gd" id="1_1ryk1"]
+[ext_resource type="Script" uid="uid://c262obcyaaje1" path="res://ui/diagnostics_view/reusable_components/faction_bar_row.gd" id="1_1ryk1"]
 
 [node name="FactionBarRow" type="HBoxContainer" unique_id=913468983]
 anchors_preset = 15
