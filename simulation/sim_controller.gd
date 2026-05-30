@@ -25,6 +25,8 @@ var is_ground_combat := true
 var use_custom_combat_decks: bool = false
 var custom_attacker_combat_deck: Array[int] = []
 var custom_defender_combat_deck: Array[int] = []
+var custom_attacker_units: Array[int] = []
+var custom_defender_units: Array[int] = []
 
 # ─── ENGINE CORE REGISTRIES ───
 @onready var card_db: Dictionary = CardRegistry.get_database()
@@ -178,6 +180,33 @@ func run_single_logged_combat(config: Dictionary) -> void:
 	
 	var attacker_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(current_atk_id, current_stage, att_count, active_ground_combat, raw_factions)
 	var defender_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(current_def_id, current_stage, def_count, active_ground_combat, raw_factions)
+	
+	# ----------------------------------------------------
+	# STEP 3.2: OVERRIDE CUSTOM SQUAD COMPOSITIONS
+	# ----------------------------------------------------
+	if config.get("attacker_has_custom_units", false):
+		var custom_atk_blueprints: Array = []
+		var faction_units: Array = raw_factions[current_atk_id].get("units", [])
+		
+		# Unpack specific tier figures matching selected unit rosters
+		for tier in custom_attacker_units:
+			for unit_data in faction_units:
+				if unit_data["tier"] == tier and active_ground_combat != unit_data.get("is_ship", false):
+					custom_atk_blueprints.append(unit_data.duplicate(true))
+					break
+		attacker_blueprint["selected_units"] = custom_atk_blueprints
+		
+	if config.get("defender_has_custom_units", false):
+		var custom_def_blueprints: Array = []
+		var faction_units: Array = raw_factions[current_def_id].get("units", [])
+		
+		# Unpack specific tier figures matching selected unit rosters
+		for tier in custom_defender_units:
+			for unit_data in faction_units:
+				if unit_data["tier"] == tier and active_ground_combat != unit_data.get("is_ship", false):
+					custom_def_blueprints.append(unit_data.duplicate(true))
+					break
+		defender_blueprint["selected_units"] = custom_def_blueprints
 	
 	# 3.5. RESOLVE FACTION-SPECIFIC DEBUG DECKS OVERRIDES
 	var atk_profile_data: Dictionary = raw_factions.get(current_atk_id, {})

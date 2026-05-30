@@ -545,7 +545,7 @@ static func _has_more_specific_dice_than_opponent(side_data: Dictionary, opp_sid
 static func _is_attacker(side: int) -> bool:
 	return side == Side.ATTACKER
 
-static func _get_live_card_icons(side_data: Dictionary, card_db: Dictionary, up_to_round: int) -> Array[int]:
+static func _get_live_card_icons(side_data: Dictionary, card_db: Dictionary, _up_to_round: int) -> Array[int]:
 	var totals: Array[int] = [0, 0, 0] # [Offence, Defence, Morale]
 	var play_area: Array = side_data.get("play_area", [])
 	
@@ -1444,7 +1444,7 @@ static func _gain_or_lose_tokens(token_pools: Array, role: String, token_type: i
 
 #region Timing Hook (IMPORTANT)
 
-static func _execute_timing_hook(window: int, state: Dictionary, context: Array, round_index: int, card_db: Dictionary, on_event: Callable) -> void:
+static func _execute_timing_hook(window: int, state: Dictionary, _context: Array, round_index: int, card_db: Dictionary, on_event: Callable) -> void:
 	match window:
 		3: # CardData.TimingWindow.AFTER_DAMAGE
 			var atk: Dictionary = state[Side.ATTACKER]
@@ -2342,7 +2342,7 @@ static func _execute_rout_lowest_tier(fx: Array, _token_pools: Array, side_data:
 			on_event.call("ability_triggered", [card_id, "↳ 🪓 Routing failed: %s has no unrouted units on the field." % side_label])
 
 
-static func _execute_rout_highest_tier(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+static func _execute_rout_highest_tier(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var parent_state: Dictionary = side_data.get("parent_state", {})
 	if parent_state.is_empty():
 		return
@@ -2462,7 +2462,7 @@ static func _execute_discard_steal_icons(fx: Array, _token_pools: Array, side_da
 			log_current_extra_icons(on_event, atk_ex, def_ex, "damage_step")
 
 
-static func _execute_play_random_card_do_not_resolve_abilities(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+static func _execute_play_random_card_do_not_resolve_abilities(_fx: Array, _token_pools: Array, side_data: Dictionary, _role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var parent_state: Dictionary = side_data.get("parent_state", {})
 	if parent_state.is_empty():
 		return
@@ -3188,7 +3188,7 @@ static func _execute_rout_all_command_level_0_units(fx: Array, _token_pools: Arr
 			on_event.call("ability_triggered", [card_id, "↳ 🪓 Routing skipped: No unrouted Command Level 0 units found on specified targets."])
 
 ## Eldar Fire Dragon's Vengeance general ability
-static func _execute_prevent_opponent_gaining_defense_tokens_this_round(fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
+static func _execute_prevent_opponent_gaining_defense_tokens_this_round(_fx: Array, _token_pools: Array, side_data: Dictionary, role: String, card_id: int, _units_valid: bool, on_event: Callable) -> void:
 	var parent_state: Dictionary = side_data.get("parent_state", {})
 	if parent_state.is_empty():
 		return
@@ -3208,6 +3208,7 @@ static func _execute_prevent_opponent_gaining_defense_tokens_this_round(fx: Arra
 		on_event.call("ability_triggered", [card_id, "↳ 🛡️ Suppression active: %s cannot gain Defence tokens this round." % opp_role])
 
 # Eldar Spiritseer Guidance
+@warning_ignore("unused_parameter")
 static func _execute_all_units_gain_damage_immunity_this_round(fx: Array, token_pools: Array, side_data: Dictionary, role: String, card_id: int, units_valid: bool, on_event: Callable) -> void:
 	var parent_state: Dictionary = side_data.get("parent_state", {})
 	if parent_state.is_empty():

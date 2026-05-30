@@ -23,100 +23,165 @@ grow_vertical = 2
 
 [node name="UserControls" type="HBoxContainer" parent="MainLayout" unique_id=1971477260]
 layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.1
 
-[node name="StartNewCombatBtn" type="Button" parent="MainLayout/UserControls" unique_id=1688779065]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Start New Combat"
-
-[node name="SelectAttackerFaction" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=388010470]
+[node name="GenericControls" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1690471369]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="MainLayout/UserControls/SelectAttackerFaction" unique_id=921623196]
-layout_mode = 2
-text = "Attacker Faction"
-
-[node name="FactionSelectAttackerBtn" type="OptionButton" parent="MainLayout/UserControls/SelectAttackerFaction" unique_id=1165120651]
-unique_name_in_owner = true
+[node name="GenericControls" type="HBoxContainer" parent="MainLayout/UserControls/GenericControls" unique_id=786859400]
 layout_mode = 2
 
-[node name="SelectAttackerCards" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1800824837]
+[node name="StageSelectContainer" type="VBoxContainer" parent="MainLayout/UserControls/GenericControls/GenericControls" unique_id=1384464544]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="MainLayout/UserControls/SelectAttackerCards" unique_id=385275026]
-layout_mode = 2
-text = "Attacker Combat Deck"
-
-[node name="CardsSelectAttackerBtn" type="OptionButton" parent="MainLayout/UserControls/SelectAttackerCards" unique_id=1960379908]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="AttackerUseDefaultDeck" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1368646404]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="MainLayout/UserControls/AttackerUseDefaultDeck" unique_id=326227912]
-layout_mode = 2
-text = "Default Deck"
-
-[node name="AttackerUsesDefaultDeck" type="CheckButton" parent="MainLayout/UserControls/AttackerUseDefaultDeck" unique_id=1907745244]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 4
-
-[node name="SelectDefenderFaction" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=2118276411]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="MainLayout/UserControls/SelectDefenderFaction" unique_id=710204765]
-layout_mode = 2
-text = "Defender Faction"
-
-[node name="FactionSelectDefenderBtn" type="OptionButton" parent="MainLayout/UserControls/SelectDefenderFaction" unique_id=1757113176]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="SelectDefenderCards" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1116840416]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="MainLayout/UserControls/SelectDefenderCards" unique_id=547676362]
-layout_mode = 2
-text = "Defender Combat Deck"
-
-[node name="CardsSelectDefenderBtn" type="OptionButton" parent="MainLayout/UserControls/SelectDefenderCards" unique_id=1153725299]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="DefenderUseDefaultDeck" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1160964929]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="MainLayout/UserControls/DefenderUseDefaultDeck" unique_id=436646391]
-layout_mode = 2
-text = "Default Deck"
-
-[node name="DefenderUsesDefaultDeck" type="CheckButton" parent="MainLayout/UserControls/DefenderUseDefaultDeck" unique_id=1930219325]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 4
-
-[node name="StageSelectContainer" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1384464544]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="MainLayout/UserControls/StageSelectContainer" unique_id=1476894399]
+[node name="Title" type="Label" parent="MainLayout/UserControls/GenericControls/GenericControls/StageSelectContainer" unique_id=1476894399]
 layout_mode = 2
 text = "Select Stage"
 
-[node name="StageSelectBtn" type="OptionButton" parent="MainLayout/UserControls/StageSelectContainer" unique_id=985789818]
+[node name="StageSelectBtn" type="OptionButton" parent="MainLayout/UserControls/GenericControls/GenericControls/StageSelectContainer" unique_id=985789818]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="IsGroundCombatContainer" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1158314248]
+[node name="IsGroundCombatContainer" type="VBoxContainer" parent="MainLayout/UserControls/GenericControls/GenericControls" unique_id=1158314248]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="MainLayout/UserControls/IsGroundCombatContainer" unique_id=1974220497]
+[node name="Title" type="Label" parent="MainLayout/UserControls/GenericControls/GenericControls/IsGroundCombatContainer" unique_id=1974220497]
 layout_mode = 2
 text = "Ground Combat"
 
-[node name="IsGroundCombatBtn" type="CheckButton" parent="MainLayout/UserControls/IsGroundCombatContainer" unique_id=2097769803]
+[node name="IsGroundCombatBtn" type="CheckButton" parent="MainLayout/UserControls/GenericControls/GenericControls/IsGroundCombatContainer" unique_id=2097769803]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="StartNewCombatBtn" type="Button" parent="MainLayout/UserControls/GenericControls" unique_id=1688779065]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "Start Combat"
+
+[node name="FactionControls" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1650484081]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AttackerControls" type="HBoxContainer" parent="MainLayout/UserControls/FactionControls" unique_id=991686767]
+layout_mode = 2
+
+[node name="SelectAttackerFaction" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/AttackerControls" unique_id=388010470]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/AttackerControls/SelectAttackerFaction" unique_id=921623196]
+layout_mode = 2
+text = "Attacker Faction"
+
+[node name="FactionSelectAttackerBtn" type="OptionButton" parent="MainLayout/UserControls/FactionControls/AttackerControls/SelectAttackerFaction" unique_id=1165120651]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SelectAttackerCards" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/AttackerControls" unique_id=1800824837]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/AttackerControls/SelectAttackerCards" unique_id=385275026]
+layout_mode = 2
+text = "Attacker Combat Deck"
+
+[node name="CardsSelectAttackerBtn" type="OptionButton" parent="MainLayout/UserControls/FactionControls/AttackerControls/SelectAttackerCards" unique_id=1960379908]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SelectAttackerUnits" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/AttackerControls" unique_id=1575796192]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/AttackerControls/SelectAttackerUnits" unique_id=1684910312]
+layout_mode = 2
+text = "Attacker Units"
+
+[node name="UnitsSelectAttackerBtn" type="OptionButton" parent="MainLayout/UserControls/FactionControls/AttackerControls/SelectAttackerUnits" unique_id=180854422]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="AttackerUseDefaultDeck" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/AttackerControls" unique_id=1368646404]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/AttackerControls/AttackerUseDefaultDeck" unique_id=326227912]
+layout_mode = 2
+text = "Default Deck"
+
+[node name="AttackerUsesDefaultDeckBtn" type="CheckButton" parent="MainLayout/UserControls/FactionControls/AttackerControls/AttackerUseDefaultDeck" unique_id=1907745244]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="AttackerUseDefaultUnits" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/AttackerControls" unique_id=1314106645]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/AttackerControls/AttackerUseDefaultUnits" unique_id=1214308785]
+layout_mode = 2
+text = "Default Units"
+
+[node name="AttackerUsesDefaultUnitsBtn" type="CheckButton" parent="MainLayout/UserControls/FactionControls/AttackerControls/AttackerUseDefaultUnits" unique_id=234710424]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="DefenderControls" type="HBoxContainer" parent="MainLayout/UserControls/FactionControls" unique_id=1118137294]
+layout_mode = 2
+
+[node name="SelectDefenderFaction" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/DefenderControls" unique_id=2118276411]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/DefenderControls/SelectDefenderFaction" unique_id=710204765]
+layout_mode = 2
+text = "Defender Faction"
+
+[node name="FactionSelectDefenderBtn" type="OptionButton" parent="MainLayout/UserControls/FactionControls/DefenderControls/SelectDefenderFaction" unique_id=1757113176]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SelectDefenderCards" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/DefenderControls" unique_id=1116840416]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/DefenderControls/SelectDefenderCards" unique_id=547676362]
+layout_mode = 2
+text = "Defender Combat Deck"
+
+[node name="CardsSelectDefenderBtn" type="OptionButton" parent="MainLayout/UserControls/FactionControls/DefenderControls/SelectDefenderCards" unique_id=1153725299]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SelectDefenderUnits" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/DefenderControls" unique_id=1085721940]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/DefenderControls/SelectDefenderUnits" unique_id=1135696545]
+layout_mode = 2
+text = "Defender Units"
+
+[node name="UnitsSelectDefenderBtn" type="OptionButton" parent="MainLayout/UserControls/FactionControls/DefenderControls/SelectDefenderUnits" unique_id=432238966]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="DefenderUseDefaultDeck" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/DefenderControls" unique_id=1160964929]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/DefenderControls/DefenderUseDefaultDeck" unique_id=436646391]
+layout_mode = 2
+text = "Default Deck"
+
+[node name="DefenderUsesDefaultDeckBtn" type="CheckButton" parent="MainLayout/UserControls/FactionControls/DefenderControls/DefenderUseDefaultDeck" unique_id=1930219325]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="DefenderUseDefaultUnits" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/DefenderControls" unique_id=1534949767]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/DefenderControls/DefenderUseDefaultUnits" unique_id=995738194]
+layout_mode = 2
+text = "Default Units"
+
+[node name="DefenderUsesDefaultUnitsBtn" type="CheckButton" parent="MainLayout/UserControls/FactionControls/DefenderControls/DefenderUseDefaultUnits" unique_id=1573116673]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
@@ -146,7 +211,7 @@ size_flags_vertical = 1
 text = "Space Marines vs Orks"
 horizontal_alignment = 1
 
-[node name="GameStage" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/HLayout" unique_id=1604020925]
+[node name="GameStageValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/HLayout" unique_id=1604020925]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1

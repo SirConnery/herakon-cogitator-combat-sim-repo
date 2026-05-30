@@ -84,7 +84,6 @@ static func get_database() -> Dictionary:
 	var node: CardEffect
 	var opt_a: CardEffect
 	var opt_b: CardEffect
-	var opt_c: CardEffect
 	var opt_u_a: CardEffect
 	var opt_u_b: CardEffect
 	var inner_gate: CardEffect
