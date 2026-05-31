@@ -46,3 +46,5 @@ ProgressBarKhorneRed/styles/fill = SubResource("StyleBoxFlat_41sl7")
 ProgressBarMacraggeBlue/base_type = &"ProgressBar"
 ProgressBarMacraggeBlue/styles/_ = null
 ProgressBarMacraggeBlue/styles/fill = SubResource("StyleBoxFlat_w4sq6")
+single_unit_container/base_type = &"VBoxContainer"
+single_unit_container/constants/separation = 0

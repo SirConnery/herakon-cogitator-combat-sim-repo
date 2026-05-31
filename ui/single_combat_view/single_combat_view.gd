@@ -79,7 +79,6 @@ func init_connections() -> void:
 	cards_select_attacker_btn.item_selected.connect(_on_attacker_card_drafted)
 	cards_select_defender_btn.item_selected.connect(_on_defender_card_drafted)
 	
-	# 🎯 New default unit checkbox toggle pathways
 	attacker_uses_default_units_btn.toggled.connect(_on_attacker_units_toggle_changed)
 	defender_uses_default_units_btn.toggled.connect(_on_defender_units_toggle_changed)
 	units_select_attacker_btn.item_selected.connect(_on_attacker_unit_drafted)
@@ -94,7 +93,7 @@ func start_new_combat_btn_pressed() -> void:
 	var attacker_is_custom_deck: bool = (not attacker_is_random_faction and not attacker_uses_default_deck.button_pressed)
 	var defender_is_custom_deck: bool = (not defender_is_random_faction and not defender_uses_default_deck.button_pressed)
 	
-	# 🎯 Determine if the simulation layer should inject user unit rosters
+	# Determine if the simulation layer should inject user unit rosters
 	var attacker_has_custom_units: bool = (not attacker_is_random_faction and not attacker_uses_default_units_btn.button_pressed)
 	var defender_has_custom_units: bool = (not defender_is_random_faction and not defender_uses_default_units_btn.button_pressed)
 	
@@ -227,7 +226,6 @@ func _populate_card_dropdown(dropdown: OptionButton, faction_id: int, active_dec
 func _populate_unit_dropdown(dropdown: OptionButton, faction_id: int, active_units: Array) -> void:
 	if sim == null: return
 	dropdown.clear()
-	# 🎯 REMOVED: Redundant [ Clear Unit Selections ] entry
 	
 	var raw_factions = FactionRegistry.get_database()
 	if not raw_factions.has(faction_id): return

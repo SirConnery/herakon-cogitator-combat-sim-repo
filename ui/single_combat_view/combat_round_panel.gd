@@ -189,6 +189,7 @@ func _rebuild_vbox_labels(container: VBoxContainer, names_csv: String) -> void:
 			continue
 
 		var label := Label.new()
+		label.theme_type_variation = "SingleUnitNames"
 		label.text = entity_name
 		container.add_child(label)
 

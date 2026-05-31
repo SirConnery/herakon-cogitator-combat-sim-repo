@@ -185,6 +185,38 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
 
+[node name="OtherUI" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1288680485]
+layout_mode = 2
+size_flags_horizontal = 8
+
+[node name="CombatAreaValue" type="Label" parent="MainLayout/UserControls/OtherUI" unique_id=2064207568]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+text = "Combat Area: World"
+horizontal_alignment = 1
+
+[node name="CombatParticipantsValue" type="Label" parent="MainLayout/UserControls/OtherUI" unique_id=1921772805]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+text = "Space Marines vs Orks"
+horizontal_alignment = 1
+
+[node name="GameStageValue" type="Label" parent="MainLayout/UserControls/OtherUI" unique_id=1604020925]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+text = "Game Stage: "
+horizontal_alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="MainLayout/UserControls" unique_id=1628688611]
+layout_mode = 2
+theme_override_constants/margin_left = 50
+
 [node name="HeaderPanel" type="PanelContainer" parent="MainLayout" unique_id=668278624]
 layout_mode = 2
 size_flags_vertical = 0
@@ -196,30 +228,6 @@ theme_override_constants/separation = 4
 
 [node name="HLayout" type="HBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer" unique_id=533786021]
 layout_mode = 2
-
-[node name="CombatAreaValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/HLayout" unique_id=2064207568]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 1
-text = "Combat Area: World"
-horizontal_alignment = 1
-
-[node name="CombatParticipantsValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/HLayout" unique_id=1921772805]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 1
-text = "Space Marines vs Orks"
-horizontal_alignment = 1
-
-[node name="GameStageValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/HLayout" unique_id=1604020925]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 1
-text = "Game Stage: "
-horizontal_alignment = 1
 
 [node name="CardsDrawnToHandAtStart" type="HBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer" unique_id=860265540]
 layout_mode = 2
