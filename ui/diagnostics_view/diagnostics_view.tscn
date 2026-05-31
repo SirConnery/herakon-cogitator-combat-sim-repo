@@ -20,6 +20,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+tab_alignment = 2
 current_tab = 0
 
 [node name="GroundUnits" type="Control" parent="GroundVoidTabs" unique_id=121739349]
@@ -33,6 +34,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+tab_alignment = 2
 current_tab = 1
 
 [node name="Overall" type="Control" parent="GroundVoidTabs/GroundUnits/TabContainer" unique_id=181917159]
@@ -346,6 +348,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+tab_alignment = 2
 current_tab = 0
 
 [node name="Overall" type="Control" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer" unique_id=607441840]
