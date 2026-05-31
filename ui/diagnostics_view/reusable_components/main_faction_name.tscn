@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://d3rua641fsvtr"]
+
+[ext_resource type="Theme" uid="uid://cav3wmfutntd8" path="res://themes/grimdark_graph_panels.tres" id="1_a0b6o"]
+
+[node name="MainFactionName" type="Label" unique_id=1435456809]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+theme = ExtResource("1_a0b6o")
+theme_type_variation = &"FactionTitleLabel"
+text = "Faction"
+horizontal_alignment = 1
+vertical_alignment = 1

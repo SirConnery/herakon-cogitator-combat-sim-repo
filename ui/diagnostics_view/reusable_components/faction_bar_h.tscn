@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://lxbnnqywg5un"]
 
 [ext_resource type="Script" uid="uid://c262obcyaaje1" path="res://ui/diagnostics_view/reusable_components/faction_bar_h.gd" id="1_iftpp"]
+[ext_resource type="PackedScene" uid="uid://d3rua641fsvtr" path="res://ui/diagnostics_view/reusable_components/main_faction_name.tscn" id="2_7261p"]
 
 [node name="FactionBarH" type="HBoxContainer" unique_id=913468983]
 anchors_preset = 15
@@ -12,20 +13,22 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_iftpp")
 
-[node name="FactionName" type="Label" parent="." unique_id=1829653705]
+[node name="MainFactionName" parent="." unique_id=1435456809 instance=ExtResource("2_7261p")]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 0
-text = "Faction"
-horizontal_alignment = 1
+size_flags_horizontal = 6
+size_flags_vertical = 4
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1077489919]
+layout_mode = 2
+theme_override_constants/margin_left = 50
 
 [node name="WinRateBar" type="ProgressBar" parent="." unique_id=556548683]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 100)
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 1
 
 [node name="WinCountLabel" type="Label" parent="." unique_id=1223467467]
 unique_name_in_owner = true

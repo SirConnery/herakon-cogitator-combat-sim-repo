@@ -346,10 +346,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-current_tab = 1
+current_tab = 0
 
 [node name="Overall" type="Control" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer" unique_id=607441840]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -408,6 +407,7 @@ text = "Overall win rate against opponents"
 horizontal_alignment = 1
 
 [node name="Attacker" type="Control" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer" unique_id=2046674635]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 

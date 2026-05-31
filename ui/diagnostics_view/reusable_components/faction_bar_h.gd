@@ -1,7 +1,7 @@
 extends FactionBar
 class_name FactionBarH
 
-@onready var _faction_name: Label = %FactionName
+@onready var _faction_name: Label = %MainFactionName
 @onready var _win_rate_bar: ProgressBar = %WinRateBar
 @onready var _win_count_label: Label = %WinCountLabel
 

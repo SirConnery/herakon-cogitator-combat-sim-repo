@@ -53,7 +53,6 @@ func populate_diagnostics_dashboard() -> void:
 	sim_controller = ui.sim_controller
 	var binary_path := "user://simulation_ground_data.dat"
 	
-	# 🎯 FIX 1: Clean out all 14 containers (including all three matchup layouts)
 	var all_containers: Array[VBoxContainer] = [
 		overall_faction_winrates, attacker_win_rates, defender_win_rates,
 		overall_early_stage_win_rates, attacker_early_stage_win_rates, defender_early_stage_win_rates,
@@ -178,7 +177,7 @@ func _spawn_leaderboard_bars(sorted_data: Array[Dictionary], target_container: V
 		bar_instance.populate_bar(faction["name"], faction["rate"], faction["wins"])
 
 
-## 🎯 UPDATED: Generates matching datasets and deploys across three clean tabs simultaneously
+#Generates matching datasets and deploys across three clean tabs simultaneously
 func _render_matchup_skyline_feed(head_to_head_matrix: Dictionary, raw_factions: Dictionary) -> void:
 	for focus_id in sim_controller.factions_to_sim:
 		var focus_profile = raw_factions.get(focus_id)
@@ -218,8 +217,8 @@ func _render_matchup_skyline_feed(head_to_head_matrix: Dictionary, raw_factions:
 				"def_rate": def_rate,
 				"def_wins": stats["def_wins"]
 			})
-			
-		# 🎯 FIX 2: Instantiate independent rows across your 3 distinct layouts
+		
+		
 		var overall_row = MATCHUP_OVERALL_PANEL_SCENE.instantiate()
 		matchups_overall_values.add_child(overall_row)
 		overall_row.initialize_real_matchup_row(focus_name, compiled_matchups_list, "overall_rate", "overall_wins")
