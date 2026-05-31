@@ -14,15 +14,15 @@ func clear_previous_data() -> void:
 
 
 ## Buffers individual match details as compact primitive arrays containing faction identifiers
-func log_match(match_index: int, stage: int, attacker_id: int, defender_id: int, attacker_won: bool, atk_hand: Array, def_hand: Array) -> void:
+func log_match(match_index: int, stage: int, attacker_id: int, defender_id: int, attacker_won: bool, atk_deck: Array, def_deck: Array) -> void:
 	var match_record = [
 		match_index,               # Index 0
 		stage,                     # Index 1
 		attacker_id,               # Index 2
 		defender_id,               # Index 3
 		1 if attacker_won else 0,  # Index 4
-		atk_hand,                  # Index 5
-		def_hand                   # Index 6
+		atk_deck,                  # Index 5
+		def_deck                   # Index 6
 	]
 	_buffer.append(match_record)
 	
@@ -62,8 +62,7 @@ func export_current_to_csv(csv_destination_path: String) -> void:
 	if not read_file or not write_file:
 		return
 		
-	# Write updated CSV Header line with new identity columns
-	write_file.store_line("MatchIndex,Stage,AttackerID,DefenderID,AttackerWon,AttackerHand,DefenderHand")
+	write_file.store_line("MatchIndex,Stage,AttackerID,DefenderID,AttackerWon,AttackerDeck,DefenderDeck")
 	
 	print("Converting binary data stream [%s] to CSV..." % file_path_binary.get_file())
 	
@@ -79,8 +78,9 @@ func export_current_to_csv(csv_destination_path: String) -> void:
 			for card_id in data[6]:
 				def_string_array.append(str(card_id))
 			
-			var atk_hand_str = ";".join(atk_string_array) # Semi-colons keep arrays safe inside cells
-			var def_hand_str = ";".join(def_string_array)
+			# 🎯 UPDATED: Variables renamed to track complete arrays safely inside table cells
+			var atk_deck_str = ";".join(atk_string_array) 
+			var def_deck_str = ";".join(def_string_array)
 			
 			var line := "%d,%d,%d,%d,%d,%s,%s" % [
 				data[0], # MatchIndex
@@ -88,8 +88,8 @@ func export_current_to_csv(csv_destination_path: String) -> void:
 				data[2], # AttackerID
 				data[3], # DefenderID
 				data[4], # AttackerWon
-				atk_hand_str, 
-				def_hand_str
+				atk_deck_str, 
+				def_deck_str
 			]
 			write_file.store_line(line)
 			

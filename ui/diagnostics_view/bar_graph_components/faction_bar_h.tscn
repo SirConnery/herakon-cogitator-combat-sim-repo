@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://lxbnnqywg5un"]
 
-[ext_resource type="Script" uid="uid://c262obcyaaje1" path="res://ui/diagnostics_view/reusable_components/faction_bar_h.gd" id="1_iftpp"]
-[ext_resource type="PackedScene" uid="uid://d3rua641fsvtr" path="res://ui/diagnostics_view/reusable_components/main_faction_name.tscn" id="2_7261p"]
+[ext_resource type="Script" uid="uid://c262obcyaaje1" path="res://ui/diagnostics_view/bar_graph_components/faction_bar_h.gd" id="1_iftpp"]
+[ext_resource type="PackedScene" uid="uid://d3rua641fsvtr" path="res://ui/diagnostics_view/bar_graph_components/main_faction_name.tscn" id="2_7261p"]
 
 [node name="FactionBarH" type="HBoxContainer" unique_id=913468983]
 anchors_preset = 15

@@ -1,21 +1,22 @@
 [gd_scene format=3 uid="uid://bpwm0ac0xfcbw"]
 
-[ext_resource type="Script" uid="uid://turs7j22e150" path="res://ui/diagnostics_view/reusable_components/faction_bar_v.gd" id="1_pn0he"]
+[ext_resource type="Script" uid="uid://turs7j22e150" path="res://ui/diagnostics_view/bar_graph_components/faction_bar_v.gd" id="1_pn0he"]
 
 [sub_resource type="Theme" id="Theme_pn0he"]
 
 [node name="VLayout" type="VBoxContainer" unique_id=1582519882]
+custom_minimum_size = Vector2(100, 0)
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_pn0he")
 
 [node name="OpposingFactionName" type="Label" parent="." unique_id=371293416]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 size_flags_vertical = 0
 theme = SubResource("Theme_pn0he")
@@ -23,6 +24,8 @@ theme_type_variation = &"FactionTitleLabel"
 text = "Faction"
 horizontal_alignment = 1
 vertical_alignment = 1
+clip_text = true
+text_overrun_behavior = 6
 
 [node name="WinCountLabel" type="Label" parent="." unique_id=997994762]
 unique_name_in_owner = true

@@ -60,20 +60,18 @@ func run_mass_combat_simulation() -> void:
 	var flat_card_db: Dictionary = _flatten_card_database(raw_cards)
 
 	var exporter := SimDataExporter.new()
-	# 💡 MOVED: clear_previous_data() is now handled per-theater inside the loop
-
 	var global_match_index := 0
 
 	print("============ STARTING MATRIX SIMULATION ============")
 	print("Pool Size: %d factions  |  Matches per pairing: %d" % [factions_to_sim.size(), iterations_per_matchup])
 	print("Streaming raw records to disk stream...")
 
-	# 🎯 THEATER BLOCK SEPARATION: Forces clean execution blocks for Ground first, then Void
+	# THEATER BLOCK SEPARATION: Forces clean execution blocks for Ground first, then Void
 	for active_ground_combat in [true, false]:
 		var theater_string := "GROUND COMBAT" if active_ground_combat else "VOID COMBAT"
 		var file_suffix := "ground" if active_ground_combat else "void"
 		
-		# 🎯 CHANGE 1: Dynamically isolate target data file paths per theater block
+		# Dynamically isolate target data file paths per theater block
 		exporter.file_path_binary = "user://simulation_%s_data.dat" % file_suffix
 		exporter.clear_previous_data() # Wipes ONLY this specific target file before the run
 		
@@ -138,9 +136,9 @@ func run_mass_combat_simulation() -> void:
 						defender_blueprint["combat_deck"] = new_deck
 						defender_blueprint["cards_in_hand"] = new_hand
 					
-					# Extract hand states AFTER debug deck overrides are finalized
-					var atk_initial_hand: Array = attacker_blueprint["cards_in_hand"].duplicate()
-					var def_initial_hand: Array = defender_blueprint["cards_in_hand"].duplicate()
+					# 🎯 UPDATED: Combine library pile and starting hand arrays to pass down complete decklists
+					var atk_full_deck: Array = attacker_blueprint["combat_deck"] + attacker_blueprint["cards_in_hand"]
+					var def_full_deck: Array = defender_blueprint["combat_deck"] + defender_blueprint["cards_in_hand"]
 					
 					# 4. INSTANTIATE SIMULATION STATE FRAME
 					var match_state: Dictionary = _instantiate_match_state(attacker_blueprint, defender_blueprint)
@@ -156,25 +154,26 @@ func run_mass_combat_simulation() -> void:
 					# 5. EXECUTE MATCH ENTIRELY WITHOUT TELEMETRY OR VISUAL OVERHEAD CALLBACKS
 					var attacker_won: bool = SimCombatEngine.run_full_match(match_state, flat_card_db, Callable())
 					
-					# 6. STREAM RAW CSV METRICS RECORD DIRECTLY TO EXPORTER
+					# 6. STREAM RAW COOPERATIVE METRICS RECORD DIRECTLY TO EXPORTER
 					exporter.log_match(
 						global_match_index, 
 						int(current_stage), 
 						atk_id,
 						def_id,
 						attacker_won, 
-						atk_initial_hand, 
-						def_initial_hand
+						atk_full_deck,
+						def_full_deck
 					)
 					
 					global_match_index += 1
 		
-		# 🎯 CHANGE 2: Force-flush residual RAM blocks BEFORE switching combat theaters!
+		# Force-flush residual RAM blocks BEFORE switching combat theaters!
 		exporter.flush_to_disk()
 		print(">> Successfully committed all %s records to disk stream." % theater_string)
 						
 	print("\n============ MATRIX SIMULATION COMPLETE ============")
 	print("Total Global Matches Run across All Matrices: %d" % global_match_index)
+
 
 #endregion
 
