@@ -255,3 +255,121 @@ layout_mode = 2
 size_flags_vertical = 1
 text = "Overall win rate against opponents"
 horizontal_alignment = 1
+
+[node name="Attacker" type="Control" parent="Matchups" unique_id=544429642]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Matchups/Attacker" unique_id=718748033]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="CenterConstraint" type="MarginContainer" parent="Matchups/Attacker/ScrollContainer" unique_id=1278535920]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 30
+
+[node name="ContentContainer" type="VBoxContainer" parent="Matchups/Attacker/ScrollContainer/CenterConstraint" unique_id=570471862]
+layout_mode = 2
+
+[node name="HeaderBlock" type="PanelContainer" parent="Matchups/Attacker/ScrollContainer/CenterConstraint/ContentContainer" unique_id=530863242]
+layout_mode = 2
+
+[node name="TextTitleBlock" type="VBoxContainer" parent="Matchups/Attacker/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock" unique_id=1042398667]
+layout_mode = 2
+
+[node name="PageTitle" type="Label" parent="Matchups/Attacker/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock/TextTitleBlock" unique_id=2140262165]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 1
+text = "Matchups Overall View"
+
+[node name="FactionWinratesBlock" type="PanelContainer" parent="Matchups/Attacker/ScrollContainer/CenterConstraint/ContentContainer" unique_id=1584146590]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FactionCardMatchupsAttackerValues" type="VBoxContainer" parent="Matchups/Attacker/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock" unique_id=1937934191]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="WinratesByFaction" type="Label" parent="Matchups/Attacker/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/FactionCardMatchupsAttackerValues" unique_id=1930782127]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Win Rates in Faction Matchups"
+horizontal_alignment = 1
+
+[node name="Explanation" type="Label" parent="Matchups/Attacker/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/FactionCardMatchupsAttackerValues" unique_id=929542898]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Overall win rate against opponents"
+horizontal_alignment = 1
+
+[node name="Defender" type="Control" parent="Matchups" unique_id=80679085]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Matchups/Defender" unique_id=643544831]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="CenterConstraint" type="MarginContainer" parent="Matchups/Defender/ScrollContainer" unique_id=1665094414]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 30
+
+[node name="ContentContainer" type="VBoxContainer" parent="Matchups/Defender/ScrollContainer/CenterConstraint" unique_id=1595375026]
+layout_mode = 2
+
+[node name="HeaderBlock" type="PanelContainer" parent="Matchups/Defender/ScrollContainer/CenterConstraint/ContentContainer" unique_id=1101497103]
+layout_mode = 2
+
+[node name="TextTitleBlock" type="VBoxContainer" parent="Matchups/Defender/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock" unique_id=2048627934]
+layout_mode = 2
+
+[node name="PageTitle" type="Label" parent="Matchups/Defender/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock/TextTitleBlock" unique_id=400462737]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 1
+text = "Matchups Overall View"
+
+[node name="FactionWinratesBlock" type="PanelContainer" parent="Matchups/Defender/ScrollContainer/CenterConstraint/ContentContainer" unique_id=400577883]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FactionCardMatchupsDefenderValues" type="VBoxContainer" parent="Matchups/Defender/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock" unique_id=1065578077]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="WinratesByFaction" type="Label" parent="Matchups/Defender/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/FactionCardMatchupsDefenderValues" unique_id=1789701625]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Win Rates in Faction Matchups"
+horizontal_alignment = 1
+
+[node name="Explanation" type="Label" parent="Matchups/Defender/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/FactionCardMatchupsDefenderValues" unique_id=1368276217]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Overall win rate against opponents"
+horizontal_alignment = 1

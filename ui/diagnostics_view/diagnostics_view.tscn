@@ -22,10 +22,12 @@ grow_horizontal = 2
 grow_vertical = 2
 tab_alignment = 2
 current_tab = 0
+tab_0/title = "Ground Units"
 
 [node name="GroundUnits" type="Control" parent="GroundVoidTabs" unique_id=121739349]
 layout_mode = 2
 metadata/_tab_index = 0
+metadata/_tab_name = "Ground Units"
 
 [node name="MainSelectionTabs" type="TabContainer" parent="GroundVoidTabs/GroundUnits" unique_id=874374249]
 layout_mode = 1
@@ -1090,62 +1092,3 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 tab_alignment = 2
-current_tab = 0
-
-[node name="AllFactions" type="Control" parent="GroundVoidTabs/GroundUnits/MainSelectionTabs/Cards/CardsAddFactionsTab" unique_id=1813857196]
-layout_mode = 2
-metadata/_tab_index = 0
-
-[node name="ScrollContainer" type="ScrollContainer" parent="GroundVoidTabs/GroundUnits/MainSelectionTabs/Cards/CardsAddFactionsTab/AllFactions" unique_id=1207967234]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-focus_mode = 2
-horizontal_scroll_mode = 0
-
-[node name="CenterConstraint" type="MarginContainer" parent="GroundVoidTabs/GroundUnits/MainSelectionTabs/Cards/CardsAddFactionsTab/AllFactions/ScrollContainer" unique_id=1512472685]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 30
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 30
-
-[node name="ContentContainer" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/MainSelectionTabs/Cards/CardsAddFactionsTab/AllFactions/ScrollContainer/CenterConstraint" unique_id=1190431234]
-layout_mode = 2
-
-[node name="HeaderBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/MainSelectionTabs/Cards/CardsAddFactionsTab/AllFactions/ScrollContainer/CenterConstraint/ContentContainer" unique_id=1800848698]
-layout_mode = 2
-
-[node name="TextTitleBlock" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/MainSelectionTabs/Cards/CardsAddFactionsTab/AllFactions/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock" unique_id=216051738]
-layout_mode = 2
-
-[node name="PageTitle" type="Label" parent="GroundVoidTabs/GroundUnits/MainSelectionTabs/Cards/CardsAddFactionsTab/AllFactions/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock/TextTitleBlock" unique_id=1795070336]
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 1
-text = "Matchups Overall View"
-
-[node name="FactionWinratesBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/MainSelectionTabs/Cards/CardsAddFactionsTab/AllFactions/ScrollContainer/CenterConstraint/ContentContainer" unique_id=2130386015]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="CardsAllFactionsOverallValues" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/MainSelectionTabs/Cards/CardsAddFactionsTab/AllFactions/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock" unique_id=2092586502]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="WinratesByFaction" type="Label" parent="GroundVoidTabs/GroundUnits/MainSelectionTabs/Cards/CardsAddFactionsTab/AllFactions/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/CardsAllFactionsOverallValues" unique_id=1414061147]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Win Rates in Faction Matchups"
-horizontal_alignment = 1
-
-[node name="Explanation" type="Label" parent="GroundVoidTabs/GroundUnits/MainSelectionTabs/Cards/CardsAddFactionsTab/AllFactions/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/CardsAllFactionsOverallValues" unique_id=1256947473]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Overall win rate against opponents"
-horizontal_alignment = 1

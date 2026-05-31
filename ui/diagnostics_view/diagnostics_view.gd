@@ -6,6 +6,8 @@ const FACTION_BAR_SCENE_H := preload("uid://lxbnnqywg5un")
 const FACTION_BAR_SCENE_V := preload("uid://bpwm0ac0xfcbw")
 const MATCHUP_OVERALL_PANEL_SCENE = preload("uid://cu1crqrtqyfop")
 const FACTION_TAB_SCENE = preload("uid://n4uue0fn6735")
+const CARDS_ALL_FACTIONS_TOP_TEN = preload("uid://4jdu0mca08bf")
+
 
 # --- UI ELEMENT NODES (Scene Unique Names) ---
 @export_group("Global Win Rates")
@@ -48,7 +50,6 @@ const FACTION_TAB_SCENE = preload("uid://n4uue0fn6735")
 
 # -- CARD NODES ---
 @export_group("Card Performance Containers")
-@onready var cards_all_factions_overall_values: VBoxContainer = %CardsAllFactionsOverallValues
 @onready var cards_add_factions_tab: TabContainer = %CardsAddFactionsTab
 
 
@@ -56,6 +57,7 @@ const FACTION_TAB_SCENE = preload("uid://n4uue0fn6735")
 @onready var ui: UI = owner
 var sim_controller: SimController
 
+var data_processed := false
 
 func _ready() -> void:
 	visibility_changed.connect(_on_visibility_changed)
@@ -70,10 +72,14 @@ func populate_diagnostics_dashboard() -> void:
 	if ui == null or ui.sim_controller == null:
 		return
 		
+	if data_processed:
+		return
+	data_processed = true
+	
 	sim_controller = ui.sim_controller
 	var binary_path := "user://simulation_ground_data.dat"
 	
-	# Automated cleanup wipe loop
+	#  Kept only your hard scene containers and tab sheets here to protect structural elements
 	var all_containers: Array[Control] = [
 		overall_faction_winrates, attacker_win_rates, defender_win_rates,
 		overall_early_stage_win_rates, attacker_early_stage_win_rates, defender_early_stage_win_rates,
@@ -83,7 +89,7 @@ func populate_diagnostics_dashboard() -> void:
 		matchups_early_stage_overall_values, matchups_middle_stage_overall_values, matchups_late_stage_overall_values,
 		matchups_early_stage_attacker_values, matchups_middle_stage_attacker_values, matchups_late_stage_attacker_values,
 		matchups_early_stage_defender_values, matchups_middle_stage_defender_values, matchups_late_stage_defender_values,
-		cards_all_factions_overall_values, cards_add_factions_tab
+		cards_add_factions_tab
 	]
 	for container in all_containers:
 		if container != null:
@@ -120,6 +126,11 @@ func populate_diagnostics_dashboard() -> void:
 	card_stats_cache[-1] = {} # Global/Overall matrix tracking
 	for f_id in sim_controller.factions_to_sim:
 		card_stats_cache[f_id] = {}
+
+	# ─── INITIALIZE CARD MATCHUP TRACKING MATRIX MAP ───
+	var card_matchup_cache := {} # Schema: player_faction -> card_id -> enemy_faction -> stats
+	for f_id in sim_controller.factions_to_sim:
+		card_matchup_cache[f_id] = {}
 
 	# 3. HIGH-SPEED SINGLE PASS BINARY STREAM PARSER
 	var file = FileAccess.open(binary_path, FileAccess.READ)
@@ -182,6 +193,13 @@ func populate_diagnostics_dashboard() -> void:
 					if atk_won:
 						card_stats_cache[tracking_id][card_id]["atk_wins"] += 1
 						
+				# Gather Attacker Matchup Metrics (Current card owner vs defender)
+				if not card_matchup_cache[atk_id].has(card_id): card_matchup_cache[atk_id][card_id] = {}
+				if not card_matchup_cache[atk_id][card_id].has(def_id):
+					card_matchup_cache[atk_id][card_id][def_id] = {"atk_wins": 0, "atk_games": 0, "def_wins": 0, "def_games": 0}
+				card_matchup_cache[atk_id][card_id][def_id]["atk_games"] += 1
+				if atk_won: card_matchup_cache[atk_id][card_id][def_id]["atk_wins"] += 1
+						
 			# Tabulate Defender Lane Data (Routes simultaneously to Global and Faction caches)
 			for card_id in unique_def_cards:
 				for tracking_id in [-1, def_id]:
@@ -190,6 +208,13 @@ func populate_diagnostics_dashboard() -> void:
 					card_stats_cache[tracking_id][card_id]["def_games"] += 1
 					if not atk_won:
 						card_stats_cache[tracking_id][card_id]["def_wins"] += 1
+						
+				# Gather Defender Matchup Metrics (Current card owner vs attacker)
+				if not card_matchup_cache[def_id].has(card_id): card_matchup_cache[def_id][card_id] = {}
+				if not card_matchup_cache[def_id][card_id].has(atk_id):
+					card_matchup_cache[def_id][card_id][atk_id] = {"atk_wins": 0, "atk_games": 0, "def_wins": 0, "def_games": 0}
+				card_matchup_cache[def_id][card_id][atk_id]["def_games"] += 1
+				if not atk_won: card_matchup_cache[def_id][card_id][atk_id]["def_wins"] += 1
 	file.close()
 
 	# 4. RESOLVE IDENTITY NAMING STRINGS
@@ -219,7 +244,7 @@ func populate_diagnostics_dashboard() -> void:
 	_render_matchup_stage_group(head_to_head_matrix[2], matchups_late_stage_attacker_values, "atk_rate", "atk_wins", raw_factions)
 	_render_matchup_stage_group(head_to_head_matrix[2], matchups_late_stage_defender_values, "def_rate", "def_wins", raw_factions)
 
-	# ─── CARD LEADERBOARD UI COMPILATION (ALL FACTIONS METRIC PANELS) ───
+	# ─── CARD LEADERBOARD DATA PROCESSING ───
 	var sorted_card_list: Array[Dictionary] = []
 	for card_id in card_stats_cache[-1]:
 		var stats = card_stats_cache[-1][card_id]
@@ -241,7 +266,15 @@ func populate_diagnostics_dashboard() -> void:
 		})
 		
 	sorted_card_list.sort_custom(func(a, b): return a["rate"] > b["rate"])
-	_spawn_leaderboard_bars(sorted_card_list, cards_all_factions_overall_values)
+
+	# ─── 🎯 UPDATED: DEPLOY THE NEW OVERALL TOP 10 LEADERBOARD TAB SCENE ───
+	if cards_add_factions_tab != null:
+		var global_tab_instance = CARDS_ALL_FACTIONS_TOP_TEN.instantiate()
+		cards_add_factions_tab.add_child(global_tab_instance)
+		global_tab_instance.name = "TOP 10 CARDS"
+		
+		if global_tab_instance.has_method("initialize_global_card_rows"):
+			global_tab_instance.initialize_global_card_rows(sorted_card_list)
 
 	# ─── DYNAMIC MULTI-CONTAINER TACTICAL FACTION TAB COMPILER ───
 	for faction_id in sim_controller.factions_to_sim:
@@ -251,8 +284,10 @@ func populate_diagnostics_dashboard() -> void:
 		var overall_list: Array[Dictionary] = []
 		var attacker_list: Array[Dictionary] = []
 		var defender_list: Array[Dictionary] = []
+		var card_matchup_row_list: Array[Dictionary] = []
 		
 		var faction_stats_map: Dictionary = card_stats_cache[faction_id]
+		var faction_matchups_map: Dictionary = card_matchup_cache[faction_id]
 		
 		for card_id in faction_stats_map:
 			var stats = faction_stats_map[card_id]
@@ -282,10 +317,53 @@ func populate_diagnostics_dashboard() -> void:
 				def_rate = (float(stats["def_wins"]) / float(stats["def_games"])) * 100.0
 			defender_list.append({"name": card_name, "rate": def_rate, "wins": stats["def_wins"]})
 			
+			# 4. Tabulate Cross-Faction Performance Matchups for this Specific Card
+			var compiled_card_matchups: Array[Dictionary] = []
+			var enemy_map: Dictionary = faction_matchups_map.get(card_id, {})
+			
+			for enemy_id in sim_controller.factions_to_sim:
+				if faction_id == enemy_id:
+					continue
+					
+				var enemy_profile = raw_factions.get(enemy_id, {})
+				var enemy_name_string: String = enemy_profile.get("name", FactionRegistry.FactionID.keys()[enemy_id])
+				
+				var m_stats: Dictionary = enemy_map.get(enemy_id, {"atk_wins": 0, "atk_games": 0, "def_wins": 0, "def_games": 0})
+				var m_wins: int = m_stats["atk_wins"] + m_stats["def_wins"]
+				var m_games: int = m_stats["atk_games"] + m_stats["def_games"]
+				var m_rate := 0.0
+				if m_games > 0:
+					m_rate = (float(m_wins) / float(m_games)) * 100.0
+					
+				var card_atk_rate := 0.0
+				if m_stats["atk_games"] > 0:
+					card_atk_rate = (float(m_stats["atk_wins"]) / float(m_stats["atk_games"])) * 100.0
+
+				var card_def_rate := 0.0
+				if m_stats["def_games"] > 0:
+					card_def_rate = (float(m_stats["def_wins"]) / float(m_stats["def_games"])) * 100.0
+					
+				compiled_card_matchups.append({
+					"enemy_name": enemy_name_string,
+					"overall_rate": m_rate,
+					"overall_wins": m_wins,
+					"atk_rate": card_atk_rate,
+					"atk_wins": m_stats["atk_wins"],
+					"def_rate": card_def_rate,
+					"def_wins": m_stats["def_wins"]
+				})
+				
+			card_matchup_row_list.append({
+				"card_name": card_name,
+				"matchups": compiled_card_matchups,
+				"sorting_rate": combined_rate
+			})
+			
 		# Sort each visual collection independently before pushing down to tabs
 		overall_list.sort_custom(func(a, b): return a["rate"] > b["rate"])
 		attacker_list.sort_custom(func(a, b): return a["rate"] > b["rate"])
 		defender_list.sort_custom(func(a, b): return a["rate"] > b["rate"])
+		card_matchup_row_list.sort_custom(func(a, b): return a["sorting_rate"] > b["sorting_rate"])
 		
 		# Instantiate, customize, and map the sub-tab node
 		var tab_instance = FACTION_TAB_SCENE.instantiate()
@@ -294,7 +372,7 @@ func populate_diagnostics_dashboard() -> void:
 		
 		# Hand off datasets to update all three lane panels cleanly
 		if tab_instance.has_method("initialize_faction_card_rows"):
-			tab_instance.initialize_faction_card_rows(overall_list, attacker_list, defender_list)
+			tab_instance.initialize_faction_card_rows(overall_list, attacker_list, defender_list, card_matchup_row_list)
 
 
 func _process_and_render_group(stage_data: Dictionary, overall_box: VBoxContainer, atk_box: VBoxContainer, def_box: VBoxContainer, raw_factions: Dictionary) -> void:
