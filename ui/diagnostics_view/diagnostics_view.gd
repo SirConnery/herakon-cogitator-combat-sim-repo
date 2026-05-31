@@ -28,9 +28,23 @@ const MATCHUP_OVERALL_PANEL_SCENE = preload("uid://cu1crqrtqyfop")
 @onready var defender_late_stage_win_rates: VBoxContainer = %DefenderLateStageWinRates
 
 # -- MATCHUP NODES ---
+@export_group("Matchup Matrix Containers")
 @onready var matchups_overall_values: VBoxContainer = %MatchupsOverallValues
-@onready var matchups_attacker_values: VBoxContainer = %MatchupsAttackerValues
-@onready var matchups_defender_values: VBoxContainer = %MatchupsDefenderValues
+@onready var matchups_overall_attacker_values: VBoxContainer = %MatchupsOverallAttackerValues
+@onready var matchups_overall_defender_values: VBoxContainer = %MatchupsOverallDefenderValues
+
+@onready var matchups_early_stage_overall_values: VBoxContainer = %MatchupsEarlyStageOverallValues
+@onready var matchups_middle_stage_overall_values: VBoxContainer = %MatchupsMiddleStageOverallValues
+@onready var matchups_late_stage_overall_values: VBoxContainer = %MatchupsLateStageOverallValues
+
+@onready var matchups_early_stage_attacker_values: VBoxContainer = %MatchupsEarlyStageAttackerValues
+@onready var matchups_middle_stage_attacker_values: VBoxContainer = %MatchupsMiddleStageAttackerValues
+@onready var matchups_late_stage_attacker_values: VBoxContainer = %MatchupsLateStageAttackerValues
+
+@onready var matchups_early_stage_defender_values: VBoxContainer = %MatchupsEarlyStageDefenderValues
+@onready var matchups_middle_stage_defender_values: VBoxContainer = %MatchupsMiddleStageDefenderValues
+@onready var matchups_late_stage_defender_values: VBoxContainer = %MatchupsLateStageDefenderValues
+
 
 # --- CONTROLLER REFS ---
 @onready var ui: UI = owner
@@ -53,20 +67,25 @@ func populate_diagnostics_dashboard() -> void:
 	sim_controller = ui.sim_controller
 	var binary_path := "user://simulation_ground_data.dat"
 	
+	# 🎯 REGISTERED: All 12 new stage-specific matrix containers added to cleanup sweep
 	var all_containers: Array[VBoxContainer] = [
 		overall_faction_winrates, attacker_win_rates, defender_win_rates,
 		overall_early_stage_win_rates, attacker_early_stage_win_rates, defender_early_stage_win_rates,
 		overall_middle_stage_win_rates, attacker_middle_stage_win_rates, defender_middle_stage_win_rates,
 		overall_late_stage_win_rates, attacker_late_stage_win_rates, defender_late_stage_win_rates,
-		matchups_overall_values, matchups_attacker_values, matchups_defender_values
+		matchups_overall_values, matchups_overall_attacker_values, matchups_overall_defender_values,
+		matchups_early_stage_overall_values, matchups_middle_stage_overall_values, matchups_late_stage_overall_values,
+		matchups_early_stage_attacker_values, matchups_middle_stage_attacker_values, matchups_late_stage_attacker_values,
+		matchups_early_stage_defender_values, matchups_middle_stage_defender_values, matchups_late_stage_defender_values
 	]
 	for container in all_containers:
-		UI_Utils.clear_children(container)
+		if container != null:
+			UI_Utils.clear_children(container)
 		
 	if not FileAccess.file_exists(binary_path):
 		return
 
-	# 2. INITIALIZE TRACKING DATA STRUCTURE FOR LEADBOARDS
+	# 2. INITIALIZE TRACKING DATA STRUCTURE FOR LEADERBOARDS
 	var matrix_cache := {}
 	for stage_idx in [-1, 0, 1, 2]:
 		matrix_cache[stage_idx] = {}
@@ -76,16 +95,18 @@ func populate_diagnostics_dashboard() -> void:
 				"def_wins": 0, "def_games": 0
 			}
 
-	# Initialize 2D Cross-Faction Data Structure for Matchups Matrix
+	# Multi-Stage Cross-Faction Matchup Tracking Matrix Initialization
 	var head_to_head_matrix := {}
-	for f_id in sim_controller.factions_to_sim:
-		head_to_head_matrix[f_id] = {}
-		for enemy_id in sim_controller.factions_to_sim:
-			if f_id != enemy_id:
-				head_to_head_matrix[f_id][enemy_id] = {
-					"atk_wins": 0, "atk_games": 0,
-					"def_wins": 0, "def_games": 0
-				}
+	for stage_idx in [-1, 0, 1, 2]:
+		head_to_head_matrix[stage_idx] = {}
+		for f_id in sim_controller.factions_to_sim:
+			head_to_head_matrix[stage_idx][f_id] = {}
+			for enemy_id in sim_controller.factions_to_sim:
+				if f_id != enemy_id:
+					head_to_head_matrix[stage_idx][f_id][enemy_id] = {
+						"atk_wins": 0, "atk_games": 0,
+						"def_wins": 0, "def_games": 0
+					}
 
 	# 3. HIGH-SPEED SINGLE PASS BINARY STREAM PARSER
 	var file = FileAccess.open(binary_path, FileAccess.READ)
@@ -98,6 +119,7 @@ func populate_diagnostics_dashboard() -> void:
 			var atk_won: bool = bool(data[4])
 			
 			if matrix_cache[-1].has(atk_id) and matrix_cache[-1].has(def_id):
+				# Leaderboard global updates
 				matrix_cache[-1][atk_id]["atk_games"] += 1
 				matrix_cache[-1][def_id]["def_games"] += 1
 				if atk_won:
@@ -105,13 +127,15 @@ func populate_diagnostics_dashboard() -> void:
 				else:
 					matrix_cache[-1][def_id]["def_wins"] += 1
 				
-				head_to_head_matrix[atk_id][def_id]["atk_games"] += 1
-				head_to_head_matrix[def_id][atk_id]["def_games"] += 1
+				# Matchups Global Matrix (-1) updates
+				head_to_head_matrix[-1][atk_id][def_id]["atk_games"] += 1
+				head_to_head_matrix[-1][def_id][atk_id]["def_games"] += 1
 				if atk_won:
-					head_to_head_matrix[atk_id][def_id]["atk_wins"] += 1
+					head_to_head_matrix[-1][atk_id][def_id]["atk_wins"] += 1
 				else:
-					head_to_head_matrix[def_id][atk_id]["def_wins"] += 1
+					head_to_head_matrix[-1][def_id][atk_id]["def_wins"] += 1
 				
+				# Stage-specific calculations
 				if matrix_cache.has(stage_id):
 					matrix_cache[stage_id][atk_id]["atk_games"] += 1
 					matrix_cache[stage_id][def_id]["def_games"] += 1
@@ -119,6 +143,14 @@ func populate_diagnostics_dashboard() -> void:
 						matrix_cache[stage_id][atk_id]["atk_wins"] += 1
 					else:
 						matrix_cache[stage_id][def_id]["def_wins"] += 1
+						
+					# Matchups Stage-Specific Matrix updates
+					head_to_head_matrix[stage_id][atk_id][def_id]["atk_games"] += 1
+					head_to_head_matrix[stage_id][def_id][atk_id]["def_games"] += 1
+					if atk_won:
+						head_to_head_matrix[stage_id][atk_id][def_id]["atk_wins"] += 1
+					else:
+						head_to_head_matrix[stage_id][def_id][atk_id]["def_wins"] += 1
 	file.close()
 
 	# 4. RESOLVE IDENTITY NAMING STRINGS
@@ -130,8 +162,26 @@ func populate_diagnostics_dashboard() -> void:
 	_process_and_render_group(matrix_cache[1], overall_middle_stage_win_rates, attacker_middle_stage_win_rates, defender_middle_stage_win_rates, raw_factions)
 	_process_and_render_group(matrix_cache[2], overall_late_stage_win_rates, attacker_late_stage_win_rates, defender_late_stage_win_rates, raw_factions)
 
-	# Process and deploy the custom interactive matchup matrix feed
-	_render_matchup_skyline_feed(head_to_head_matrix, raw_factions)
+	# 🎯 DEPLOY TARGETED MATCHUP FEEDS TO ALL STAGE SUBSYSTEMS
+	# Global Matrix Panels (-1)
+	_render_matchup_stage_group(head_to_head_matrix[-1], matchups_overall_values, "overall_rate", "overall_wins", raw_factions)
+	_render_matchup_stage_group(head_to_head_matrix[-1], matchups_overall_attacker_values, "atk_rate", "atk_wins", raw_factions)
+	_render_matchup_stage_group(head_to_head_matrix[-1], matchups_overall_defender_values, "def_rate", "def_wins", raw_factions)
+	
+	# Early Stage Panels (0)
+	_render_matchup_stage_group(head_to_head_matrix[0], matchups_early_stage_overall_values, "overall_rate", "overall_wins", raw_factions)
+	_render_matchup_stage_group(head_to_head_matrix[0], matchups_early_stage_attacker_values, "atk_rate", "atk_wins", raw_factions)
+	_render_matchup_stage_group(head_to_head_matrix[0], matchups_early_stage_defender_values, "def_rate", "def_wins", raw_factions)
+	
+	# Middle Stage Panels (1)
+	_render_matchup_stage_group(head_to_head_matrix[1], matchups_middle_stage_overall_values, "overall_rate", "overall_wins", raw_factions)
+	_render_matchup_stage_group(head_to_head_matrix[1], matchups_middle_stage_attacker_values, "atk_rate", "atk_wins", raw_factions)
+	_render_matchup_stage_group(head_to_head_matrix[1], matchups_middle_stage_defender_values, "def_rate", "def_wins", raw_factions)
+	
+	# Late Stage Panels (2)
+	_render_matchup_stage_group(head_to_head_matrix[2], matchups_late_stage_overall_values, "overall_rate", "overall_wins", raw_factions)
+	_render_matchup_stage_group(head_to_head_matrix[2], matchups_late_stage_attacker_values, "atk_rate", "atk_wins", raw_factions)
+	_render_matchup_stage_group(head_to_head_matrix[2], matchups_late_stage_defender_values, "def_rate", "def_wins", raw_factions)
 
 
 func _process_and_render_group(stage_data: Dictionary, overall_box: VBoxContainer, atk_box: VBoxContainer, def_box: VBoxContainer, raw_factions: Dictionary) -> void:
@@ -177,13 +227,15 @@ func _spawn_leaderboard_bars(sorted_data: Array[Dictionary], target_container: V
 		bar_instance.populate_bar(faction["name"], faction["rate"], faction["wins"])
 
 
-#Generates matching datasets and deploys across three clean tabs simultaneously
-func _render_matchup_skyline_feed(head_to_head_matrix: Dictionary, raw_factions: Dictionary) -> void:
+# ─── MODULAR MATCHUP MATRIX GENERATION SUB-ENGINE ───
+
+func _render_matchup_stage_group(stage_matrix_slice: Dictionary, target_container: VBoxContainer, rate_key: String, wins_key: String, raw_factions: Dictionary) -> void:
+	if target_container == null: return
+	
 	for focus_id in sim_controller.factions_to_sim:
 		var focus_profile = raw_factions.get(focus_id)
 		var focus_name: String = focus_profile.get("name", FactionRegistry.FactionID.keys()[focus_id])
 		
-		# Build a single cache containing both percentages and raw win counters
 		var compiled_matchups_list: Array[Dictionary] = []
 		
 		for enemy_id in sim_controller.factions_to_sim:
@@ -193,7 +245,7 @@ func _render_matchup_skyline_feed(head_to_head_matrix: Dictionary, raw_factions:
 			var enemy_profile = raw_factions.get(enemy_id)
 			var enemy_name: String = enemy_profile.get("name", FactionRegistry.FactionID.keys()[enemy_id])
 			
-			var stats: Dictionary = head_to_head_matrix[focus_id][enemy_id]
+			var stats: Dictionary = stage_matrix_slice[focus_id][enemy_id]
 			
 			var atk_rate := 0.0
 			if stats["atk_games"] > 0:
@@ -218,15 +270,6 @@ func _render_matchup_skyline_feed(head_to_head_matrix: Dictionary, raw_factions:
 				"def_wins": stats["def_wins"]
 			})
 		
-		
-		var overall_row = MATCHUP_OVERALL_PANEL_SCENE.instantiate()
-		matchups_overall_values.add_child(overall_row)
-		overall_row.initialize_real_matchup_row(focus_name, compiled_matchups_list, "overall_rate", "overall_wins")
-		
-		var attacker_row = MATCHUP_OVERALL_PANEL_SCENE.instantiate()
-		matchups_attacker_values.add_child(attacker_row)
-		attacker_row.initialize_real_matchup_row(focus_name, compiled_matchups_list, "atk_rate", "atk_wins")
-		
-		var defender_row = MATCHUP_OVERALL_PANEL_SCENE.instantiate()
-		matchups_defender_values.add_child(defender_row)
-		defender_row.initialize_real_matchup_row(focus_name, compiled_matchups_list, "def_rate", "def_wins")
+		var row = MATCHUP_OVERALL_PANEL_SCENE.instantiate()
+		target_container.add_child(row)
+		row.initialize_real_matchup_row(focus_name, compiled_matchups_list, rate_key, wins_key)

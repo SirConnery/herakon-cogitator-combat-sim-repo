@@ -354,10 +354,11 @@ current_tab = 0
 [node name="Overall" type="TabContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer" unique_id=1033660249]
 layout_mode = 2
 tab_alignment = 2
-current_tab = 0
+current_tab = 1
 metadata/_tab_index = 0
 
 [node name="Overall" type="Control" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Overall" unique_id=607441840]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -416,7 +417,6 @@ text = "Overall win rate against opponents"
 horizontal_alignment = 1
 
 [node name="Early" type="Control" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Overall" unique_id=944029656]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
@@ -592,486 +592,134 @@ size_flags_vertical = 1
 text = "Win rate against opponents when attacking"
 horizontal_alignment = 1
 
-[node name="Attacker" type="TabContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer" unique_id=591505745]
+[node name="Attacker" type="Control" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer" unique_id=2046674635]
 visible = false
 layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker" unique_id=1115323088]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="CenterConstraint" type="MarginContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/ScrollContainer" unique_id=773865421]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 30
+
+[node name="ContentContainer" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/ScrollContainer/CenterConstraint" unique_id=800359673]
+layout_mode = 2
+
+[node name="HeaderBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/ScrollContainer/CenterConstraint/ContentContainer" unique_id=515840911]
+layout_mode = 2
+
+[node name="TextTitleBlock" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock" unique_id=2142164879]
+layout_mode = 2
+
+[node name="PageTitle" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock/TextTitleBlock" unique_id=2086684746]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 1
+text = "Matchups Attacker View"
+
+[node name="FactionWinratesBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/ScrollContainer/CenterConstraint/ContentContainer" unique_id=451379158]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MatchupsAttackerValues" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock" unique_id=576287003]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="WinratesByFaction" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsAttackerValues" unique_id=1894512593]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Win Rates in Faction Matchups"
+horizontal_alignment = 1
+
+[node name="Explanation" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsAttackerValues" unique_id=736863538]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Win rate against opponents when attacking"
+horizontal_alignment = 1
+
+[node name="Defender" type="Control" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer" unique_id=502879174]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender" unique_id=555045303]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="CenterConstraint" type="MarginContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/ScrollContainer" unique_id=1832650274]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 30
+
+[node name="ContentContainer" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/ScrollContainer/CenterConstraint" unique_id=1443294947]
+layout_mode = 2
+
+[node name="HeaderBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/ScrollContainer/CenterConstraint/ContentContainer" unique_id=1988654138]
+layout_mode = 2
+
+[node name="TextTitleBlock" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock" unique_id=308394010]
+layout_mode = 2
+
+[node name="PageTitle" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock/TextTitleBlock" unique_id=1820837205]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 1
+text = "Matchups Defender View"
+
+[node name="FactionWinratesBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/ScrollContainer/CenterConstraint/ContentContainer" unique_id=1622531363]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MatchupsDefenderValues" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock" unique_id=1391673075]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="WinratesByFaction" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsDefenderValues" unique_id=173110698]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Win Rates in Faction Matchups"
+horizontal_alignment = 1
+
+[node name="Explanation" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsDefenderValues" unique_id=1996277194]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Win rate against opponents when defending"
+horizontal_alignment = 1
+
+[node name="Stages" type="Control" parent="GroundVoidTabs/GroundUnits/TabContainer" unique_id=1051660338]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="TabContainer" type="TabContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Stages" unique_id=802775750]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 tab_alignment = 2
-current_tab = 1
-metadata/_tab_index = 1
-
-[node name="Overall" type="Control" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker" unique_id=1861442272]
-visible = false
-layout_mode = 2
-metadata/_tab_index = 0
-
-[node name="ScrollContainer" type="ScrollContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Overall" unique_id=1370948789]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-focus_mode = 2
-horizontal_scroll_mode = 0
-
-[node name="CenterConstraint" type="MarginContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Overall/ScrollContainer" unique_id=984387189]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 30
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 30
-
-[node name="ContentContainer" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Overall/ScrollContainer/CenterConstraint" unique_id=110560367]
-layout_mode = 2
-
-[node name="HeaderBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Overall/ScrollContainer/CenterConstraint/ContentContainer" unique_id=260107785]
-layout_mode = 2
-
-[node name="TextTitleBlock" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Overall/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock" unique_id=1690112387]
-layout_mode = 2
-
-[node name="PageTitle" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Overall/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock/TextTitleBlock" unique_id=993294160]
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 1
-text = "Matchups Overall View"
-
-[node name="FactionWinratesBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Overall/ScrollContainer/CenterConstraint/ContentContainer" unique_id=333655647]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="MatchupsOverallAttackerValues" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Overall/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock" unique_id=237922203]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="WinratesByFaction" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Overall/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsOverallAttackerValues" unique_id=702840010]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Win Rates in Faction Matchups"
-horizontal_alignment = 1
-
-[node name="Explanation" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Overall/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsOverallAttackerValues" unique_id=54625736]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Overall win rate against opponents"
-horizontal_alignment = 1
-
-[node name="Early" type="Control" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker" unique_id=1701503001]
-layout_mode = 2
-metadata/_tab_index = 1
-
-[node name="ScrollContainer" type="ScrollContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Early" unique_id=540790488]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-focus_mode = 2
-horizontal_scroll_mode = 0
-
-[node name="CenterConstraint" type="MarginContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Early/ScrollContainer" unique_id=369672353]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 30
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 30
-
-[node name="ContentContainer" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Early/ScrollContainer/CenterConstraint" unique_id=1511257582]
-layout_mode = 2
-
-[node name="HeaderBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Early/ScrollContainer/CenterConstraint/ContentContainer" unique_id=1054306328]
-layout_mode = 2
-
-[node name="TextTitleBlock" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Early/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock" unique_id=805715500]
-layout_mode = 2
-
-[node name="PageTitle" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Early/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock/TextTitleBlock" unique_id=1922018873]
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 1
-text = "Matchups Attacker View"
-
-[node name="FactionWinratesBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Early/ScrollContainer/CenterConstraint/ContentContainer" unique_id=1480161174]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="MatchupsEarlyStageAttackerValues" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Early/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock" unique_id=1322278078]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="WinratesByFaction" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Early/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsEarlyStageAttackerValues" unique_id=1725421987]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Win Rates in Faction Matchups"
-horizontal_alignment = 1
-
-[node name="Explanation" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Early/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsEarlyStageAttackerValues" unique_id=724449845]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Win rate against opponents when attacking"
-horizontal_alignment = 1
-
-[node name="Middle" type="Control" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker" unique_id=1380827648]
-visible = false
-layout_mode = 2
-metadata/_tab_index = 2
-
-[node name="ScrollContainer" type="ScrollContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Middle" unique_id=1871648705]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-focus_mode = 2
-horizontal_scroll_mode = 0
-
-[node name="CenterConstraint" type="MarginContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Middle/ScrollContainer" unique_id=772500396]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 30
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 30
-
-[node name="ContentContainer" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Middle/ScrollContainer/CenterConstraint" unique_id=338291552]
-layout_mode = 2
-
-[node name="HeaderBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Middle/ScrollContainer/CenterConstraint/ContentContainer" unique_id=600416848]
-layout_mode = 2
-
-[node name="TextTitleBlock" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Middle/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock" unique_id=1738002090]
-layout_mode = 2
-
-[node name="PageTitle" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Middle/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock/TextTitleBlock" unique_id=1596988259]
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 1
-text = "Matchups Attacker View"
-
-[node name="FactionWinratesBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Middle/ScrollContainer/CenterConstraint/ContentContainer" unique_id=354426742]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="MatchupsMiddleStageAttackerValues" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Middle/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock" unique_id=2058462057]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="WinratesByFaction" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Middle/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsMiddleStageAttackerValues" unique_id=601313511]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Win Rates in Faction Matchups"
-horizontal_alignment = 1
-
-[node name="Explanation" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Middle/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsMiddleStageAttackerValues" unique_id=1499381904]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Win rate against opponents when attacking"
-horizontal_alignment = 1
-
-[node name="Late" type="Control" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker" unique_id=1367807360]
-visible = false
-layout_mode = 2
-metadata/_tab_index = 3
-
-[node name="ScrollContainer" type="ScrollContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Late" unique_id=1821129131]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-focus_mode = 2
-horizontal_scroll_mode = 0
-
-[node name="CenterConstraint" type="MarginContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Late/ScrollContainer" unique_id=1124677669]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 30
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 30
-
-[node name="ContentContainer" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Late/ScrollContainer/CenterConstraint" unique_id=1334913907]
-layout_mode = 2
-
-[node name="HeaderBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Late/ScrollContainer/CenterConstraint/ContentContainer" unique_id=371220056]
-layout_mode = 2
-
-[node name="TextTitleBlock" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Late/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock" unique_id=315921486]
-layout_mode = 2
-
-[node name="PageTitle" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Late/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock/TextTitleBlock" unique_id=1251807996]
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 1
-text = "Matchups Attacker View"
-
-[node name="FactionWinratesBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Late/ScrollContainer/CenterConstraint/ContentContainer" unique_id=1394230877]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="MatchupsLateStageAttackerValues" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Late/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock" unique_id=1628291508]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="WinratesByFaction" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Late/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsLateStageAttackerValues" unique_id=245056134]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Win Rates in Faction Matchups"
-horizontal_alignment = 1
-
-[node name="Explanation" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Attacker/Late/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsLateStageAttackerValues" unique_id=799468168]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Win rate against opponents when attacking"
-horizontal_alignment = 1
-
-[node name="Defender" type="TabContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer" unique_id=429207027]
-visible = false
-layout_mode = 2
-tab_alignment = 2
-current_tab = 1
-metadata/_tab_index = 2
-
-[node name="Overall" type="Control" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender" unique_id=797603683]
-visible = false
-layout_mode = 2
-metadata/_tab_index = 0
-
-[node name="ScrollContainer" type="ScrollContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Overall" unique_id=1230030492]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-focus_mode = 2
-horizontal_scroll_mode = 0
-
-[node name="CenterConstraint" type="MarginContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Overall/ScrollContainer" unique_id=837883986]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 30
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 30
-
-[node name="ContentContainer" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Overall/ScrollContainer/CenterConstraint" unique_id=1568624421]
-layout_mode = 2
-
-[node name="HeaderBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Overall/ScrollContainer/CenterConstraint/ContentContainer" unique_id=929813717]
-layout_mode = 2
-
-[node name="TextTitleBlock" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Overall/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock" unique_id=1156647610]
-layout_mode = 2
-
-[node name="PageTitle" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Overall/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock/TextTitleBlock" unique_id=197903075]
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 1
-text = "Matchups Overall View"
-
-[node name="FactionWinratesBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Overall/ScrollContainer/CenterConstraint/ContentContainer" unique_id=1771166466]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="MatchupsOverallDefenderValues" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Overall/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock" unique_id=1019242002]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="WinratesByFaction" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Overall/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsOverallDefenderValues" unique_id=114667860]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Win Rates in Faction Matchups"
-horizontal_alignment = 1
-
-[node name="Explanation" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Overall/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsOverallDefenderValues" unique_id=90234390]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Overall win rate against opponents"
-horizontal_alignment = 1
-
-[node name="Early" type="Control" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender" unique_id=916936928]
-layout_mode = 2
-metadata/_tab_index = 1
-
-[node name="ScrollContainer" type="ScrollContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Early" unique_id=623450402]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-focus_mode = 2
-horizontal_scroll_mode = 0
-
-[node name="CenterConstraint" type="MarginContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Early/ScrollContainer" unique_id=577047801]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 30
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 30
-
-[node name="ContentContainer" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Early/ScrollContainer/CenterConstraint" unique_id=1216454508]
-layout_mode = 2
-
-[node name="HeaderBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Early/ScrollContainer/CenterConstraint/ContentContainer" unique_id=687617338]
-layout_mode = 2
-
-[node name="TextTitleBlock" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Early/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock" unique_id=2059082076]
-layout_mode = 2
-
-[node name="PageTitle" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Early/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock/TextTitleBlock" unique_id=541827290]
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 1
-text = "Matchups Attacker View"
-
-[node name="FactionWinratesBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Early/ScrollContainer/CenterConstraint/ContentContainer" unique_id=529914140]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="MatchupsEarlyStageDefenderValues" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Early/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock" unique_id=1339796477]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="WinratesByFaction" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Early/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsEarlyStageDefenderValues" unique_id=790073341]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Win Rates in Faction Matchups"
-horizontal_alignment = 1
-
-[node name="Explanation" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Early/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsEarlyStageDefenderValues" unique_id=806167210]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Win rate against opponents when attacking"
-horizontal_alignment = 1
-
-[node name="Middle" type="Control" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender" unique_id=1395389510]
-visible = false
-layout_mode = 2
-metadata/_tab_index = 2
-
-[node name="ScrollContainer" type="ScrollContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Middle" unique_id=1402837526]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-focus_mode = 2
-horizontal_scroll_mode = 0
-
-[node name="CenterConstraint" type="MarginContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Middle/ScrollContainer" unique_id=552759716]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 30
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 30
-
-[node name="ContentContainer" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Middle/ScrollContainer/CenterConstraint" unique_id=66857891]
-layout_mode = 2
-
-[node name="HeaderBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Middle/ScrollContainer/CenterConstraint/ContentContainer" unique_id=1740603568]
-layout_mode = 2
-
-[node name="TextTitleBlock" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Middle/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock" unique_id=532475914]
-layout_mode = 2
-
-[node name="PageTitle" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Middle/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock/TextTitleBlock" unique_id=933593376]
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 1
-text = "Matchups Attacker View"
-
-[node name="FactionWinratesBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Middle/ScrollContainer/CenterConstraint/ContentContainer" unique_id=17133294]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="MatchupsMiddleStageDefenderValues" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Middle/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock" unique_id=228675033]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="WinratesByFaction" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Middle/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsMiddleStageDefenderValues" unique_id=769158823]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Win Rates in Faction Matchups"
-horizontal_alignment = 1
-
-[node name="Explanation" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Middle/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsMiddleStageDefenderValues" unique_id=479355652]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Win rate against opponents when attacking"
-horizontal_alignment = 1
-
-[node name="Late" type="Control" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender" unique_id=2024229719]
-visible = false
-layout_mode = 2
-metadata/_tab_index = 3
-
-[node name="ScrollContainer" type="ScrollContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Late" unique_id=600613890]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-focus_mode = 2
-horizontal_scroll_mode = 0
-
-[node name="CenterConstraint" type="MarginContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Late/ScrollContainer" unique_id=1922263395]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 30
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 30
-
-[node name="ContentContainer" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Late/ScrollContainer/CenterConstraint" unique_id=770288331]
-layout_mode = 2
-
-[node name="HeaderBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Late/ScrollContainer/CenterConstraint/ContentContainer" unique_id=1493987096]
-layout_mode = 2
-
-[node name="TextTitleBlock" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Late/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock" unique_id=749937998]
-layout_mode = 2
-
-[node name="PageTitle" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Late/ScrollContainer/CenterConstraint/ContentContainer/HeaderBlock/TextTitleBlock" unique_id=488466590]
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 1
-text = "Matchups Attacker View"
-
-[node name="FactionWinratesBlock" type="PanelContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Late/ScrollContainer/CenterConstraint/ContentContainer" unique_id=1656706536]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="MatchupsLateStageDefenderValues" type="VBoxContainer" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Late/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock" unique_id=734044951]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="WinratesByFaction" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Late/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsLateStageDefenderValues" unique_id=2071062679]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Win Rates in Faction Matchups"
-horizontal_alignment = 1
-
-[node name="Explanation" type="Label" parent="GroundVoidTabs/GroundUnits/TabContainer/Matchups/TabContainer/Defender/Late/ScrollContainer/CenterConstraint/ContentContainer/FactionWinratesBlock/MatchupsLateStageDefenderValues" unique_id=870833408]
-layout_mode = 2
-size_flags_vertical = 1
-text = "Win rate against opponents when attacking"
-horizontal_alignment = 1

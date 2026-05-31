@@ -1,6 +1,5 @@
 extends PanelContainer
 
-# 🚀 Preload your newly created vertical layout bar component
 const FACTION_BAR_SCENE_V := preload("uid://bpwm0ac0xfcbw")
 
 @onready var faction_title: Label = %FactionTitle
@@ -17,6 +16,9 @@ func initialize_real_matchup_row(focus_faction_name: String, calculated_matchups
 	# Clear out any old child scenes cleanly
 	for child in matchup_row.get_children():
 		child.queue_free()
+	
+	# Sort highest first
+	calculated_matchups_list.sort_custom(func(a, b): return a[rate_key] > b[rate_key])
 	
 	# Ensure layouts stretch out and fill areas properly
 	if h_layout:
