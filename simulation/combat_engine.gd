@@ -277,11 +277,13 @@ static func apply_damage(player_state: Dictionary, total_damage: int, round_inde
 	var side_name: String = player_state["name"]
 	var newly_routed_units: Array[Dictionary] = []
 	
-	# 🎯 THE IMMUNITY INTERCEPT: Check player state or parent state for the global immunity flag
-	var damage_immune: bool = player_state.get("all_units_damage_immune", false) or player_state.get("parent_state", {}).get("all_units_damage_immune", false)
-	if damage_immune:
+	#  THE IMMUNITY INTERCEPT: Check player state or parent state for the global immunity flag
+	if is_damage_immunity_active(player_state):
 		if on_event.is_valid():
-			on_event.call("ability_triggered", [hostile_card_id, "↳ 🛡️ Damage Immunity Active! All units on both sides are immune to damage this round."])
+			on_event.call("ability_triggered", [
+				hostile_card_id, 
+				"↳ 🛡️ Damage Immunity Active! All units on both sides are immune to damage this round."
+			])
 		return newly_routed_units # Exit immediately with 0 units routed or damaged
 
 	# Fetch the round-scoped status flag directly from the state container
@@ -1012,7 +1014,21 @@ static func _get_current_combat_round_index(side_data: Dictionary) -> int:
 		
 	return int(parent_state.get("current_round_index", 0))
 
-
+## Centralized checker to determine if damage immunity is globally or locally active
+static func is_damage_immunity_active(state_data: Dictionary) -> bool:
+	if state_data.is_empty():
+		return false
+		
+	# 1. Direct check (if player_state/side_data itself holds the flag)
+	if state_data.get("all_units_damage_immune", false):
+		return true
+		
+	# 2. Nested check (if player_state contains a parent_state holding the flag)
+	var parent_state: Dictionary = state_data.get("parent_state", {})
+	if not parent_state.is_empty() and parent_state.get("all_units_damage_immune", false):
+		return true
+		
+	return false
 
 #endregion
 
@@ -1779,6 +1795,9 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 			condition_passed = (_get_current_combat_round_index(side_data) == 0)
 		CardData.ConditionType.IS_NOT_FIRST_COMBAT_ROUND:
 			condition_passed = not (_get_current_combat_round_index(side_data) == 0)
+		CardData.ConditionType.ALL_UNITS_HAVE_DAMAGE_IMMUNITY:
+			condition_passed = is_damage_immunity_active(side_data)
+		
 		_:
 			condition_passed = true
 			
@@ -2130,6 +2149,26 @@ static func _execute_spend_specific_dice_to_gain_tokens(fx: Array, token_pools: 
 	var max_spend: int = fx[6] if fx.size() > 6 else -1
 	var gain_token_type: int = fx[9]
 	
+	# ─── 🛡️ COMBAT IMMUNITY ENGINE GUARD ───
+	# Short-circuit conversion logic entirely if damage immunity rules are active this round
+	if is_damage_immunity_active(side_data):
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [
+				card_id, 
+				"↳ ❌ Conversion blocked: Bypassing resource trade."
+			])
+		return # Abort immediately to preserve dice pools
+
+	# ─── 🛑 SUPPRESSION STATE ENGINE GUARD ───
+	# Block defense token payouts specifically if a suppression modifier status is active on this side
+	if gain_token_type == 2 and _is_cannot_gain_defense_tokens_active(side_data):
+		if on_event.is_valid():
+			on_event.call("ability_triggered", [
+				card_id,
+				"↳ ❌ Conversion blocked: Suppression Active!"
+			])
+		return # Abort immediately to preserve dice pools
+
 	var source_stat := Stat.OFFENCE
 	var stat_label := "⚔️"
 	

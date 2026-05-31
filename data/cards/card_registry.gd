@@ -870,12 +870,7 @@ static func get_database() -> Dictionary:
 	card.defence_icons = 2
 	card.required_unit_types = [CardData.UnitType.CHAOS_SPACE_MARINES, CardData.UnitType.ICONOCLAST_DESTROYERS]
 	
-	# --- GENERAL ABILITY ---
-	var fx_suppression_guard = CardEffect.new()
-	fx_suppression_guard.effect_type = CardData.EffectType.CONDITIONAL
-	fx_suppression_guard.condition_type = CardData.ConditionType.CANNOT_GAIN_DEFENSE_TOKENS_THIS_ROUND_IS_NOT_ACTIVE
-	
-	# Inner Branch (Refactored to If/Else layout)
+	# --- GENERAL ABILITY (Cleaned of all nested wrapper constraints) ---
 	fx_1 = CardEffect.new()
 	fx_1.effect_type = CardData.EffectType.CONDITIONAL
 	fx_1.condition_type = CardData.ConditionType.HAS_MORALE_DICE
@@ -900,8 +895,7 @@ static func get_database() -> Dictionary:
 	opt_b.max_spend = 1
 	fx_1.else_choices.append(opt_b)
 	
-	fx_suppression_guard.choices.append(fx_1)
-	card.general_ability.append(fx_suppression_guard)
+	card.general_ability.append(fx_1)
 	
 	# --- UNIT ABILITY ---
 	fx_u_1 = CardEffect.new()
