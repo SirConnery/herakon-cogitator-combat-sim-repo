@@ -1,0 +1,36 @@
+[gd_scene format=3 uid="uid://bpwm0ac0xfcbw"]
+
+[ext_resource type="Script" uid="uid://turs7j22e150" path="res://ui/diagnostics_view/reusable_components/faction_bar_v.gd" id="1_pn0he"]
+
+[node name="VLayout" type="VBoxContainer" unique_id=1582519882]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+script = ExtResource("1_pn0he")
+
+[node name="FactionName" type="Label" parent="." unique_id=371293416]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_vertical = 0
+text = "Faction"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="WinCountLabel" type="Label" parent="." unique_id=997994762]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+text = "Winrate"
+horizontal_alignment = 1
+
+[node name="WinRateBar" type="ProgressBar" parent="." unique_id=1019930215]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 300)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+fill_mode = 3
