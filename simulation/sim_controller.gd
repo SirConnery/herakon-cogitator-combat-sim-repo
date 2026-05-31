@@ -4,7 +4,9 @@ class_name SimController
 
 #region Mass Combat Sim variables
 # ─── RUN MODE CONFIGURATION ───
-var iterations_per_matchup: int = 10
+var iterations_per_matchup: int = 1000
+@export_range(1, 16) var simulation_workers: int = 4
+@export var simulate_void: bool = false
 
 # ─── MATRIX BATCH CONFIGURATION ───
 var factions_to_sim: Array[FactionRegistry.FactionID] = [
@@ -60,119 +62,151 @@ func run_mass_combat_simulation() -> void:
 	var flat_card_db: Dictionary = _flatten_card_database(raw_cards)
 
 	var exporter := SimDataExporter.new()
-	var global_match_index := 0
 
-	print("============ STARTING MATRIX SIMULATION ============")
+	print("============ STARTING THREADED MATRIX SIMULATION ============")
 	print("Pool Size: %d factions  |  Matches per pairing: %d" % [factions_to_sim.size(), iterations_per_matchup])
-	print("Streaming raw records to disk stream...")
 
 	# THEATER BLOCK SEPARATION: Forces clean execution blocks for Ground first, then Void
 	for active_ground_combat in [true, false]:
+		
+		# Safety short-circuit check for the Void theater loop
+		if not active_ground_combat and not simulate_void:
+			print("\n>> SKIPPING BLOCK RUN: VOID COMBAT (Disabled via toggle variable)")
+			continue
+			
 		var theater_string := "GROUND COMBAT" if active_ground_combat else "VOID COMBAT"
 		var file_suffix := "ground" if active_ground_combat else "void"
 		
 		# Dynamically isolate target data file paths per theater block
 		exporter.file_path_binary = "user://simulation_%s_data.dat" % file_suffix
-		exporter.clear_previous_data() # Wipes ONLY this specific target file before the run
+		exporter.clear_previous_data() 
 		
 		print("\n====================================================")
 		print("INITIALIZING BLOCK RUN: %s" % theater_string)
 		print("Target Destination: %s" % exporter.file_path_binary)
 		print("====================================================")
 
+		# 1. COMPILE ALL JOBS INTO A FLAT THREAD-SAFE WORK QUEUE
+		var task_queue: Array[Dictionary] = []
 		for atk_id in factions_to_sim:
 			for def_id in factions_to_sim:
 				if atk_id == def_id:
 					continue
-					
-				var atk_profile: Dictionary = raw_factions.get(atk_id, {})
-				var def_profile: Dictionary = raw_factions.get(def_id, {})
-				var atk_name_string: String = atk_profile.get("name", FactionRegistry.FactionID.keys()[atk_id])
-				var def_name_string: String = def_profile.get("name", FactionRegistry.FactionID.keys()[def_id])
+				
+				task_queue.append({
+					"atk_id": atk_id,
+					"def_id": def_id,
+					"active_ground_combat": active_ground_combat,
+					"current_stage": get_current_stage(),
+					"flat_card_db": flat_card_db,
+					"raw_factions": raw_factions,
+					"atk_profile": raw_factions.get(atk_id, {}),
+					"def_profile": raw_factions.get(def_id, {})
+				})
 
-				print(" -> [%s] Pairing Matrix: [Atk] %s vs [Def] %s..." % [theater_string, atk_name_string, def_name_string])
-
+		# 2. INTRODUCE THREAD-SAFE SHARED ARRAYS
+		var shared_results_buffer: Array = []
+		shared_results_buffer.resize(task_queue.size())
+		
+		# 3. SPIN UP INDEPENDENT BATCH WORKER GROUPS
+		var group_id = WorkerThreadPool.add_group_task(
+			func(task_index: int):
+				var job: Dictionary = task_queue[task_index]
+				var local_matches: Array = []
+				
+				var atk_name: String = job["atk_profile"].get("name", FactionRegistry.FactionID.keys()[job["atk_id"]])
+				var def_name: String = job["def_profile"].get("name", FactionRegistry.FactionID.keys()[job["def_id"]])
+				
 				for i in range(iterations_per_matchup):
-					# 1. RESOLVE CONFIGURABLE ENVIRONMENT RULES
-					current_stage = get_current_stage()
-					
-					# 2. GENERATE COMPOSITION SCALE
 					var att_count := randi_range(1, 5)
 					var def_count := randi_range(1, 5)
 					
-					var attacker_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(atk_id, current_stage, att_count, active_ground_combat, raw_factions)
-					var defender_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(def_id, current_stage, def_count, active_ground_combat, raw_factions)
+					var attacker_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(job["atk_id"], job["current_stage"], att_count, job["active_ground_combat"], job["raw_factions"])
+					var defender_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(job["def_id"], job["current_stage"], def_count, job["active_ground_combat"], job["raw_factions"])
 					
-					# 3. RESOLVE FACTION-SPECIFIC DEBUG DECKS OVERRIDES
-					var atk_debug_deck: Array = atk_profile.get("debug_deck", [])
+					# Process Debug Overrides (Attacker)
+					var atk_debug_deck: Array = job["atk_profile"].get("debug_deck", [])
 					if not atk_debug_deck.is_empty():
 						var target_card: int = atk_debug_deck[0]
 						var new_deck: Array = []
 						new_deck.resize(10)
 						new_deck.fill(target_card)
 						new_deck.shuffle()
-						
 						var new_hand: Array = []
 						var draw_count: int = min(5, new_deck.size())
-						for h in range(draw_count):
+						for h in range(draw_count): 
 							new_hand.append(new_deck.pop_back())
-							
 						attacker_blueprint["combat_deck"] = new_deck
 						attacker_blueprint["cards_in_hand"] = new_hand
 
-					var def_debug_deck: Array = def_profile.get("debug_deck", [])
+					# Process Debug Overrides (Defender)
+					var def_debug_deck: Array = job["def_profile"].get("debug_deck", [])
 					if not def_debug_deck.is_empty():
 						var target_card: int = def_debug_deck[0]
 						var new_deck: Array = []
 						new_deck.resize(10)
 						new_deck.fill(target_card)
 						new_deck.shuffle()
-						
 						var new_hand: Array = []
 						var draw_count: int = min(5, new_deck.size())
-						for h in range(draw_count):
+						for h in range(draw_count): 
 							new_hand.append(new_deck.pop_back())
-							
 						defender_blueprint["combat_deck"] = new_deck
 						defender_blueprint["cards_in_hand"] = new_hand
 					
-					# 🎯 UPDATED: Combine library pile and starting hand arrays to pass down complete decklists
 					var atk_full_deck: Array = attacker_blueprint["combat_deck"] + attacker_blueprint["cards_in_hand"]
 					var def_full_deck: Array = defender_blueprint["combat_deck"] + defender_blueprint["cards_in_hand"]
 					
-					# 4. INSTANTIATE SIMULATION STATE FRAME
 					var match_state: Dictionary = _instantiate_match_state(attacker_blueprint, defender_blueprint)
+					match_state["card_db"] = job["flat_card_db"]
+					match_state["is_ground_combat"] = job["active_ground_combat"]
+					match_state[SimCombatEngine.Side.ATTACKER]["faction_id"] = job["atk_id"]
+					match_state[SimCombatEngine.Side.DEFENDER]["faction_id"] = job["def_id"]
+					match_state[SimCombatEngine.Side.ATTACKER]["name"] = atk_name
+					match_state[SimCombatEngine.Side.DEFENDER]["name"] = def_name
 					
-					match_state["card_db"] = flat_card_db
-					match_state["is_ground_combat"] = active_ground_combat
+					var attacker_won: bool = SimCombatEngine.run_full_match(match_state, job["flat_card_db"], Callable())
 					
-					match_state[SimCombatEngine.Side.ATTACKER]["faction_id"] = atk_id
-					match_state[SimCombatEngine.Side.DEFENDER]["faction_id"] = def_id
-					match_state[SimCombatEngine.Side.ATTACKER]["name"] = atk_name_string
-					match_state[SimCombatEngine.Side.DEFENDER]["name"] = def_name_string
-					
-					# 5. EXECUTE MATCH ENTIRELY WITHOUT TELEMETRY OR VISUAL OVERHEAD CALLBACKS
-					var attacker_won: bool = SimCombatEngine.run_full_match(match_state, flat_card_db, Callable())
-					
-					# 6. STREAM RAW COOPERATIVE METRICS RECORD DIRECTLY TO EXPORTER
-					exporter.log_match(
-						global_match_index, 
-						int(current_stage), 
-						atk_id,
-						def_id,
-						attacker_won, 
+					local_matches.append([
+						job["current_stage"],
+						job["atk_id"],
+						job["def_id"],
+						attacker_won,
 						atk_full_deck,
 						def_full_deck
-					)
+					])
 					
-					global_match_index += 1
+				shared_results_buffer[task_index] = local_matches, # End of inner processing loops
+			task_queue.size(),
+			simulation_workers 
+		)
 		
-		# Force-flush residual RAM blocks BEFORE switching combat theaters!
+		# 🎯 CORRECTED UNINDENTATION BLOCK STARTS HERE
+		# Back to theater level loop indentation depth (2 tabs)
+		while not WorkerThreadPool.is_group_task_completed(group_id):
+			OS.delay_msec(10)
+
+		# 5. SINGLE-THREADED COLLECTIVE FLUSH
+		print(" >> Group Tasks Completed. Streaming multi-lane logs sequentially down to file block...")
+		var final_match_index := 0
+		for pairing_chunk in shared_results_buffer:
+			if pairing_chunk != null:
+				for match_record in pairing_chunk:
+					exporter.log_match(
+						final_match_index,
+						match_record[0],
+						match_record[1],
+						match_record[2],
+						match_record[3],
+						match_record[4],
+						match_record[5]
+					)
+					final_match_index += 1
+					
 		exporter.flush_to_disk()
-		print(">> Successfully committed all %s records to disk stream." % theater_string)
+		print(" >> Successfully committed all %d threaded %s records to disk stream." % [final_match_index, theater_string])
 						
-	print("\n============ MATRIX SIMULATION COMPLETE ============")
-	print("Total Global Matches Run across All Matrices: %d" % global_match_index)
+	print("\n============ THREADED MATRIX SIMULATION COMPLETE ============")
 
 
 #endregion
