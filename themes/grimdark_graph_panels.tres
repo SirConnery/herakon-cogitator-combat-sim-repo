@@ -30,6 +30,63 @@ bg_color = Color(0.54901963, 0.1764706, 0.09803922, 1)
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_w4sq6"]
 bg_color = Color(0.08627451, 0.35686275, 0.54901963, 1)
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_igd2q"]
+bg_color = Color(0.23921569, 0.28627452, 0.3372549, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_bottom = 2
+border_color = Color(0.62352943, 0.7019608, 0.78039217, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_o8elw"]
+content_margin_left = 16.0
+content_margin_top = 7.0
+content_margin_right = 19.0
+content_margin_bottom = 7.0
+bg_color = Color(0.14509805, 0.18039216, 0.21960784, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+corner_detail = 3
+expand_margin_right = 3.0
+shadow_color = Color(0, 0, 0, 1)
+shadow_size = 2
+shadow_offset = Vector2(1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cl0re"]
+content_margin_left = 16.0
+content_margin_top = 9.0
+content_margin_right = 22.0
+content_margin_bottom = 9.0
+bg_color = Color(0.23921569, 0.29411766, 0.34901962, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.7176471, 0, 1)
+corner_detail = 3
+expand_margin_right = 6.0
+shadow_color = Color(0, 0, 0, 1)
+shadow_size = 2
+shadow_offset = Vector2(1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sjb4q"]
+content_margin_left = 16.0
+content_margin_top = 6.0
+content_margin_right = 16.0
+content_margin_bottom = 6.0
+bg_color = Color(0.11764706, 0.14509805, 0.1764706, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.62352943, 0.7019608, 0.78039217, 1)
+corner_detail = 3
+shadow_color = Color(0, 0, 0, 1)
+shadow_size = 2
+shadow_offset = Vector2(1, 1)
+
 [resource]
 FactionTitleLabel/base_type = &"Label"
 FactionTitleLabel/colors/font_color = Color(1, 0.62352943, 0, 1)
@@ -46,5 +103,15 @@ ProgressBarKhorneRed/styles/fill = SubResource("StyleBoxFlat_41sl7")
 ProgressBarMacraggeBlue/base_type = &"ProgressBar"
 ProgressBarMacraggeBlue/styles/_ = null
 ProgressBarMacraggeBlue/styles/fill = SubResource("StyleBoxFlat_w4sq6")
+TabContainer/colors/font_hovered_color = Color(1, 1, 1, 1)
+TabContainer/colors/font_outline_color = Color(0.07058824, 0.078431375, 0.09019608, 1)
+TabContainer/colors/font_selected_color = Color(1, 0.7176471, 0, 1)
+TabContainer/colors/font_unselected_color = Color(0.7294118, 0.77254903, 0.8156863, 1)
+TabContainer/constants/outline_size = 4
+TabContainer/constants/tab_separation = 6
+TabContainer/styles/panel = SubResource("StyleBoxFlat_igd2q")
+TabContainer/styles/tab_hovered = SubResource("StyleBoxFlat_o8elw")
+TabContainer/styles/tab_selected = SubResource("StyleBoxFlat_cl0re")
+TabContainer/styles/tab_unselected = SubResource("StyleBoxFlat_sjb4q")
 single_unit_container/base_type = &"VBoxContainer"
 single_unit_container/constants/separation = 0
