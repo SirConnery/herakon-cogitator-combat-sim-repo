@@ -33,10 +33,15 @@ func _populate_container(container: Control, sorted_card_data: Array[Dictionary]
 	for card in sorted_card_data:
 		var bar_instance = FACTION_BAR_V.instantiate()
 		container.add_child(bar_instance)
-		bar_instance.populate_bar(card["name"], card["rate"], card["wins"])
+		
+		# 🎯 UPDATED: Extract the games count, falling back to wins if absent
+		var total_games: int = card.get("games", card["wins"])
+		
+		# 🎯 UPDATED: Forward all 4 required properties down to the component script layout
+		bar_instance.populate_bar(card["name"], card["rate"], card["wins"], total_games)
 
 
-## 🎯 UPDATED: Instantiates cross-faction matchup grids for Overall, Attacker, and Defender lanes
+## Instantiates cross-faction matchup grids for Overall, Attacker, and Defender lanes
 func _populate_matchup_matrix(matchup_data: Array[Dictionary]) -> void:
 	var matrix_containers = [
 		faction_card_matchups_overall_values,

@@ -34,6 +34,13 @@ size_flags_vertical = 1
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
-size_flags_vertical = 0
 text = "Winrate"
+horizontal_alignment = 2
+
+[node name="MatchCountLabel" type="Label" parent="." unique_id=854570234]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Match Count"
 horizontal_alignment = 2

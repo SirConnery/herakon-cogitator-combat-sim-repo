@@ -34,6 +34,14 @@ size_flags_vertical = 0
 text = "Winrate"
 horizontal_alignment = 1
 
+[node name="MatchCountLabel" type="Label" parent="." unique_id=1869992987]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 0
+text = "Match Count"
+horizontal_alignment = 1
+
 [node name="WinRateBar" type="ProgressBar" parent="." unique_id=1019930215]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 300)
