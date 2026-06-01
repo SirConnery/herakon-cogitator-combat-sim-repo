@@ -4,7 +4,7 @@ class_name SimController
 
 #region Mass Combat Sim variables
 # ─── RUN MODE CONFIGURATION ───
-var iterations_per_matchup: int = 100
+var iterations_per_matchup: int = 1000
 @export_range(1, 24) var simulation_workers: int = 16
 @export var simulate_void: bool = false
 
@@ -69,173 +69,152 @@ func _execute_simulation_heavy_lifting() -> void:
 	var flat_card_db: Dictionary = _flatten_card_database(raw_cards)
 	var exporter := SimDataExporter.new()
 
-	# Clear baseline counters
 	completed_chunks = 0
 	total_chunks = 0
 	
 	print("============ STARTING THREADED MATRIX SIMULATION ============")
-	print("Pool Size: %d factions  |  Matches per pairing: %d" % [factions_to_sim.size(), iterations_per_matchup])
-
-	# THEATER BLOCK SEPARATION: Forces clean execution blocks for Ground first, then Void
+	
 	for active_ground_combat in [true, false]:
-		
-		# Safety short-circuit check for the Void theater loop
 		if not active_ground_combat and not simulate_void:
-			print("\n>> SKIPPING BLOCK RUN: VOID COMBAT (Disabled via toggle variable)")
 			continue
 			
-		var theater_string := "GROUND COMBAT" if active_ground_combat else "VOID COMBAT"
 		var file_suffix := "ground" if active_ground_combat else "void"
-		
-		# Dynamically isolate target data file paths per theater block
 		exporter.file_path_binary = "user://simulation_%s_data.dat" % file_suffix
 		exporter.clear_previous_data() 
-		
-		print("\n====================================================")
-		print("INITIALIZING BLOCK RUN: %s" % theater_string)
-		print("Target Destination: %s" % exporter.file_path_binary)
-		print("====================================================")
 
-		# 1. COMPILE ALL JOBS INTO A FLAT THREAD-SAFE WORK QUEUE (Main Thread)
-		var task_queue: Array[Dictionary] = []
+		# Compile queue using flat arrays
+		# Layout: [atk_id, def_id, current_stage, active_ground_combat, atk_override, def_override]
+		var task_queue: Array[Array] = []
 		
-		# Loop through every stage index explicitly to populate the complete balance matrix
-		for stage_idx in [0, 1, 2]: # 0 = Early, 1 = Mid, 2 = Late
+		for stage_idx in [0, 1, 2]:
 			for atk_id in factions_to_sim:
 				for def_id in factions_to_sim:
-					if atk_id == def_id:
+					if atk_id == def_id: 
 						continue
 					
-					# Pre-resolve string lookup names safely on the single main thread here
-					var atk_name_string: String = raw_factions.get(atk_id, {}).get("name", FactionRegistry.FactionID.keys()[atk_id])
-					var def_name_string: String = raw_factions.get(def_id, {}).get("name", FactionRegistry.FactionID.keys()[def_id])
+					# Cache the debug decks exactly ONCE here instead of on workers
+					var atk_profile: Dictionary = raw_factions.get(atk_id, {})
+					var def_profile: Dictionary = raw_factions.get(def_id, {})
+					var atk_debug: Array = atk_profile.get("debug_deck", [])
+					var def_debug: Array = def_profile.get("debug_deck", [])
 					
-					task_queue.append({
-						"atk_id": atk_id,
-						"def_id": def_id,
-						"atk_name": atk_name_string,
-						"def_name": def_name_string,
-						"active_ground_combat": active_ground_combat,
-						"current_stage": stage_idx,
-						"flat_card_db": flat_card_db,
-						"raw_factions": raw_factions,
-						"atk_profile": raw_factions.get(atk_id, {}),
-						"def_profile": raw_factions.get(def_id, {})
-					})
+					var atk_override: Array = []
+					if not atk_debug.is_empty():
+						atk_override.resize(10)
+						atk_override.fill(atk_debug[0])
+						
+					var def_override: Array = []
+					if not def_debug.is_empty():
+						def_override.resize(10)
+						def_override.fill(def_debug[0])
 
-		# Update the progressive target ceiling dynamically
+					task_queue.append([
+						atk_id,
+						def_id,
+						stage_idx,
+						active_ground_combat,
+						atk_override,
+						def_override
+					])
+
 		total_chunks += task_queue.size()
 
-		# 2. INTRODUCE THREAD-SAFE SHARED ARRAYS
 		var shared_results_buffer: Array = []
 		shared_results_buffer.resize(task_queue.size())
 		
-		# 3. SPIN UP INDEPENDENT BATCH WORKER GROUPS
 		var group_id = WorkerThreadPool.add_group_task(
 			func(task_index: int):
-				var job: Dictionary = task_queue[task_index]
+				var job: Array = task_queue[task_index]
 				var local_matches: Array = []
 				
-				# Thread-safe direct string extraction from job metadata
-				var atk_name: String = job["atk_name"]
-				var def_name: String = job["def_name"]
+				# Unpack parameters from sequential array indices (Blistering Fast)
+				var job_atk_id: int = job[0]
+				var job_def_id: int = job[1]
+				var job_stage: int  = job[2]
+				var is_ground: bool = job[3]
+				var cached_atk_override: Array = job[4]
+				var cached_def_override: Array = job[5]
 				
-				# CACHE OVERRIDES LEVEL 1: Pull allocation logic completely out of the inner loops
-				var debug_atk_deck_override: Array = []
-				var atk_debug_deck: Array = job["atk_profile"].get("debug_deck", [])
-				if not atk_debug_deck.is_empty():
-					var target_card: int = atk_debug_deck[0]
-					debug_atk_deck_override.resize(10)
-					debug_atk_deck_override.fill(target_card)
-					
-				var debug_def_deck_override: Array = []
-				var def_debug_deck: Array = job["def_profile"].get("debug_deck", [])
-				if not def_debug_deck.is_empty():
-					var target_card: int = def_debug_deck[0]
-					debug_def_deck_override.resize(10)
-					debug_def_deck_override.fill(target_card)
-				
-				# HIGH SPEED CORE MATCH LOOP
 				for i in range(iterations_per_matchup):
 					var att_count := randi_range(1, 5)
 					var def_count := randi_range(1, 5)
 					
-					var attacker_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(job["atk_id"], job["current_stage"], att_count, job["active_ground_combat"], job["raw_factions"])
-					var defender_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(job["def_id"], job["current_stage"], def_count, job["active_ground_combat"], job["raw_factions"])
+					var attacker_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(job_atk_id, job_stage, att_count, is_ground, raw_factions)
+					var defender_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(job_def_id, job_stage, def_count, is_ground, raw_factions)
 					
-					# Process Attacker Debug Blueprints instantly from clean lookups
-					if not debug_atk_deck_override.is_empty():
-						var running_deck := debug_atk_deck_override.duplicate()
+					# Process Attacker overrides using pre-allocated arrays
+					if not cached_atk_override.is_empty():
+						var running_deck := cached_atk_override.duplicate()
 						running_deck.shuffle()
 						var new_hand: Array = []
-						var draw_count: int = min(5, running_deck.size())
-						for h in range(draw_count): 
+						for h in range(min(5, running_deck.size())): 
 							new_hand.append(running_deck.pop_back())
 						attacker_blueprint["combat_deck"] = running_deck
 						attacker_blueprint["cards_in_hand"] = new_hand
 
-					# Process Defender Debug Blueprints instantly from clean lookups
-					if not debug_def_deck_override.is_empty():
-						var running_deck := debug_def_deck_override.duplicate()
+					# Process Defender overrides using pre-allocated arrays
+					if not cached_def_override.is_empty():
+						var running_deck := cached_def_override.duplicate()
 						running_deck.shuffle()
 						var new_hand: Array = []
-						var draw_count: int = min(5, running_deck.size())
-						for h in range(draw_count): 
+						for h in range(min(5, running_deck.size())): 
 							new_hand.append(running_deck.pop_back())
 						defender_blueprint["combat_deck"] = running_deck
 						defender_blueprint["cards_in_hand"] = new_hand
 					
-					var atk_full_deck: Array = attacker_blueprint["combat_deck"] + attacker_blueprint["cards_in_hand"]
-					var def_full_deck: Array = defender_blueprint["combat_deck"] + defender_blueprint["cards_in_hand"]
-					
+					# Instantiate match
 					var match_state: Dictionary = _instantiate_match_state(attacker_blueprint, defender_blueprint)
-					match_state["card_db"] = job["flat_card_db"]
-					match_state["is_ground_combat"] = job["active_ground_combat"]
-					match_state[SimCombatEngine.Side.ATTACKER]["faction_id"] = job["atk_id"]
-					match_state[SimCombatEngine.Side.DEFENDER]["faction_id"] = job["def_id"]
-					match_state[SimCombatEngine.Side.ATTACKER]["name"] = atk_name
-					match_state[SimCombatEngine.Side.DEFENDER]["name"] = def_name
+					match_state["card_db"] = flat_card_db
+					match_state["is_ground_combat"] = is_ground
+					match_state[SimCombatEngine.Side.ATTACKER]["faction_id"] = job_atk_id
+					match_state[SimCombatEngine.Side.DEFENDER]["faction_id"] = job_def_id
 					
-					var attacker_won: bool = SimCombatEngine.run_full_match(match_state, job["flat_card_db"], Callable())
+					# Run match with blank names (saves massive string mapping overhead)
+					match_state[SimCombatEngine.Side.ATTACKER]["name"] = ""
+					match_state[SimCombatEngine.Side.DEFENDER]["name"] = ""
 					
-					# Pure raw telemetry pack arrangement
+					var attacker_won: bool = SimCombatEngine.run_full_match(match_state, flat_card_db, Callable())
+					
+					# 🎯 OPTIMIZATION: Pack split arrays individually. Bypasses '+' allocation loops entirely.
 					local_matches.append([
-						job["current_stage"],
-						job["atk_id"],
-						job["def_id"],
+						job_stage,
+						job_atk_id,
+						job_def_id,
 						attacker_won,
-						atk_full_deck,
-						def_full_deck
+						attacker_blueprint["combat_deck"],
+						attacker_blueprint["cards_in_hand"],
+						defender_blueprint["combat_deck"],
+						defender_blueprint["cards_in_hand"]
 					])
 					
 				shared_results_buffer[task_index] = local_matches
-				completed_chunks += 1 # Lockless tracking update
+				completed_chunks += 1
 		, task_queue.size(), simulation_workers)
 		
-		# Sync block gate execution processing line
 		while not WorkerThreadPool.is_group_task_completed(group_id):
 			OS.delay_msec(1)
 
 		# 5. SINGLE-THREADED COLLECTIVE FLUSH
-		print(" >> Group Tasks Completed. Streaming multi-lane logs sequentially down to file block...")
 		var final_match_index := 0
 		for pairing_chunk in shared_results_buffer:
 			if pairing_chunk != null:
 				for match_record in pairing_chunk:
-					# Hand off all 6 array indices smoothly down to log_match setup
+					# Recombine here right before the disk stream line
+					var atk_full: Array = match_record[4] + match_record[5]
+					var def_full: Array = match_record[6] + match_record[7]
+					
 					exporter.log_match(
 						final_match_index,
-						match_record[0], # current_stage
-						match_record[1], # atk_id
-						match_record[2], # def_id
-						match_record[3], # attacker_won
-						match_record[4], # atk_full_deck
-						match_record[5]  # def_full_deck
+						match_record[0],  # job_stage
+						match_record[1],  # job_atk_id
+						match_record[2],  # job_def_id
+						match_record[3],  # attacker_won
+						atk_full,         # recombined attacker profile
+						def_full          # recombined defender profile
 					)
 					final_match_index += 1
 					
 		exporter.flush_to_disk()
-		print(" >> Successfully committed all %d threaded %s records to disk stream." % [final_match_index, theater_string])
 						
 	print("\n============ THREADED MATRIX SIMULATION COMPLETE ============")
 	G_SimEvents.emit_signal.call_deferred("mass_sim_completed")
