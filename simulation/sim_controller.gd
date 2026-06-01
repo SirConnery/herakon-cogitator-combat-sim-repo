@@ -4,7 +4,7 @@ class_name SimController
 
 #region Mass Combat Sim variables
 # ─── RUN MODE CONFIGURATION ───
-var iterations_per_matchup: int = 1000
+var iterations_per_matchup: int = 100
 @export_range(1, 24) var simulation_workers: int = 16
 @export var simulate_void: bool = false
 

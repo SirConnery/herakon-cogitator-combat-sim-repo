@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cc5gyblwmlnoj"]
+
+[ext_resource type="Script" uid="uid://b25p443hrmrup" path="res://globals/g_sim_events.gd" id="1_b2nop"]
+
+[node name="G_SimEvents" type="Node" unique_id=1655151247]
+script = ExtResource("1_b2nop")
