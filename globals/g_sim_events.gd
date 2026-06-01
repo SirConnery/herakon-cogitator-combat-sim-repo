@@ -1,7 +1,6 @@
 extends Node
 
-# Emitted whenever a matrix matchup chunk completes processing
-signal mass_sim_progress_updated(current: int, total: int)
+signal mass_sim_completed
 
-func post_progress(current: int, total: int) -> void:
-	mass_sim_progress_updated.emit(current, total)
+func mass_combat_simulation_done() -> void:
+	mass_sim_completed.emit()

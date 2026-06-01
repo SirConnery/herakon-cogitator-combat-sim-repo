@@ -56,13 +56,23 @@ func _ready() -> void:
 #region Mass Combat Simulation
 
 ## High-speed round-robin matrix simulation. 
+var total_chunks: int = 0
+var completed_chunks: int = 0
+
 func run_mass_combat_simulation() -> void:
+	WorkerThreadPool.add_task(_execute_simulation_heavy_lifting)
+
+@warning_ignore("confusable_capture_reassignment")
+func _execute_simulation_heavy_lifting() -> void:
 	var raw_cards: Dictionary = CardRegistry.get_database()
 	var raw_factions: Dictionary = FactionRegistry.get_database()
 	var flat_card_db: Dictionary = _flatten_card_database(raw_cards)
-
 	var exporter := SimDataExporter.new()
 
+	# Clear baseline counters
+	completed_chunks = 0
+	total_chunks = 0
+	
 	print("============ STARTING THREADED MATRIX SIMULATION ============")
 	print("Pool Size: %d factions  |  Matches per pairing: %d" % [factions_to_sim.size(), iterations_per_matchup])
 
@@ -89,7 +99,7 @@ func run_mass_combat_simulation() -> void:
 		# 1. COMPILE ALL JOBS INTO A FLAT THREAD-SAFE WORK QUEUE (Main Thread)
 		var task_queue: Array[Dictionary] = []
 		
-		# 🎯 UPDATED: Loop through every stage index explicitly to populate the complete balance matrix
+		# Loop through every stage index explicitly to populate the complete balance matrix
 		for stage_idx in [0, 1, 2]: # 0 = Early, 1 = Mid, 2 = Late
 			for atk_id in factions_to_sim:
 				for def_id in factions_to_sim:
@@ -106,12 +116,15 @@ func run_mass_combat_simulation() -> void:
 						"atk_name": atk_name_string,
 						"def_name": def_name_string,
 						"active_ground_combat": active_ground_combat,
-						"current_stage": stage_idx, # 🎯 UPDATED: Assigns the decoupled iteration stage index
+						"current_stage": stage_idx,
 						"flat_card_db": flat_card_db,
 						"raw_factions": raw_factions,
 						"atk_profile": raw_factions.get(atk_id, {}),
 						"def_profile": raw_factions.get(def_id, {})
 					})
+
+		# Update the progressive target ceiling dynamically
+		total_chunks += task_queue.size()
 
 		# 2. INTRODUCE THREAD-SAFE SHARED ARRAYS
 		var shared_results_buffer: Array = []
@@ -196,11 +209,12 @@ func run_mass_combat_simulation() -> void:
 					])
 					
 				shared_results_buffer[task_index] = local_matches
+				completed_chunks += 1 # Lockless tracking update
 		, task_queue.size(), simulation_workers)
 		
 		# Sync block gate execution processing line
 		while not WorkerThreadPool.is_group_task_completed(group_id):
-			OS.delay_msec(10)
+			OS.delay_msec(1)
 
 		# 5. SINGLE-THREADED COLLECTIVE FLUSH
 		print(" >> Group Tasks Completed. Streaming multi-lane logs sequentially down to file block...")
@@ -224,7 +238,7 @@ func run_mass_combat_simulation() -> void:
 		print(" >> Successfully committed all %d threaded %s records to disk stream." % [final_match_index, theater_string])
 						
 	print("\n============ THREADED MATRIX SIMULATION COMPLETE ============")
-
+	G_SimEvents.emit_signal.call_deferred("mass_sim_completed")
 
 #endregion
 

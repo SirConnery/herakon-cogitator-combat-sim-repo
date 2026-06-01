@@ -190,12 +190,12 @@ layout_mode = 2
 
 [node name="OtherUI" type="VBoxContainer" parent="MainLayout/UserControls/CombatInfoPanel" unique_id=1746756939]
 layout_mode = 2
+size_flags_vertical = 4
 
 [node name="CombatAreaValue" type="Label" parent="MainLayout/UserControls/CombatInfoPanel/OtherUI" unique_id=2064207568]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 1
 text = "Combat Area: World"
 horizontal_alignment = 1
 
@@ -203,7 +203,6 @@ horizontal_alignment = 1
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 1
 text = "Space Marines vs Orks"
 horizontal_alignment = 1
 
@@ -211,7 +210,6 @@ horizontal_alignment = 1
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 1
 text = "Game Stage: "
 horizontal_alignment = 1
 
