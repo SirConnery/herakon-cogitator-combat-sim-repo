@@ -40,7 +40,7 @@ static func get_database() -> Dictionary:
 	# =========================================================================
 	db[FactionID.CHAOS_SPACE_MARINES] = {
 		"name": "Chaos",
-		"debug_deck": [],
+		"debug_deck": [2010],
 		"upgrade_deck": [2006,2007,2008,2009,2010,2011,2012,2013,2014],
 		"starting_combat_deck": [2001,2001,2002,2002,2003,2003,2004,2004,2005,2005],
 		"combat_deck": [],

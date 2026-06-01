@@ -1030,6 +1030,20 @@ static func is_damage_immunity_active(state_data: Dictionary) -> bool:
 		
 	return false
 
+static func has_tier_0_units(side_data: Dictionary) -> bool:
+	var squads = side_data.get("squads", [])
+	if squads is Array:
+		for squad in squads:
+			if squad is Dictionary and int(squad.get("tier", -1)) == 0:
+				var alive_figs = squad.get("alive_figures", [])
+				if alive_figs is Array:
+					for hp in alive_figs:
+						if int(hp) > 0:
+							return true # 🎯 SHORT-CIRCUIT: Found an alive figure, stop checking!
+	return false
+
+
+
 #endregion
 
 #region Passive helper functions
@@ -1779,6 +1793,9 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 			condition_passed = _has_any_unrouted_units(opp_side_data)
 		CardData.ConditionType.OPPONENT_HAS_NO_UNROUTED_UNITS:
 			condition_passed = not _has_any_unrouted_units(opp_side_data)
+		
+		CardData.ConditionType.HAS_TIER_0_UNITS:
+			condition_passed = has_tier_0_units(side_data)
 		
 		# --- FACTION SPECIFIC ATOMIC CHECKS ---
 		CardData.ConditionType.OPPONENT_HAS_TWO_OR_MORE_DEFENSE_TOKENS:
