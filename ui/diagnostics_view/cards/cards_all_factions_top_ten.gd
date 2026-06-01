@@ -23,8 +23,8 @@ func initialize_global_card_rows(sorted_card_data: Array[Dictionary]) -> void:
 		var bar_instance = FACTION_BAR_V.instantiate()
 		cards_all_factions_top_ten_values.add_child(bar_instance)
 		
-		# 🎯 UPDATED: Safely grab total games played tracking details from your dictionary
+		#  UPDATED: Safely grab total games played tracking details from your dictionary
 		var total_games: int = card.get("games", card["wins"])
 		
-		# 🎯 UPDATED: Pass all 4 telemetry elements down to the vertical UI components
+		#  UPDATED: Pass all 4 telemetry elements down to the vertical UI components
 		bar_instance.populate_bar(card["name"], card["rate"], card["wins"], total_games)

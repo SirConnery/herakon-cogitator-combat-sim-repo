@@ -209,7 +209,7 @@ func _on_defender_units_toggle_changed(_pressed: bool) -> void:
 func _populate_card_dropdown(dropdown: OptionButton, faction_id: int, active_deck: Array) -> void:
 	if sim == null: return
 	dropdown.clear()
-	# 🎯 REMOVED: Redundant [ Clear Deck Selections ] entry
+	#  REMOVED: Redundant [ Clear Deck Selections ] entry
 	
 	var raw_factions = FactionRegistry.get_database()
 	if not raw_factions.has(faction_id): return

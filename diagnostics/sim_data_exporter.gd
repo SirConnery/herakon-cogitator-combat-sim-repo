@@ -5,7 +5,7 @@ var _buffer: Array[Array] = []
 var _buffer_limit := 10000
 
 # Default fallback path, dynamically overwritten by the simulation controller
-var file_path_binary := "user://simulation_raw_data.dat"
+var file_path_binary := "res://export/simulation_raw_data.dat"
 
 func clear_previous_data() -> void:
 	# Wipe old logs before starting a fresh generation loop
@@ -78,7 +78,7 @@ func export_current_to_csv(csv_destination_path: String) -> void:
 			for card_id in data[6]:
 				def_string_array.append(str(card_id))
 			
-			# 🎯 UPDATED: Variables renamed to track complete arrays safely inside table cells
+			#  UPDATED: Variables renamed to track complete arrays safely inside table cells
 			var atk_deck_str = ";".join(atk_string_array) 
 			var def_deck_str = ";".join(def_string_array)
 			

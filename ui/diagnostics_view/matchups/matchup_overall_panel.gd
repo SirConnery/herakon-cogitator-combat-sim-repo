@@ -27,7 +27,7 @@ func initialize_real_matchup_row(focus_faction_name: String, calculated_matchups
 	matchup_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	matchup_row.add_theme_constant_override("separation", 24)
 	
-	# 🎯 UPDATED: Infers "overall_games", "atk_games", or "def_games" from your wins_key pattern
+	#  UPDATED: Infers "overall_games", "atk_games", or "def_games" from your wins_key pattern
 	var matches_key: String = wins_key.replace("wins", "games")
 		
 	# Drop in your new specialized vertical bar component scenes
@@ -36,12 +36,12 @@ func initialize_real_matchup_row(focus_faction_name: String, calculated_matchups
 		var real_rate: float = data[rate_key]
 		var real_wins: int = data[wins_key]
 		
-		# 🎯 UPDATED: Extract context-appropriate matches, falling back to wins if key tracking misses
+		#  UPDATED: Extract context-appropriate matches, falling back to wins if key tracking misses
 		var real_matches: int = data.get(matches_key, real_wins)
 		
 		# Instantiate your concrete vertical bar scene asset
 		var col = FACTION_BAR_SCENE_V.instantiate() as FactionBarV
 		matchup_row.add_child(col)
 		
-		# 🎯 UPDATED: Pass all 4 tracking arguments safely to the component script layout
+		#  UPDATED: Pass all 4 tracking arguments safely to the component script layout
 		col.populate_bar(enemy_name, real_rate, real_wins, real_matches)

@@ -1039,7 +1039,7 @@ static func has_tier_0_units(side_data: Dictionary) -> bool:
 				if alive_figs is Array:
 					for hp in alive_figs:
 						if int(hp) > 0:
-							return true # 🎯 SHORT-CIRCUIT: Found an alive figure, stop checking!
+							return true #  SHORT-CIRCUIT: Found an alive figure, stop checking!
 	return false
 
 
@@ -1236,13 +1236,13 @@ static func _convert_dice_in_pool(target_side_data: Dictionary, target_role: Str
 	for conversion in range(max_to_convert):
 		var best_source_stat := -1
 		
-		# 🎯 Path A: Strict Source Pool Constraint Mode (e.g., Wraithguard Advance)
+		#  Path A: Strict Source Pool Constraint Mode (e.g., Wraithguard Advance)
 		if source_pool_type in stat_map:
 			var constrained_stat = stat_map[source_pool_type]
 			if target_side_data[constrained_stat] > 0 and constrained_stat != target_stat:
 				best_source_stat = constrained_stat
 		
-		# 🎯 Path B: Generic Scavenger Mode (e.g., Blessed Power Armour)
+		#  Path B: Generic Scavenger Mode (e.g., Blessed Power Armour)
 		else:
 			var max_available_dice := 0
 			for src_stat in [Stat.OFFENCE, Stat.DEFENCE, Stat.MORALE]:
@@ -1827,7 +1827,7 @@ static func _execute_generic_conditional(fx: Array, token_pools: Array, side_dat
 			if EFFECT_RESOLVERS.has(sub_effect_type):
 				EFFECT_RESOLVERS[sub_effect_type].call(sub_fx, token_pools, side_data, role, card_id, units_valid, on_event)
 	else:
-		# 🎯 THE ELSE BRANCH PIPELINE
+		#  THE ELSE BRANCH PIPELINE
 		if not else_effects.is_empty():
 			if on_event.is_valid():
 				on_event.call("ability_triggered", [card_id, "↳ 🌊: Checking fallback conditions."])
@@ -1920,7 +1920,7 @@ static func _execute_convert_dice_to_specific_dice(fx: Array, _token_pools: Arra
 	var target_type: int = fx[1]      # fx[1] = target_type (0 = SELF, 1 = OPPONENT)
 	var max_to_convert: int = fx[2]   # fx[2] = count values limit
 	var target_pool_type: int = fx[3] # fx[3] = pool target category type
-	var source_pool_type: int = fx[6] if fx.size() > 6 else -1 # 🎯 Index 6 extracts strict source constraints
+	var source_pool_type: int = fx[6] if fx.size() > 6 else -1 #  Index 6 extracts strict source constraints
 	
 	var is_attacker := (role == "Attacker")
 	var targets_self := (target_type == 0)
@@ -2070,7 +2070,7 @@ static func _execute_gain_or_lose_combat_tokens(fx: Array, token_pools: Array, s
 	if is_opponent:
 		target_role = "Defender" if role == "Attacker" else "Attacker"
 		
-	# 🎯 Type Validation: Align log outputs with strict CombatTokenType enum rules
+	#  Type Validation: Align log outputs with strict CombatTokenType enum rules
 	var effective_token := _validate_token_type(pool_type)
 	var label := "Offence" if effective_token == CardData.CombatTokenType.OFFENSE else "Defence"
 	
@@ -2139,7 +2139,7 @@ static func _execute_gain_token_per_specific_dice(fx: Array, token_pools: Array,
 	if chosen_token_type == 0: # RANDOM choice evaluation
 		chosen_token_type = CardData.CombatTokenType.OFFENSE if (randi() % 2 == 0) else CardData.CombatTokenType.DEFENSE
 		
-	# 🎯 Type Validation: Protect telemetry layers from cross-enum garbage
+	#  Type Validation: Protect telemetry layers from cross-enum garbage
 	var verified_token := _validate_token_type(chosen_token_type)
 	var token_label := "Offence" if verified_token == CardData.CombatTokenType.OFFENSE else "Defence"
 
@@ -2365,7 +2365,7 @@ static func _execute_rout_lowest_tier(fx: Array, _token_pools: Array, side_data:
 	var opp_role := "Defender" if is_attacker else "Attacker"
 	var opp_side_data: Dictionary = parent_state.get(Side.DEFENDER if is_attacker else Side.ATTACKER, {})
 	
-	# 🎯 THE FIX: Read the target type from index 1 of the effect array
+	#  THE FIX: Read the target type from index 1 of the effect array
 	var target_type: int = fx[1] if fx.size() > 1 else CardData.TargetType.OPPONENT
 	
 	# Dynamically choose which side we are slicing into
@@ -2466,7 +2466,7 @@ static func _execute_discard_steal_icons(fx: Array, _token_pools: Array, side_da
 	if card_db.is_empty():
 		return
 
-	# 🎯 Dynamic Target Routing (Who are we harvesting icons from?)
+	#  Dynamic Target Routing (Who are we harvesting icons from?)
 	var target_type: int = fx[1] if fx.size() > 1 else CardData.TargetType.OPPONENT
 	var is_self := (target_type == CardData.TargetType.SELF)
 	
@@ -2549,7 +2549,7 @@ static func _execute_discard_worst_faceup_card(fx: Array, _token_pools: Array, s
 	var current_round: int = parent_state.get("current_round_index", 0)
 	var card_db: Dictionary = parent_state.get("card_db", {})
 
-	# 🎯 Dynamic target resolution
+	#  Dynamic target resolution
 	var target_type: int = fx[1] if fx.size() > 1 else CardData.TargetType.OPPONENT
 	var is_self := (target_type == CardData.TargetType.SELF)
 	
@@ -2582,7 +2582,7 @@ static func _execute_discard_best_faceup_card(fx: Array, _token_pools: Array, si
 	var current_round: int = parent_state.get("current_round_index", 0)
 	var card_db: Dictionary = parent_state.get("card_db", {})
 
-	# 🎯 Dynamic target resolution
+	#  Dynamic target resolution
 	var target_type: int = fx[1] if fx.size() > 1 else CardData.TargetType.OPPONENT
 	var is_self := (target_type == CardData.TargetType.SELF)
 	

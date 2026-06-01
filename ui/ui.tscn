@@ -41,6 +41,131 @@ tab_3/title = "Diagnostics View"
 layout_mode = 2
 metadata/_tab_index = 0
 
+[node name="MarginContainer" type="MarginContainer" parent="MainTabs/Home" unique_id=1823467700]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MainTabs/Home/MarginContainer" unique_id=1546894490]
+layout_mode = 2
+
+[node name="RichTextLabel" type="RichTextLabel" parent="MainTabs/Home/MarginContainer/ScrollContainer" unique_id=2135620861]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/normal_font_size = 24
+text = "
+Foreword:
+This is documentation on how the combat sim works. You should be familiar with the game’s rules since they won’t be explained here.
+-- 
+Cards played from hand are completely random with no strategies applied by factions. Below is the how each match is constructed.
+
+How damage is selected:
+When a side (attacker or defender) needs to allocate damage to their units the following is how the selection operates.
+
+Step 1: The \"Perfect Absorption\" Strategy (Zero Casualties)
+The AI scans all squads looking for a single, perfect target that can absorb the entire remaining damage pool in a single hit without dying.
+To choose this target, the engine checks if you have steady, unrouted units left on the field. It then applies a strict tactical hierarchy:
+•	Scenario A: The Front Line Holds (Unrouted Units Exist) If you have steady troops standing, already routed units are completely locked out and cannot take damage. The engine is forced to choose a healthy, unrouted unit with enough current Hit Points (HP) to survive the full damage pool.
+•	Scenario B: Complete Front-Line Collapse (No Unrouted Units Left) If every unit on your side of the battlefield is already routed the incoming damage hits an already routed unit that has enough HP to absorb the blow.
+If a perfect target is found in either scenario, it absorbs 100% of the damage pool, and the engine stops searching.
+
+
+
+Step 2: The \"Lethal Sacrifice\" Fallback (Casualty Management)
+If the damage pool is too large to be cleanly absorbed by a single unit in Step 1, the engine is forced to start killing units to chip away at the total damage. It looks for a Sacrifice Target to take a lethal blow.
+•	Damage Reduction: The engine selects a unit, records its remaining HP, and subtracts that exact amount from the incoming total_damage pool.
+•	Unit Destruction: The chosen unit's figure is completely destroyed and wiped from the battlefield.
+•	The \"Forced Overkill\" Rule (is_routing_lethal): If your game rules dictate that a panic/rout state is instantly fatal (is_routing_lethal = true), the engine will aggressively execute a healthy unit even if the remaining damage wouldn't normally kill it. It forces an overkill scenario because a partial hit would cause a panic state, which is treated as death anyway.
+Once the unit is sacrificed and the damage pool is reduced, the loop resets back to Step 1 with whatever damage is left over. It repeats this process until the damage pool hits 0 or all units are wiped out.
+
+
+1. Unit Tier Selection Odds
+When the engine picks a unit for a squad slot, these are the chances for each tier:
+Game Stage	Tier 0  	Tier 1 	Tier 2 	Tier 3
+Early Game	65%	30%	5%	0%
+Mid Game	35%	40%	25%	0%
+Late Game	15%	25%	35%	
+
+2. Card Upgrade Quantity Odds
+This determines how many total card slots in the starter deck will be selected for mutation/upgrades:
+Game Stage	 1 Card	2 Cards	3 Cards	4 Cards	5 Cards
+Early Game	 30%	50%	20%	0%	0%
+Mid Game	 0%	0%	50%	50%	0%
+Late Game 	 0%	0%	0%	80%         	20%
+
+3. Card Upgrade Quality Tiers
+Once the engine knows how many cards it is upgrading, it rolls against these percentages to see which upgrade pool those cards are pulled from:
+Game Stage	 Tier 0  	  Tier 2	  Tier 3
+Early Game	 100%	   0%	  0%
+Mid Game	 57.1%	   42.9%	  0%
+Late Game	 23.8%	   47.6%	  28.6%
+
+Current possible weaknesses of the engine:
+-	Unit odds are equal among all factions. So swarmer factions will on average still have the same amount of units as in combat as all others.
+
+
+CARDS:
+General principles:
+All cards are currently played with pure random choice from hand
+Always rally, rout and spawn units instead of gaining dice or tokens first.
+Always spend dice to rally, rout or destroy. Or to avoid being routed or destroyed.
+All choosing dice are just a random roll between them.
+When spending dice, Morale is always chosen first to spend.
+Always spend dice to gain tokens.
+
+Special checks:
+Eldar Spiritseer’s Guidance damage immunity cancels spending dice to gain any tokens.
+Eldar Fire Dragon’s Vengeance cancels spending dice to gain defence tokens.
+
+Abilities ignored:
+Retreat choices are completely ignored unless forced by opponent (currently 0 cards).
+Abilities that reveal information about opponent cards in hand are ignored.
+Abilities that spawn units on other areas or move units to other areas are ignored.
+
+Special Card abilities clarifications
+SM
+Ambush
+Unit: If opponent has morale dice it is spent. Else the unit is destroyed.
+
+Fury of the Ultramar 
+General: Opponent rerolls 1 defence. Then 50/50 whether you also roll defence.
+
+Drop Pod Assault
+Unit: Spend 1 Morale and place 1 Space Marine here
+
+Break the Line
+Unit: Opponent chooses lowest value card. Prioritized 1st tier, 2nd amount of icons on the card, 3rd random.
+
+Emperor’s Glory
+In rounds 1-2 ignore unit ability. In round 3 convert all safe dice to Morale. Calculated with opponent known combined attack vs self combined defence. Rest of the dice are turned into morale.
+
+Chaos
+Mark of Nurgle
+Unit: Always gain 4 shield tokens if opponent has routed unit.
+
+Inhuman Strength
+Unit: If you have a tier 0 unit, destroy it and gain 4 offence tokens.
+
+Chaos United
+Unit: Spawns highest allowed tier unit.
+
+Orks
+Gretchin 
+Unit: Always destroy.
+
+Eldar
+Psychic Lance
+Unit: Always gain 4 tokens unless it is the 1st combat round and you are attacking.
+"
+
 [node name="SingleCombatView" parent="MainTabs" unique_id=1865234252 instance=ExtResource("2_ks8t7")]
 visible = false
 layout_mode = 2

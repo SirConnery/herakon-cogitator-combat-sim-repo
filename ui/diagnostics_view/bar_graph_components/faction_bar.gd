@@ -6,7 +6,7 @@ var win_rate_bar: ProgressBar
 var win_count_label: Label
 var match_count_label: Label
 
-# 🎯 UPDATED: Added total_matches as a 4th parameter
+#  UPDATED: Added total_matches as a 4th parameter
 func populate_bar(faction_name_label: String, rate: float, total_wins: int, total_matches: int) -> void:
 	faction_name.text = faction_name_label
 	win_count_label.text = "(%d Wins)" % total_wins

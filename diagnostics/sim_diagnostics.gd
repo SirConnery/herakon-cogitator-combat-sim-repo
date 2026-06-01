@@ -43,7 +43,7 @@ func load_and_parse_binary(file_path: String, factions_pool: Array) -> bool:
 	# 2. DATA EXTRACTION CRUNCHING LOOP
 	while file.get_position() < file.get_length():
 		var data = file.get_var()
-		# 🎯 FIXED: Ensures data is a valid matrix row block before proceeding
+		#  FIXED: Ensures data is a valid matrix row block before proceeding
 		if data is Array and data.size() >= 7:
 			total_matches_processed += 1
 			
@@ -81,7 +81,6 @@ func _process_faction_metrics(atk_id: int, def_id: int, attacker_won: bool) -> v
 
 ## Internal aggregator for card performance tracking loops
 func _process_card_metrics(attacker_won: bool, atk_initial_hand: Array, def_initial_hand: Array) -> void:
-	# 🎯 OPTIMIZED: Constant time hash dictionaries replace heavy array lookups
 	var atk_unique := {}
 	var def_unique := {}
 	

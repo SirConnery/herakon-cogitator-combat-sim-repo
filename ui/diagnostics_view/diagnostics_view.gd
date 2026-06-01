@@ -77,7 +77,7 @@ func populate_diagnostics_dashboard() -> void:
 	data_processed = true
 	
 	sim_controller = ui.sim_controller
-	var binary_path := "user://simulation_ground_data.dat"
+	var binary_path := "res://export/simulation_ground_data.dat"
 	
 	#  Kept only your hard scene containers and tab sheets here to protect structural elements
 	var all_containers: Array[Control] = [
@@ -137,15 +137,15 @@ func populate_diagnostics_dashboard() -> void:
 	while file.get_position() < file.get_length():
 		var data = file.get_var()
 		
-		# 🎯 FIX: Adjusted step validation layout up to match the 7-element exporter payload
+		#  FIX: Adjusted step validation layout up to match the 7-element exporter payload
 		if data is Array and data.size() >= 7:
 			# data[0] is match_index (safely skipped for calculations)
-			var stage_id: int = data[1]       # 🎯 FIX: stage index is 1
-			var atk_id: int = data[2]         # 🎯 FIX: atk_id index is 2
-			var def_id: int = data[3]         # 🎯 FIX: def_id index is 3
-			var atk_won: bool = bool(data[4]) # 🎯 FIX: atk_won index is 4
-			var atk_deck: Array = data[5]     # 🎯 FIX: atk_deck index is 5
-			var def_deck: Array = data[6]     # 🎯 FIX: def_deck index is 6
+			var stage_id: int = data[1]       #  FIX: stage index is 1
+			var atk_id: int = data[2]         #  FIX: atk_id index is 2
+			var def_id: int = data[3]         #  FIX: def_id index is 3
+			var atk_won: bool = bool(data[4]) #  FIX: atk_won index is 4
+			var atk_deck: Array = data[5]     #  FIX: atk_deck index is 5
+			var def_deck: Array = data[6]     #  FIX: def_deck index is 6
 			
 			if matrix_cache[-1].has(atk_id) and matrix_cache[-1].has(def_id):
 				# Leaderboard global updates

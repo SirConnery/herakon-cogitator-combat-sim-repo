@@ -34,10 +34,10 @@ func _populate_container(container: Control, sorted_card_data: Array[Dictionary]
 		var bar_instance = FACTION_BAR_V.instantiate()
 		container.add_child(bar_instance)
 		
-		# 🎯 UPDATED: Extract the games count, falling back to wins if absent
+		#  UPDATED: Extract the games count, falling back to wins if absent
 		var total_games: int = card.get("games", card["wins"])
 		
-		# 🎯 UPDATED: Forward all 4 required properties down to the component script layout
+		#  UPDATED: Forward all 4 required properties down to the component script layout
 		bar_instance.populate_bar(card["name"], card["rate"], card["wins"], total_games)
 
 

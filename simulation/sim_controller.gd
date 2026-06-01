@@ -4,7 +4,7 @@ class_name SimController
 
 #region Mass Combat Sim variables
 # ─── RUN MODE CONFIGURATION ───
-var iterations_per_matchup: int = 1000
+var iterations_per_matchup: int = 10000
 @export_range(1, 24) var simulation_workers: int = 16
 @export var simulate_void: bool = false
 
@@ -79,7 +79,7 @@ func _execute_simulation_heavy_lifting() -> void:
 			continue
 			
 		var file_suffix := "ground" if active_ground_combat else "void"
-		exporter.file_path_binary = "user://simulation_%s_data.dat" % file_suffix
+		exporter.file_path_binary = "res://export/simulation_%s_data.dat" % file_suffix
 		exporter.clear_previous_data() 
 
 		# Compile queue using flat arrays
@@ -175,7 +175,7 @@ func _execute_simulation_heavy_lifting() -> void:
 					
 					var attacker_won: bool = SimCombatEngine.run_full_match(match_state, flat_card_db, Callable())
 					
-					# 🎯 OPTIMIZATION: Pack split arrays individually. Bypasses '+' allocation loops entirely.
+					#  OPTIMIZATION: Pack split arrays individually. Bypasses '+' allocation loops entirely.
 					local_matches.append([
 						job_stage,
 						job_atk_id,
@@ -231,7 +231,7 @@ func run_single_logged_combat(config: Dictionary) -> void:
 	# 1. RESOLVE CONFIGURABLE ENVIRONMENT RULES
 	current_stage = get_current_stage()
 	
-	# 🎯 FIXED: Relies strictly on the UI-selected combat theater state variable now
+	#  FIXED: Relies strictly on the UI-selected combat theater state variable now
 	var active_ground_combat := is_ground_combat
 		
 	# 2. RESOLVE MATCHUP IDENTITIES FROM CONFIG ENVELOPE (ANTI-MIRROR SECURE)
@@ -451,7 +451,7 @@ func _flatten_card_database(raw_db: Dictionary) -> Dictionary:
 func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_types: Array) -> Array:
 	var raw_effect_type: int = int(fx.effect_type)
 	var value_slot: Variant = fx.value
-	var flattened_else_choices: Array = [] # 🎯 Scratchpad for fallback branch data
+	var flattened_else_choices: Array = [] #  Scratchpad for fallback branch data
 	
 	# BOTH Choice and Conditional node blocks contain packed nested child arrays
 	if raw_effect_type == CardData.EffectType.CHOICE or raw_effect_type == CardData.EffectType.CONDITIONAL:
@@ -466,7 +466,7 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_t
 					
 		value_slot = flattened_choices
 		
-		# 🎯 RECURSIVE INTERCEPT: Flatten the false/else track for conditionals
+		#  RECURSIVE INTERCEPT: Flatten the false/else track for conditionals
 		if raw_effect_type == CardData.EffectType.CONDITIONAL and not fx.else_choices.is_empty():
 			for else_fx in fx.else_choices:
 				if else_fx != null:
@@ -491,7 +491,7 @@ func _flatten_single_effect(fx: CardEffect, is_general_ability: bool, req_unit_t
 		fx.condition_type,       # Index 7
 		fx.destruction_mode,     # Index 8
 		fx.gain_token_type,      # Index 9 (Strictly a CombatTokenType enum value)
-		flattened_else_choices   # 🎯 Index 10: Fallback / Else choices array
+		flattened_else_choices   #  Index 10: Fallback / Else choices array
 	]
 
 #endregion
