@@ -86,23 +86,32 @@ func run_mass_combat_simulation() -> void:
 		print("Target Destination: %s" % exporter.file_path_binary)
 		print("====================================================")
 
-		# 1. COMPILE ALL JOBS INTO A FLAT THREAD-SAFE WORK QUEUE
+		# 1. COMPILE ALL JOBS INTO A FLAT THREAD-SAFE WORK QUEUE (Main Thread)
 		var task_queue: Array[Dictionary] = []
-		for atk_id in factions_to_sim:
-			for def_id in factions_to_sim:
-				if atk_id == def_id:
-					continue
-				
-				task_queue.append({
-					"atk_id": atk_id,
-					"def_id": def_id,
-					"active_ground_combat": active_ground_combat,
-					"current_stage": get_current_stage(),
-					"flat_card_db": flat_card_db,
-					"raw_factions": raw_factions,
-					"atk_profile": raw_factions.get(atk_id, {}),
-					"def_profile": raw_factions.get(def_id, {})
-				})
+		
+		# 🎯 UPDATED: Loop through every stage index explicitly to populate the complete balance matrix
+		for stage_idx in [0, 1, 2]: # 0 = Early, 1 = Mid, 2 = Late
+			for atk_id in factions_to_sim:
+				for def_id in factions_to_sim:
+					if atk_id == def_id:
+						continue
+					
+					# Pre-resolve string lookup names safely on the single main thread here
+					var atk_name_string: String = raw_factions.get(atk_id, {}).get("name", FactionRegistry.FactionID.keys()[atk_id])
+					var def_name_string: String = raw_factions.get(def_id, {}).get("name", FactionRegistry.FactionID.keys()[def_id])
+					
+					task_queue.append({
+						"atk_id": atk_id,
+						"def_id": def_id,
+						"atk_name": atk_name_string,
+						"def_name": def_name_string,
+						"active_ground_combat": active_ground_combat,
+						"current_stage": stage_idx, # 🎯 UPDATED: Assigns the decoupled iteration stage index
+						"flat_card_db": flat_card_db,
+						"raw_factions": raw_factions,
+						"atk_profile": raw_factions.get(atk_id, {}),
+						"def_profile": raw_factions.get(def_id, {})
+					})
 
 		# 2. INTRODUCE THREAD-SAFE SHARED ARRAYS
 		var shared_results_buffer: Array = []
@@ -114,9 +123,26 @@ func run_mass_combat_simulation() -> void:
 				var job: Dictionary = task_queue[task_index]
 				var local_matches: Array = []
 				
-				var atk_name: String = job["atk_profile"].get("name", FactionRegistry.FactionID.keys()[job["atk_id"]])
-				var def_name: String = job["def_profile"].get("name", FactionRegistry.FactionID.keys()[job["def_id"]])
+				# Thread-safe direct string extraction from job metadata
+				var atk_name: String = job["atk_name"]
+				var def_name: String = job["def_name"]
 				
+				# CACHE OVERRIDES LEVEL 1: Pull allocation logic completely out of the inner loops
+				var debug_atk_deck_override: Array = []
+				var atk_debug_deck: Array = job["atk_profile"].get("debug_deck", [])
+				if not atk_debug_deck.is_empty():
+					var target_card: int = atk_debug_deck[0]
+					debug_atk_deck_override.resize(10)
+					debug_atk_deck_override.fill(target_card)
+					
+				var debug_def_deck_override: Array = []
+				var def_debug_deck: Array = job["def_profile"].get("debug_deck", [])
+				if not def_debug_deck.is_empty():
+					var target_card: int = def_debug_deck[0]
+					debug_def_deck_override.resize(10)
+					debug_def_deck_override.fill(target_card)
+				
+				# HIGH SPEED CORE MATCH LOOP
 				for i in range(iterations_per_matchup):
 					var att_count := randi_range(1, 5)
 					var def_count := randi_range(1, 5)
@@ -124,34 +150,26 @@ func run_mass_combat_simulation() -> void:
 					var attacker_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(job["atk_id"], job["current_stage"], att_count, job["active_ground_combat"], job["raw_factions"])
 					var defender_blueprint: Dictionary = GameStageGenerator.generate_faction_blueprint(job["def_id"], job["current_stage"], def_count, job["active_ground_combat"], job["raw_factions"])
 					
-					# Process Debug Overrides (Attacker)
-					var atk_debug_deck: Array = job["atk_profile"].get("debug_deck", [])
-					if not atk_debug_deck.is_empty():
-						var target_card: int = atk_debug_deck[0]
-						var new_deck: Array = []
-						new_deck.resize(10)
-						new_deck.fill(target_card)
-						new_deck.shuffle()
+					# Process Attacker Debug Blueprints instantly from clean lookups
+					if not debug_atk_deck_override.is_empty():
+						var running_deck := debug_atk_deck_override.duplicate()
+						running_deck.shuffle()
 						var new_hand: Array = []
-						var draw_count: int = min(5, new_deck.size())
+						var draw_count: int = min(5, running_deck.size())
 						for h in range(draw_count): 
-							new_hand.append(new_deck.pop_back())
-						attacker_blueprint["combat_deck"] = new_deck
+							new_hand.append(running_deck.pop_back())
+						attacker_blueprint["combat_deck"] = running_deck
 						attacker_blueprint["cards_in_hand"] = new_hand
 
-					# Process Debug Overrides (Defender)
-					var def_debug_deck: Array = job["def_profile"].get("debug_deck", [])
-					if not def_debug_deck.is_empty():
-						var target_card: int = def_debug_deck[0]
-						var new_deck: Array = []
-						new_deck.resize(10)
-						new_deck.fill(target_card)
-						new_deck.shuffle()
+					# Process Defender Debug Blueprints instantly from clean lookups
+					if not debug_def_deck_override.is_empty():
+						var running_deck := debug_def_deck_override.duplicate()
+						running_deck.shuffle()
 						var new_hand: Array = []
-						var draw_count: int = min(5, new_deck.size())
+						var draw_count: int = min(5, running_deck.size())
 						for h in range(draw_count): 
-							new_hand.append(new_deck.pop_back())
-						defender_blueprint["combat_deck"] = new_deck
+							new_hand.append(running_deck.pop_back())
+						defender_blueprint["combat_deck"] = running_deck
 						defender_blueprint["cards_in_hand"] = new_hand
 					
 					var atk_full_deck: Array = attacker_blueprint["combat_deck"] + attacker_blueprint["cards_in_hand"]
@@ -167,6 +185,7 @@ func run_mass_combat_simulation() -> void:
 					
 					var attacker_won: bool = SimCombatEngine.run_full_match(match_state, job["flat_card_db"], Callable())
 					
+					# Pure raw telemetry pack arrangement
 					local_matches.append([
 						job["current_stage"],
 						job["atk_id"],
@@ -176,13 +195,10 @@ func run_mass_combat_simulation() -> void:
 						def_full_deck
 					])
 					
-				shared_results_buffer[task_index] = local_matches, # End of inner processing loops
-			task_queue.size(),
-			simulation_workers 
-		)
+				shared_results_buffer[task_index] = local_matches
+		, task_queue.size(), simulation_workers)
 		
-		# 🎯 CORRECTED UNINDENTATION BLOCK STARTS HERE
-		# Back to theater level loop indentation depth (2 tabs)
+		# Sync block gate execution processing line
 		while not WorkerThreadPool.is_group_task_completed(group_id):
 			OS.delay_msec(10)
 
@@ -192,14 +208,15 @@ func run_mass_combat_simulation() -> void:
 		for pairing_chunk in shared_results_buffer:
 			if pairing_chunk != null:
 				for match_record in pairing_chunk:
+					# Hand off all 6 array indices smoothly down to log_match setup
 					exporter.log_match(
 						final_match_index,
-						match_record[0],
-						match_record[1],
-						match_record[2],
-						match_record[3],
-						match_record[4],
-						match_record[5]
+						match_record[0], # current_stage
+						match_record[1], # atk_id
+						match_record[2], # def_id
+						match_record[3], # attacker_won
+						match_record[4], # atk_full_deck
+						match_record[5]  # def_full_deck
 					)
 					final_match_index += 1
 					

@@ -136,13 +136,16 @@ func populate_diagnostics_dashboard() -> void:
 	var file = FileAccess.open(binary_path, FileAccess.READ)
 	while file.get_position() < file.get_length():
 		var data = file.get_var()
+		
+		# 🎯 FIX: Adjusted step validation layout up to match the 7-element exporter payload
 		if data is Array and data.size() >= 7:
-			var stage_id: int = data[1]
-			var atk_id: int = data[2]
-			var def_id: int = data[3]
-			var atk_won: bool = bool(data[4])
-			var atk_deck: Array = data[5]
-			var def_deck: Array = data[6]
+			# data[0] is match_index (safely skipped for calculations)
+			var stage_id: int = data[1]       # 🎯 FIX: stage index is 1
+			var atk_id: int = data[2]         # 🎯 FIX: atk_id index is 2
+			var def_id: int = data[3]         # 🎯 FIX: def_id index is 3
+			var atk_won: bool = bool(data[4]) # 🎯 FIX: atk_won index is 4
+			var atk_deck: Array = data[5]     # 🎯 FIX: atk_deck index is 5
+			var def_deck: Array = data[6]     # 🎯 FIX: def_deck index is 6
 			
 			if matrix_cache[-1].has(atk_id) and matrix_cache[-1].has(def_id):
 				# Leaderboard global updates
@@ -259,7 +262,6 @@ func populate_diagnostics_dashboard() -> void:
 		if card_profile:
 			card_name = card_profile.card_name
 		
-		# 🎯 UPDATED: Packed games variable into payload
 		sorted_card_list.append({
 			"name": card_name,
 			"rate": win_rate,
@@ -305,21 +307,18 @@ func populate_diagnostics_dashboard() -> void:
 			var combined_rate := 0.0
 			if combined_games > 0:
 				combined_rate = (float(combined_wins) / float(combined_games)) * 100.0
-			# 🎯 UPDATED: Packed games variable into payload
 			overall_list.append({"name": card_name, "rate": combined_rate, "wins": combined_wins, "games": combined_games})
 			
 			# 2. Tabulate Attacking Metric Lane
 			var atk_rate := 0.0
 			if stats["atk_games"] > 0:
 				atk_rate = (float(stats["atk_wins"]) / float(stats["atk_games"])) * 100.0
-			# 🎯 UPDATED: Packed games variable into payload
 			attacker_list.append({"name": card_name, "rate": atk_rate, "wins": stats["atk_wins"], "games": stats["atk_games"]})
 			
 			# 3. Tabulate Defending Metric Lane
 			var def_rate := 0.0
 			if stats["def_games"] > 0:
 				def_rate = (float(stats["def_wins"]) / float(stats["def_games"])) * 100.0
-			# 🎯 UPDATED: Packed games variable into payload
 			defender_list.append({"name": card_name, "rate": def_rate, "wins": stats["def_wins"], "games": stats["def_games"]})
 			
 			# 4. Tabulate Cross-Faction Performance Matchups for this Specific Card
@@ -348,7 +347,6 @@ func populate_diagnostics_dashboard() -> void:
 				if m_stats["def_games"] > 0:
 					card_def_rate = (float(m_stats["def_wins"]) / float(m_stats["def_games"])) * 100.0
 					
-				# 🎯 UPDATED: Packed matching lane sub-games keys directly into matrix package
 				compiled_card_matchups.append({
 					"enemy_name": enemy_name_string,
 					"overall_rate": m_rate,
@@ -399,19 +397,16 @@ func _process_and_render_group(stage_data: Dictionary, overall_box: VBoxContaine
 		var overall_rate := 0.0
 		if total_games > 0:
 			overall_rate = (float(total_wins) / float(total_games)) * 100.0
-		# 🎯 UPDATED: Packed games variable into payload
 		overall_list.append({"name": name_string, "rate": overall_rate, "wins": total_wins, "games": total_games})
 		
 		var atk_rate := 0.0
 		if stats["atk_games"] > 0:
 			atk_rate = (float(stats["atk_wins"]) / float(stats["atk_games"])) * 100.0
-		# 🎯 UPDATED: Packed games variable into payload
 		attack_list.append({"name": name_string, "rate": atk_rate, "wins": stats["atk_wins"], "games": stats["atk_games"]})
 		
 		var def_rate := 0.0
 		if stats["def_games"] > 0:
 			def_rate = (float(stats["def_wins"]) / float(stats["def_games"])) * 100.0
-		# 🎯 UPDATED: Packed games variable into payload
 		defense_list.append({"name": name_string, "rate": def_rate, "wins": stats["def_wins"], "games": stats["def_games"]})
 		
 	overall_list.sort_custom(func(a, b): return a["rate"] > b["rate"])
@@ -428,7 +423,6 @@ func _spawn_leaderboard_bars(sorted_data: Array[Dictionary], target_container: V
 		var bar_instance = FACTION_BAR_SCENE_H.instantiate()
 		target_container.add_child(bar_instance)
 		
-		# 🎯 UPDATED: Extract the newly packed "games" variable and pass it as the 4th parameter
 		var total_games: int = faction.get("games", faction["wins"])
 		bar_instance.populate_bar(faction["name"], faction["rate"], faction["wins"], total_games)
 
@@ -466,7 +460,6 @@ func _render_matchup_stage_group(stage_matrix_slice: Dictionary, target_containe
 			if total_games > 0:
 				overall_rate = (float(stats["atk_wins"] + stats["def_wins"]) / float(total_games)) * 100.0
 				
-			# 🎯 UPDATED: Packed context-aware game counters into matrix structure
 			compiled_matchups_list.append({
 				"enemy_name": enemy_name,
 				"overall_rate": overall_rate,
