@@ -67,7 +67,9 @@ text = "
 Foreword:
 This is documentation on how the combat sim works. You should be familiar with the game’s rules since they won’t be explained here.
 -- 
-Cards played from hand are completely random with no strategies applied by factions. Below is the how each match is constructed.
+The data for diagnostics has been made with 10k iterations per matchup. So Faction (attacker) vs faction (defender) 10k times. Since each faction plays against each other as both attacker and defender total matches between them will be 20k.
+
+Below is the how each match is constructed.
 
 How damage is selected:
 When a side (attacker or defender) needs to allocate damage to their units the following is how the selection operates.
