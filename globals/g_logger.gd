@@ -238,11 +238,49 @@ func engine_callback(event_type: String, data: Array) -> void:
 				var msg := "%s +%d %s +%d %s +%d %s" % [IMG_DICE, data[1], IMG_SWORD, data[2], IMG_SHIELD, data[3], IMG_MEDAL]
 				current_panel.append_console_log(msg)
 		
+		"dice_lost":
+			print("🎲 -> %s lost dice: -%d ⚔️ | -%d 🛡️ | -%d 🎖️" % [data[0], data[1], data[2], data[3]])
+			
+			if current_panel:
+				var msg := "%s -%d %s -%d %s -%d %s" % [IMG_DICE, data[1], IMG_SWORD, data[2], IMG_SHIELD, data[3], IMG_MEDAL]
+				current_panel.append_console_log(msg)
+		
 		"dice_rerolled_log":
 			print("🔄 [%s] Reroll: Lost 1 %s die -> Gained 1 %s die" % [data[0], data[1], data[2]])
 			
 			if current_panel:
 				var msg := "%s -1 %s +1 %s" % [IMG_REROLL, str(data[1]), str(data[2])]
+				current_panel.append_console_log(msg)
+		
+		"dice_converted":
+			# Multi-type map ensures compatibility whether engine passes text, indices, or emojis
+			var stat_icons := {
+				"Offense": IMG_SWORD, "OFFENCE": IMG_SWORD, 1: IMG_SWORD,
+				"Defense": IMG_SHIELD, "DEFENCE": IMG_SHIELD, 2: IMG_SHIELD,
+				"Morale": IMG_MEDAL, "MORALE": IMG_MEDAL, 3: IMG_MEDAL
+			}
+			var stat_emojis := {
+				"Offense": "⚔️", "OFFENCE": "⚔️", 1: "⚔️",
+				"Defense": "🛡️", "DEFENCE": "🛡️", 2: "🛡️",
+				"Morale": "🎖️", "MORALE": "🎖️", 3: "🎖️"
+			}
+			
+			var role: String = data[0]
+			var from_count: int = data[1]
+			var from_stat = data[2]
+			var to_count: int = data[3]
+			var to_stat = data[4]
+			
+			var src_icon: String = stat_icons.get(from_stat, IMG_DICE)
+			var tgt_icon: String = stat_icons.get(to_stat, IMG_DICE)
+			var src_emo: String = stat_emojis.get(from_stat, "🎲")
+			var tgt_emo: String = stat_emojis.get(to_stat, "🎲")
+			
+			print("🎲 -> %s converted dice: %d %s into %d %s" % [role, from_count, src_emo, to_count, tgt_emo])
+			
+			if current_panel:
+				# Formats cleanly as: [Reroll] 2 [Sword] [Fast-Forward] +2 [Shield]
+				var msg := "%s %d %s %s +%d %s" % [IMG_REROLL, from_count, src_icon, IMG_FAST_FORWARD, to_count, tgt_icon]
 				current_panel.append_console_log(msg)
 		
 		"batch_dice_roll":

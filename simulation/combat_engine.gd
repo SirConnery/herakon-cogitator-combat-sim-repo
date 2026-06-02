@@ -1208,12 +1208,8 @@ static func _remove_dice_from_pool(target_side_data: Dictionary, target_role: St
 
 	# Telemetry Pass
 	if on_event.is_valid():
-		var label_items: Array[String] = []
-		if b_offence > 0: label_items.append("-%d ⚔️" % b_offence)
-		if b_defence > 0: label_items.append("-%d 🛡️" % b_defence)
-		if b_morale > 0:  label_items.append("-%d 🎖️" % b_morale)
-		
-		on_event.call("ability_triggered", [card_id, "Resolved LOSE_DICE: %s lost %s." % [target_role, ", ".join(label_items)], "dice_icon"])
+		# Dispatches raw metrics to the decoupled "dice_lost" channel for rich icon stitching
+		on_event.call("dice_lost", [target_role, b_offence, b_defence, b_morale])
 		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
 
 	# Master Table Print Dump Sync
@@ -1223,6 +1219,7 @@ static func _remove_dice_from_pool(target_side_data: Dictionary, target_role: St
 		var def_side: Dictionary = parent_state.get(Side.DEFENDER, {})
 		if not atk_side.is_empty() and not def_side.is_empty():
 			log_current_dice_pools(on_event, atk_side, def_side, "Dice Loss")
+
 
 static func _convert_dice_in_pool(target_side_data: Dictionary, target_role: String, max_to_convert: int, target_pool_type: int, card_id: int, original_side_data: Dictionary, on_event: Callable, source_pool_type: int = -1) -> void:
 	var stat_map := {1: Stat.OFFENCE, 2: Stat.DEFENCE, 3: Stat.MORALE}
@@ -1265,20 +1262,19 @@ static func _convert_dice_in_pool(target_side_data: Dictionary, target_role: Str
 
 	# --- TELEMETRY AND STATE SYNCHRONIZATION ---
 	if converted_count > 0 and on_event.is_valid():
-		var icons := {Stat.OFFENCE: "⚔️", Stat.DEFENCE: "🛡️", Stat.MORALE: "🎖️"}
-		var breakdown_parts: Array[String] = []
+		var labels := {Stat.OFFENCE: "Offense", Stat.DEFENCE: "Defense", Stat.MORALE: "Morale"}
 		
+		# Dispatch custom conversion telemetry per source pool processed
 		for stat_key in stripped_counts:
-			if stripped_counts[stat_key] > 0:
-				breakdown_parts.append("%d %s" % [stripped_counts[stat_key], icons[stat_key]])
-				
-		var summary_msg := " Dice Conversion (%s): Converted %s into %d %s" % [
-			target_role, 
-			", ".join(breakdown_parts), 
-			converted_count, 
-			icons[target_stat]
-		]
-		on_event.call("ability_triggered", [card_id, summary_msg, "reroll_icon"])
+			var amount_converted: int = stripped_counts[stat_key]
+			if amount_converted > 0:
+				on_event.call("dice_converted", [
+					target_role, 
+					amount_converted, 
+					labels[stat_key], 
+					amount_converted, 
+					labels[target_stat]
+				])
 		
 		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
 		
@@ -1303,12 +1299,12 @@ static func _convert_dice_to_random_different_dice(target_side_data: Dictionary,
 	
 	if actual_convert_count <= 0:
 		if on_event.is_valid():
-			var labels := {1: "⚔️", 2: "🛡️", 3: "🎖️"}
-			on_event.call("ability_triggered", [card_id, " Conversion skipped: 0 %s dice available on %s's side." % [labels[source_pool_type], target_role], "reroll_icon"])
+			var text_labels := {1: "Offense", 2: "Defense", 3: "Morale"}
+			on_event.call("ability_triggered", [card_id, "Conversion skipped: 0 %s dice available on %s's side." % [text_labels[source_pool_type], target_role], "fast_forward_icon"])
 		return
 
 	# --- EXCLUSION FILTER ---
-	# Dynamically isolates the alternative stats (e.g., if converting Morale, filters to ONLY Offence and Defence)
+	# Dynamically isolates the alternative stats (e.g., if converting Morale, filters to ONLY Offense and Defense)
 	var alternative_stats: Array[int] = []
 	for pool_key in stat_map.keys():
 		if pool_key != source_pool_type:
@@ -1327,18 +1323,19 @@ static func _convert_dice_to_random_different_dice(target_side_data: Dictionary,
 
 	# --- TELEMETRY AND UI SYNC ---
 	if on_event.is_valid():
-		var labels := {Stat.OFFENCE: "⚔️", Stat.DEFENCE: "🛡️", Stat.MORALE: "🎖️"}
-		var source_label: String = labels[source_stat]
+		var labels := {Stat.OFFENCE: "Offense", Stat.DEFENCE: "Defense", Stat.MORALE: "Morale"}
 		
-		var breakdown_parts: Array[String] = []
+		# Separate conversion logs are dispatched per destination pool that gained dice
 		for stat_key in added_counts:
-			if added_counts[stat_key] > 0:
-				breakdown_parts.append("+%d %s" % [added_counts[stat_key], labels[stat_key]])
-				
-		var summary_msg := " Dice Conversion (%s): Exchanged %d %s dice into alternative types -> %s" % [
-			target_role, actual_convert_count, source_label, ", ".join(breakdown_parts)
-		]
-		on_event.call("ability_triggered", [card_id, summary_msg, "reroll_icon"])
+			var gained_count: int = added_counts[stat_key]
+			if gained_count > 0:
+				on_event.call("dice_converted", [
+					target_role, 
+					gained_count, 
+					labels[source_stat], 
+					gained_count, 
+					labels[stat_key]
+				])
 		
 		# Informs layout panels to immediately update screen numbers
 		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
