@@ -21,11 +21,15 @@ const WARNING = preload("uid://eoi5qeurd3od")
 const WAVING_WHITE_FLAG = preload("uid://cdxydf02sdra5")
 
 
-# 🎰 INLINE BBCODE TEXTURE PATH STRINGS
+# INLINE BBCODE TEXTURE PATH STRINGS
 @onready var IMG_SWORD: String = "[img=22]" + CROSSED_SWORDS.get_path() + "[/img]"
 @onready var IMG_SHIELD: String = "[img=22]" + SHIELD.get_path() + "[/img]"
 @onready var IMG_MEDAL: String = "[img=22]" + MEDAL.get_path() + "[/img]"
 @onready var IMG_BOOM: String = "[img=22]" + BOOM.get_path() + "[/img]"
+
+
+const UNIT_LABEL := preload("res://ui/single_combat_view/UnitLabel.tscn")
+
 
 #region vars
 
@@ -206,11 +210,7 @@ func _rebuild_vbox_labels(container: VBoxContainer, names_csv: String) -> void:
 		if entity_name == "None" or entity_name.is_empty():
 			continue
 
-		# 🎯 REBUILT AS PROPER RICHTEXTLABELS TO MATCH LAYOUT EXPECTATIONS
-		var label := RichTextLabel.new()
-		label.bbcode_enabled = true
-		label.fit_content = true
-		label.scroll_active = false
+		var label := UNIT_LABEL.instantiate()
 		label.text = entity_name
 		container.add_child(label)
 

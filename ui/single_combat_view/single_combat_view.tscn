@@ -2,6 +2,17 @@
 
 [ext_resource type="Script" uid="uid://bcpktui0yfxph" path="res://ui/single_combat_view/single_combat_view.gd" id="1_j12wc"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_j12wc"]
+bg_color = Color(0.25490198, 0.2901961, 0.32156864, 1)
+border_width_left = 10
+border_width_top = 10
+border_width_right = 10
+border_width_bottom = 10
+border_color = Color(0.31764707, 0.32156864, 0.31764707, 1)
+border_blend = true
+shadow_size = 50
+shadow_offset = Vector2(10, 30)
+
 [node name="SingleCombatView" type="Control" unique_id=466081623]
 layout_mode = 3
 anchors_preset = 15
@@ -21,216 +32,18 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="UserControls" type="HBoxContainer" parent="MainLayout" unique_id=1971477260]
-layout_mode = 2
-size_flags_stretch_ratio = 0.2
-
-[node name="GenericControls" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1690471369]
-layout_mode = 2
-
-[node name="GenericControls" type="HBoxContainer" parent="MainLayout/UserControls/GenericControls" unique_id=786859400]
-layout_mode = 2
-
-[node name="StageSelectContainer" type="VBoxContainer" parent="MainLayout/UserControls/GenericControls/GenericControls" unique_id=1384464544]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="MainLayout/UserControls/GenericControls/GenericControls/StageSelectContainer" unique_id=1476894399]
-layout_mode = 2
-text = "Select Stage"
-
-[node name="StageSelectBtn" type="OptionButton" parent="MainLayout/UserControls/GenericControls/GenericControls/StageSelectContainer" unique_id=985789818]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="IsGroundCombatContainer" type="VBoxContainer" parent="MainLayout/UserControls/GenericControls/GenericControls" unique_id=1158314248]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="MainLayout/UserControls/GenericControls/GenericControls/IsGroundCombatContainer" unique_id=1974220497]
-layout_mode = 2
-text = "Ground Combat"
-
-[node name="IsGroundCombatBtn" type="CheckButton" parent="MainLayout/UserControls/GenericControls/GenericControls/IsGroundCombatContainer" unique_id=2097769803]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 4
-
-[node name="StartNewCombatBtn" type="Button" parent="MainLayout/UserControls/GenericControls" unique_id=1688779065]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-text = "Start Combat"
-
-[node name="FactionControls" type="VBoxContainer" parent="MainLayout/UserControls" unique_id=1650484081]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="AttackerControls" type="HBoxContainer" parent="MainLayout/UserControls/FactionControls" unique_id=991686767]
-layout_mode = 2
-
-[node name="SelectAttackerFaction" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/AttackerControls" unique_id=388010470]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/AttackerControls/SelectAttackerFaction" unique_id=921623196]
-layout_mode = 2
-text = "Attacker Faction"
-
-[node name="FactionSelectAttackerBtn" type="OptionButton" parent="MainLayout/UserControls/FactionControls/AttackerControls/SelectAttackerFaction" unique_id=1165120651]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="SelectAttackerCards" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/AttackerControls" unique_id=1800824837]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/AttackerControls/SelectAttackerCards" unique_id=385275026]
-layout_mode = 2
-text = "Attacker Combat Deck"
-
-[node name="CardsSelectAttackerBtn" type="OptionButton" parent="MainLayout/UserControls/FactionControls/AttackerControls/SelectAttackerCards" unique_id=1960379908]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="SelectAttackerUnits" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/AttackerControls" unique_id=1575796192]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/AttackerControls/SelectAttackerUnits" unique_id=1684910312]
-layout_mode = 2
-text = "Attacker Units"
-
-[node name="UnitsSelectAttackerBtn" type="OptionButton" parent="MainLayout/UserControls/FactionControls/AttackerControls/SelectAttackerUnits" unique_id=180854422]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="AttackerUseDefaultDeck" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/AttackerControls" unique_id=1368646404]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/AttackerControls/AttackerUseDefaultDeck" unique_id=326227912]
-layout_mode = 2
-text = "Default Deck"
-
-[node name="AttackerUsesDefaultDeckBtn" type="CheckButton" parent="MainLayout/UserControls/FactionControls/AttackerControls/AttackerUseDefaultDeck" unique_id=1907745244]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 4
-
-[node name="AttackerUseDefaultUnits" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/AttackerControls" unique_id=1314106645]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/AttackerControls/AttackerUseDefaultUnits" unique_id=1214308785]
-layout_mode = 2
-text = "Default Units"
-
-[node name="AttackerUsesDefaultUnitsBtn" type="CheckButton" parent="MainLayout/UserControls/FactionControls/AttackerControls/AttackerUseDefaultUnits" unique_id=234710424]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 4
-
-[node name="DefenderControls" type="HBoxContainer" parent="MainLayout/UserControls/FactionControls" unique_id=1118137294]
-layout_mode = 2
-
-[node name="SelectDefenderFaction" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/DefenderControls" unique_id=2118276411]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/DefenderControls/SelectDefenderFaction" unique_id=710204765]
-layout_mode = 2
-text = "Defender Faction"
-
-[node name="FactionSelectDefenderBtn" type="OptionButton" parent="MainLayout/UserControls/FactionControls/DefenderControls/SelectDefenderFaction" unique_id=1757113176]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="SelectDefenderCards" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/DefenderControls" unique_id=1116840416]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/DefenderControls/SelectDefenderCards" unique_id=547676362]
-layout_mode = 2
-text = "Defender Combat Deck"
-
-[node name="CardsSelectDefenderBtn" type="OptionButton" parent="MainLayout/UserControls/FactionControls/DefenderControls/SelectDefenderCards" unique_id=1153725299]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="SelectDefenderUnits" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/DefenderControls" unique_id=1085721940]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/DefenderControls/SelectDefenderUnits" unique_id=1135696545]
-layout_mode = 2
-text = "Defender Units"
-
-[node name="UnitsSelectDefenderBtn" type="OptionButton" parent="MainLayout/UserControls/FactionControls/DefenderControls/SelectDefenderUnits" unique_id=432238966]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="DefenderUseDefaultDeck" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/DefenderControls" unique_id=1160964929]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/DefenderControls/DefenderUseDefaultDeck" unique_id=436646391]
-layout_mode = 2
-text = "Default Deck"
-
-[node name="DefenderUsesDefaultDeckBtn" type="CheckButton" parent="MainLayout/UserControls/FactionControls/DefenderControls/DefenderUseDefaultDeck" unique_id=1930219325]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 4
-
-[node name="DefenderUseDefaultUnits" type="VBoxContainer" parent="MainLayout/UserControls/FactionControls/DefenderControls" unique_id=1534949767]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="MainLayout/UserControls/FactionControls/DefenderControls/DefenderUseDefaultUnits" unique_id=995738194]
-layout_mode = 2
-text = "Default Units"
-
-[node name="DefenderUsesDefaultUnitsBtn" type="CheckButton" parent="MainLayout/UserControls/FactionControls/DefenderControls/DefenderUseDefaultUnits" unique_id=1573116673]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 4
-
-[node name="CombatInfoPanel" type="PanelContainer" parent="MainLayout/UserControls" unique_id=1326576128]
-layout_mode = 2
-
-[node name="OtherUI" type="VBoxContainer" parent="MainLayout/UserControls/CombatInfoPanel" unique_id=1746756939]
-layout_mode = 2
-size_flags_vertical = 4
-
-[node name="CombatAreaValue" type="Label" parent="MainLayout/UserControls/CombatInfoPanel/OtherUI" unique_id=2064207568]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Combat Area: World"
-horizontal_alignment = 1
-
-[node name="CombatParticipantsValue" type="Label" parent="MainLayout/UserControls/CombatInfoPanel/OtherUI" unique_id=1921772805]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Space Marines vs Orks"
-horizontal_alignment = 1
-
-[node name="GameStageValue" type="Label" parent="MainLayout/UserControls/CombatInfoPanel/OtherUI" unique_id=1604020925]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Game Stage: "
-horizontal_alignment = 1
-
-[node name="MarginContainer" type="MarginContainer" parent="MainLayout/UserControls" unique_id=1628688611]
-layout_mode = 2
-theme_override_constants/margin_left = 50
-
 [node name="HeaderPanel" type="PanelContainer" parent="MainLayout" unique_id=668278624]
 layout_mode = 2
 size_flags_vertical = 0
 size_flags_stretch_ratio = 0.1
 
-[node name="HeaderContainer" type="VBoxContainer" parent="MainLayout/HeaderPanel" unique_id=1160828375]
+[node name="HeaderContainer" type="HBoxContainer" parent="MainLayout/HeaderPanel" unique_id=453170365]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="HLayout" type="HBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer" unique_id=533786021]
-layout_mode = 2
-
 [node name="CardsDrawnToHandAtStart" type="HBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer" unique_id=860265540]
 layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="AttackerDrawnCardsTitle" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=899910493]
 layout_mode = 2
@@ -243,10 +56,51 @@ uppercase = true
 [node name="AttackerDrawnCardsValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=2032794372]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 0
-autowrap_mode = 1
+size_flags_vertical = 1
+autowrap_mode = 3
 
-[node name="DefenderDrawnCardsTitle" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=1291985439]
+[node name="CombatInfoPanel" type="PanelContainer" parent="MainLayout/HeaderPanel/HeaderContainer" unique_id=1326576128]
+layout_mode = 2
+
+[node name="OtherUI" type="VBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/CombatInfoPanel" unique_id=1746756939]
+layout_mode = 2
+
+[node name="CombatAreaValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CombatInfoPanel/OtherUI" unique_id=2064207568]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "Combat Area: World"
+horizontal_alignment = 1
+
+[node name="CombatParticipantsValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CombatInfoPanel/OtherUI" unique_id=1921772805]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "Space Marines vs Orks"
+horizontal_alignment = 1
+
+[node name="GameStageValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CombatInfoPanel/OtherUI" unique_id=1604020925]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "Game Stage: "
+horizontal_alignment = 1
+
+[node name="StartNewCombatBtn" type="Button" parent="MainLayout/HeaderPanel/HeaderContainer" unique_id=1688779065]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "Start Combat"
+
+[node name="CardsDrawnToHandAtStart2" type="HBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer" unique_id=552576990]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DefenderDrawnCardsTitle" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart2" unique_id=1679766897]
 layout_mode = 2
 size_flags_vertical = 0
 text = "Defender Cards 
@@ -254,10 +108,190 @@ drawn at start: "
 vertical_alignment = 1
 uppercase = true
 
-[node name="DefenderDrawnCardsValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart" unique_id=831402059]
+[node name="DefenderDrawnCardsValue" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart2" unique_id=168316995]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 0
+size_flags_vertical = 1
+autowrap_mode = 3
+
+[node name="MatchConfigsBtn" type="Button" parent="MainLayout/HeaderPanel/HeaderContainer" unique_id=637371439]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Match Configs"
+
+[node name="MatchConfigsPopup" type="PopupPanel" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn" unique_id=494260938]
+unique_name_in_owner = true
+oversampling_override = 1.0
+title = "Configs"
+initial_position = 1
+size = Vector2i(769, 281)
+visible = true
+theme_override_styles/panel = SubResource("StyleBoxFlat_j12wc")
+
+[node name="UserControls" type="VBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup" unique_id=278441420]
+offset_left = 50.0
+offset_top = 30.0
+offset_right = 699.0
+offset_bottom = 191.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+size_flags_stretch_ratio = 0.2
+metadata/_edit_use_anchors_ = true
+
+[node name="GenericControls" type="VBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls" unique_id=1690471369]
+layout_mode = 2
+
+[node name="GenericControls" type="HBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/GenericControls" unique_id=786859400]
+layout_mode = 2
+
+[node name="StageSelectContainer" type="VBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/GenericControls/GenericControls" unique_id=1384464544]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/GenericControls/GenericControls/StageSelectContainer" unique_id=1476894399]
+layout_mode = 2
+text = "Select Stage"
+
+[node name="StageSelectBtn" type="OptionButton" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/GenericControls/GenericControls/StageSelectContainer" unique_id=985789818]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="IsGroundCombatContainer" type="VBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/GenericControls/GenericControls" unique_id=1158314248]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/GenericControls/GenericControls/IsGroundCombatContainer" unique_id=1974220497]
+layout_mode = 2
+text = "Ground Combat"
+
+[node name="IsGroundCombatBtn" type="CheckButton" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/GenericControls/GenericControls/IsGroundCombatContainer" unique_id=2097769803]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="FactionControls" type="VBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls" unique_id=1650484081]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AttackerControls" type="HBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls" unique_id=991686767]
+layout_mode = 2
+
+[node name="SelectAttackerFaction" type="VBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/AttackerControls" unique_id=388010470]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/AttackerControls/SelectAttackerFaction" unique_id=921623196]
+layout_mode = 2
+text = "Attacker Faction"
+
+[node name="FactionSelectAttackerBtn" type="OptionButton" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/AttackerControls/SelectAttackerFaction" unique_id=1165120651]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="AttackerUseDefaultDeck" type="VBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/AttackerControls" unique_id=1368646404]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/AttackerControls/AttackerUseDefaultDeck" unique_id=326227912]
+layout_mode = 2
+text = "Default Deck"
+
+[node name="AttackerUsesDefaultDeckBtn" type="CheckButton" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/AttackerControls/AttackerUseDefaultDeck" unique_id=1907745244]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="AttackerUseDefaultUnits" type="VBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/AttackerControls" unique_id=1314106645]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/AttackerControls/AttackerUseDefaultUnits" unique_id=1214308785]
+layout_mode = 2
+text = "Default Units"
+
+[node name="AttackerUsesDefaultUnitsBtn" type="CheckButton" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/AttackerControls/AttackerUseDefaultUnits" unique_id=234710424]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="SelectAttackerCards" type="VBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/AttackerControls" unique_id=1800824837]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/AttackerControls/SelectAttackerCards" unique_id=385275026]
+layout_mode = 2
+text = "Attacker Combat Deck"
+
+[node name="CardsSelectAttackerBtn" type="OptionButton" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/AttackerControls/SelectAttackerCards" unique_id=1960379908]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SelectAttackerUnits" type="VBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/AttackerControls" unique_id=1575796192]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/AttackerControls/SelectAttackerUnits" unique_id=1684910312]
+layout_mode = 2
+text = "Attacker Units"
+
+[node name="UnitsSelectAttackerBtn" type="OptionButton" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/AttackerControls/SelectAttackerUnits" unique_id=180854422]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="DefenderControls" type="HBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls" unique_id=1118137294]
+layout_mode = 2
+
+[node name="SelectDefenderFaction" type="VBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/DefenderControls" unique_id=2118276411]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/DefenderControls/SelectDefenderFaction" unique_id=710204765]
+layout_mode = 2
+text = "Defender Faction"
+
+[node name="FactionSelectDefenderBtn" type="OptionButton" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/DefenderControls/SelectDefenderFaction" unique_id=1757113176]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="DefenderUseDefaultDeck" type="VBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/DefenderControls" unique_id=1160964929]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/DefenderControls/DefenderUseDefaultDeck" unique_id=436646391]
+layout_mode = 2
+text = "Default Deck"
+
+[node name="DefenderUsesDefaultDeckBtn" type="CheckButton" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/DefenderControls/DefenderUseDefaultDeck" unique_id=1930219325]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="DefenderUseDefaultUnits" type="VBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/DefenderControls" unique_id=1534949767]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/DefenderControls/DefenderUseDefaultUnits" unique_id=995738194]
+layout_mode = 2
+text = "Default Units"
+
+[node name="DefenderUsesDefaultUnitsBtn" type="CheckButton" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/DefenderControls/DefenderUseDefaultUnits" unique_id=1573116673]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="SelectDefenderCards" type="VBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/DefenderControls" unique_id=1116840416]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/DefenderControls/SelectDefenderCards" unique_id=547676362]
+layout_mode = 2
+text = "Defender Combat Deck"
+
+[node name="CardsSelectDefenderBtn" type="OptionButton" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/DefenderControls/SelectDefenderCards" unique_id=1153725299]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SelectDefenderUnits" type="VBoxContainer" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/DefenderControls" unique_id=1085721940]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/DefenderControls/SelectDefenderUnits" unique_id=1135696545]
+layout_mode = 2
+text = "Defender Units"
+
+[node name="UnitsSelectDefenderBtn" type="OptionButton" parent="MainLayout/HeaderPanel/HeaderContainer/MatchConfigsBtn/MatchConfigsPopup/UserControls/FactionControls/DefenderControls/SelectDefenderUnits" unique_id=432238966]
+unique_name_in_owner = true
+layout_mode = 2
 
 [node name="CentralCombatView" type="HBoxContainer" parent="MainLayout" unique_id=117080739]
 layout_mode = 2

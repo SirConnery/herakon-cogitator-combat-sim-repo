@@ -12,7 +12,8 @@ class_name SingleCombatView
 
 
 @onready var attacker_drawn_cards_value: Label = $MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart/AttackerDrawnCardsValue
-@onready var defender_drawn_cards_value: Label = $MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart/DefenderDrawnCardsValue
+@onready var defender_drawn_cards_value: Label = $MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart2/DefenderDrawnCardsValue
+
 
 @onready var round_1_container: VBoxContainer = $MainLayout/CentralCombatView/RoundsContainer/Round1
 @onready var round_2_container: VBoxContainer = $MainLayout/CentralCombatView/RoundsContainer/Round2
@@ -31,9 +32,15 @@ class_name SingleCombatView
 @onready var defender_uses_default_deck: CheckButton = %DefenderUsesDefaultDeckBtn
 @onready var defender_uses_default_units_btn: CheckButton = %DefenderUsesDefaultUnitsBtn
 
+
+@onready var match_configs_popup: PopupPanel = %MatchConfigsPopup
 @onready var stage_select_btn: OptionButton = %StageSelectBtn
 @onready var is_ground_combat_btn: CheckButton = %IsGroundCombatBtn
+
+
+@onready var match_configs_btn: Button = %MatchConfigsBtn
 @onready var start_new_combat_btn: Button = %StartNewCombatBtn
+
 
 # ─── CORE SCENE LINKS ───
 @onready var ui: UI = owner
@@ -55,11 +62,15 @@ const CLEAR_UNITS_ID: int = 888
 
 
 func _ready() -> void:
-	header_panel.hide()
+	#header_panel.hide()
 	init_connections()
 	visibility_changed.connect(_on_visibility_changed)
 
-
+func _on_matchonfigs_btn_pressed() -> void:
+	match_configs_popup.reset_size()
+	match_configs_popup.popup()
+	
+	
 func _on_visibility_changed() -> void:
 	if visible:
 		_setup_dropdown_options()
@@ -83,7 +94,8 @@ func init_connections() -> void:
 	defender_uses_default_units_btn.toggled.connect(_on_defender_units_toggle_changed)
 	units_select_attacker_btn.item_selected.connect(_on_attacker_unit_drafted)
 	units_select_defender_btn.item_selected.connect(_on_defender_unit_drafted)
-
+	
+	match_configs_btn.pressed.connect(_on_matchonfigs_btn_pressed)
 
 # ─── COMBAT ENGINE DATA EXECUTION LINE ───
 

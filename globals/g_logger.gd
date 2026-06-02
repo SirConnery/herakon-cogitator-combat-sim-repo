@@ -364,7 +364,7 @@ func engine_callback(event_type: String, data: Array) -> void:
 			
 			print("⚠️ SUDDEN DEATH: one side eliminated")
 			if target_panel:
-				var message := "%s" % IMG_WARNING
+				var message := "One side was completely wiped out %s" % IMG_WARNING
 				target_panel.append_console_log(message)
 			
 			for i in range(active_round_index + 1, active_round_panels.size()):
@@ -378,7 +378,7 @@ func engine_callback(event_type: String, data: Array) -> void:
 			
 			print("🏁 VICTORY BY WIPEOUT: %s" % data[0])
 			if target_panel:
-				var message := "%s %s" % [IMG_FLAG, str(data[0])]
+				var message := "%s wins %s" % [str(data[0]), IMG_FLAG]
 				target_panel.append_console_log(message)
 
 		"victory_mutual_annihilation":
@@ -387,7 +387,7 @@ func engine_callback(event_type: String, data: Array) -> void:
 			
 			print("💥 MUTUAL ANNIHILATION")
 			if target_panel:
-				var message := "%s" % IMG_BOOM
+				var message := "Mutual Annihilation %s" % IMG_BOOM
 				target_panel.append_console_log(message)
 
 		"tiebreaker_morale":
@@ -396,7 +396,7 @@ func engine_callback(event_type: String, data: Array) -> void:
 			
 			print("--- TIEBREAKER ---\nATK %d | DEF %d" % [data[0], data[1]])
 			if target_panel:
-				var message := "%d | %d" % [data[0], data[1]]
+				var message := "-TIEBREAKER- Morale ATK %d | DEF %d" % [data[0], data[1]]
 				target_panel.append_console_log(message)
 
 #endregion
