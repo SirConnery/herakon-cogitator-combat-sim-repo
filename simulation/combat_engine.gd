@@ -567,7 +567,7 @@ static func _perform_rout_or_spend_tax(opp_side_data: Dictionary, opp_role: Stri
 	if opp_side_data[target_stat] >= penalty_amount:
 		opp_side_data[target_stat] -= penalty_amount
 		if on_event.is_valid():
-			on_event.call("ability_triggered", [card_id, " %s spent %d %s die/dice to not rout his units." % [opp_role, penalty_amount, target_label], "rally_icon"])
+			on_event.call("ability_triggered", [card_id, "Tax Paid: %s spent %d %s dice to prevent unit routing." % [opp_role, penalty_amount, target_label], "rally_icon"])
 			on_event.call("dice_updated", [opp_role, opp_side_data[Stat.OFFENCE], opp_side_data[Stat.DEFENCE], opp_side_data[Stat.MORALE]])
 	else:
 		var target_unit := _find_lowest_tier_unrouted_unit(opp_side_data["squads"])
@@ -1213,7 +1213,7 @@ static func _remove_dice_from_pool(target_side_data: Dictionary, target_role: St
 		if b_defence > 0: label_items.append("-%d 🛡️" % b_defence)
 		if b_morale > 0:  label_items.append("-%d 🎖️" % b_morale)
 		
-		on_event.call("ability_triggered", [card_id, "Resolved LOSE_DICE: %s lost [%s]" % [target_role, ", ".join(label_items)], "dice_icon"])
+		on_event.call("ability_triggered", [card_id, "Resolved LOSE_DICE: %s lost %s." % [target_role, ", ".join(label_items)], "dice_icon"])
 		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
 
 	# Master Table Print Dump Sync
@@ -1278,7 +1278,7 @@ static func _convert_dice_in_pool(target_side_data: Dictionary, target_role: Str
 			converted_count, 
 			icons[target_stat]
 		]
-		on_event.call("ability_triggered", [card_id, summary_msg, "arrows_counterclockwise_icon"])
+		on_event.call("ability_triggered", [card_id, summary_msg, "reroll_icon"])
 		
 		on_event.call("dice_updated", [target_role, target_side_data[Stat.OFFENCE], target_side_data[Stat.DEFENCE], target_side_data[Stat.MORALE]])
 		
@@ -1402,9 +1402,7 @@ static func _reroll_dice_in_pool(target_side_data: Dictionary, target_role: Stri
 			if is_all_flush and on_event.is_valid():
 				on_event.call("ability_triggered", [
 					card_id, 
-					"↳ Reroll skipped: %s has 0 %s dice to clear." % [target_role, pool_label], 
-					"fast_forward_icon"
-				])
+					"Reroll skipped: %s has 0 %s dice to clear." % [target_role, pool_label,], "fast_forward_icon"])
 			return
 
 	# --- 2. TRANSACTIONAL ATOMIC UPDATE PHASE ---
