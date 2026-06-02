@@ -1,43 +1,98 @@
 extends Node
 
 const ARROWS_COUNTERCLOCKWISE = preload("uid://865pnryo3ujp")
+const AXE = preload("uid://cjqm3odnptdox")
 const BOOM = preload("uid://bb86pf3ujv2ll")
 const BRAIN = preload("uid://cib2wu76oigcs")
 const CARD_INDEX = preload("uid://cgj0u2io8yxbh")
 const CHECKERED_FLAG = preload("uid://cgqk18tlfu8ki")
-const COIN = preload("uid://cruigmoxlb8r0")
 const CROSSED_SWORDS = preload("uid://bdhga5ctungo4")
+const CRYSTAL_BALL = preload("uid://i1kke1ijr24r")
+const DISCARD_HARVEST = preload("uid://cdc5bhhw22cmp")
+const FALLBACK_CONDITION = preload("uid://olgrn53fh3uc")
+const FAST_FORWARD = preload("uid://dyk4ksxen13eo")
 const FLOWER_PLAYING_CARDS = preload("uid://fsarkovhf8ll")
-const GAME_DIE = preload("uid://b51b7ogv3v08x")
+const GAME_DICE = preload("uid://b51b7ogv3v08x")
+const GLOBAL_EFFECT = preload("uid://b4o6suck4tg0e")
 const GUARD = preload("uid://c7y0855sdtlee")
-const HANDSHAKE = preload("uid://cytd1cyk5m2mg")
+const INNER_ABILITY = preload("uid://cu8d75tcp48y6")
 const LARGE_BLUE_SQUARE = preload("uid://c3mh1p2tbkpbn")
 const LARGE_RED_SQUARE = preload("uid://cqy2rgwfkk0k0")
 const MEDAL = preload("uid://cq63x40y4n0ki")
+const RALLY = preload("uid://io1te3a6p5pw")
+const SAVED_FROM_DESTRUCTION = preload("uid://gnlrlamg1kuo")
+const SCAN = preload("uid://cqcwgny2oqivw")
 const SHIELD = preload("uid://bnr4nvio4fy5f")
 const SKULL = preload("uid://bbthodxg0r8d2")
+const TOKEN = preload("uid://cruigmoxlb8r0")
 const WARNING = preload("uid://eoi5qeurd3od")
 const WAVING_WHITE_FLAG = preload("uid://cdxydf02sdra5")
+const X = preload("uid://b8f60ffd8wqla")
+const ZAP = preload("uid://desyroq2a3rp4")
 
 # 🎰 INLINE BBCODE TEXTURE PATH STRINGS (Sized to match console lines)
-@onready var IMG_SWORD: String = "[img=18]" + CROSSED_SWORDS.get_path() + "[/img]"
-@onready var IMG_SHIELD: String = "[img=18]" + SHIELD.get_path() + "[/img]"
-@onready var IMG_MEDAL: String = "[img=18]" + MEDAL.get_path() + "[/img]"
+@onready var IMG_AXE: String = "[img=18]" + AXE.get_path() + "[/img]"
+@onready var IMG_BLUE_SQUARE: String = "[img=18]" + LARGE_BLUE_SQUARE.get_path() + "[/img]"
 @onready var IMG_BOOM: String = "[img=18]" + BOOM.get_path() + "[/img]"
 @onready var IMG_BRAIN: String = "[img=18]" + BRAIN.get_path() + "[/img]"
-@onready var IMG_DIE: String = "[img=18]" + GAME_DIE.get_path() + "[/img]"
-@onready var IMG_REROLL: String = "[img=18]" + ARROWS_COUNTERCLOCKWISE.get_path() + "[/img]"
 @onready var IMG_CARDS_PLAYED: String = "[img=18]" + FLOWER_PLAYING_CARDS.get_path() + "[/img]"
+@onready var IMG_CRYSTAL_BALL: String = "[img=18]" + CRYSTAL_BALL.get_path() + "[/img]"
+@onready var IMG_DICE: String = "[img=18]" + GAME_DICE.get_path() + "[/img]"
 @onready var IMG_DISCARD: String = "[img=18]" + CARD_INDEX.get_path() + "[/img]"
-@onready var IMG_TOKEN: String = "[img=18]" + COIN.get_path() + "[/img]"
-@onready var IMG_ROUTED: String = "[img=18]" + WAVING_WHITE_FLAG.get_path() + "[/img]"
-@onready var IMG_SKULL: String = "[img=18]" + SKULL.get_path() + "[/img]"
-@onready var IMG_RALLY: String = "[img=18]" + HANDSHAKE.get_path() + "[/img]"
-@onready var IMG_WARNING: String = "[img=18]" + WARNING.get_path() + "[/img]"
+@onready var IMG_DISCARD_HARVEST: String = "[img=18]" + DISCARD_HARVEST.get_path() + "[/img]"
+@onready var IMG_FALLBACK_CONDITION: String = "[img=18]" + FALLBACK_CONDITION.get_path() + "[/img]"
+@onready var IMG_FAST_FORWARD: String = "[img=18]" + FAST_FORWARD.get_path() + "[/img]"
 @onready var IMG_FLAG: String = "[img=18]" + CHECKERED_FLAG.get_path() + "[/img]"
+@onready var IMG_GLOBAL_EFFECT: String = "[img=18]" + GLOBAL_EFFECT.get_path() + "[/img]"
 @onready var IMG_GUARD: String = "[img=18]" + GUARD.get_path() + "[/img]"
+@onready var IMG_INNER_ABILITY: String = "[img=18]" + INNER_ABILITY.get_path() + "[/img]"
+@onready var IMG_MEDAL: String = "[img=18]" + MEDAL.get_path() + "[/img]"
+@onready var IMG_RALLY: String = "[img=18]" + RALLY.get_path() + "[/img]"
 @onready var IMG_RED_SQUARE: String = "[img=18]" + LARGE_RED_SQUARE.get_path() + "[/img]"
-@onready var IMG_BLUE_SQUARE: String = "[img=18]" + LARGE_BLUE_SQUARE.get_path() + "[/img]"
+@onready var IMG_REROLL: String = "[img=18]" + ARROWS_COUNTERCLOCKWISE.get_path() + "[/img]"
+@onready var IMG_ROUTED: String = "[img=18]" + WAVING_WHITE_FLAG.get_path() + "[/img]"
+@onready var IMG_SAVED_FROM_DESTRUCTION: String = "[img=18]" + SAVED_FROM_DESTRUCTION.get_path() + "[/img]"
+@onready var IMG_SCAN: String = "[img=18]" + SCAN.get_path() + "[/img]"
+@onready var IMG_SHIELD: String = "[img=18]" + SHIELD.get_path() + "[/img]"
+@onready var IMG_SKULL: String = "[img=18]" + SKULL.get_path() + "[/img]"
+@onready var IMG_SWORD: String = "[img=18]" + CROSSED_SWORDS.get_path() + "[/img]"
+@onready var IMG_TOKEN: String = "[img=18]" + TOKEN.get_path() + "[/img]"
+@onready var IMG_WARNING: String = "[img=18]" + WARNING.get_path() + "[/img]"
+@onready var IMG_X: String = "[img=18]" + X.get_path() + "[/img]"
+@onready var IMG_ZAP: String = "[img=18]" + ZAP.get_path() + "[/img]"
+
+# This dict is only for the generic "ability_triggered" log
+@onready var ICON_MAP: Dictionary = {
+	"axe_icon": IMG_AXE,
+	"blue_square_icon": IMG_BLUE_SQUARE,
+	"boom_icon": IMG_BOOM,
+	"brain_icon": IMG_BRAIN,
+	"cards_played_icon": IMG_CARDS_PLAYED,
+	"crystal_ball_icon": IMG_CRYSTAL_BALL,
+	"dice_icon": IMG_DICE,
+	"discard_harvest_icon": IMG_DISCARD_HARVEST,
+	"discard_icon": IMG_DISCARD,
+	"fallback_condition_icon": IMG_FALLBACK_CONDITION,
+	"fast_forward_icon": IMG_FAST_FORWARD,
+	"flag_icon": IMG_FLAG,
+	"global_effect_icon": IMG_GLOBAL_EFFECT,
+	"guard_icon": IMG_GUARD,
+	"inner_ability_icon": IMG_INNER_ABILITY,
+	"medal_icon": IMG_MEDAL,
+	"rally_icon": IMG_RALLY,
+	"red_square_icon": IMG_RED_SQUARE,
+	"reroll_icon": IMG_REROLL,
+	"routed_icon": IMG_ROUTED,
+	"saved_from_destruction_icon": IMG_SAVED_FROM_DESTRUCTION,
+	"scan_icon": IMG_SCAN,
+	"shield_icon": IMG_SHIELD,
+	"skull_icon": IMG_SKULL,
+	"sword_icon": IMG_SWORD,
+	"token_icon": IMG_TOKEN,
+	"warning_icon": IMG_WARNING,
+	"x_icon": IMG_X,
+	"zap_icon": IMG_ZAP
+}
 
 var active_round_panels: Array[CombatRoundPanel] = []
 var active_round_index: int = 0
@@ -180,7 +235,7 @@ func engine_callback(event_type: String, data: Array) -> void:
 			print("🎲 -> %s dice results: +%d ⚔️ | +%d 🛡️ | +%d 🎖️" % [data[0], data[1], data[2], data[3]])
 			
 			if current_panel:
-				var msg := "%s +%d %s +%d %s +%d %s" % [IMG_DIE, data[1], IMG_SWORD, data[2], IMG_SHIELD, data[3], IMG_MEDAL]
+				var msg := "%s +%d %s +%d %s +%d %s" % [IMG_DICE, data[1], IMG_SWORD, data[2], IMG_SHIELD, data[3], IMG_MEDAL]
 				current_panel.append_console_log(msg)
 		
 		"dice_rerolled_log":
@@ -270,7 +325,6 @@ func engine_callback(event_type: String, data: Array) -> void:
 			if current_panel != null:
 				current_panel.set_assess_damage_step_card_icons(role_label, off_icons, def_icons, mor_icons)
 
-
 		"ability_triggered":
 			var controller = context.get("controller_ref")
 			var card_name := "Card #" + str(data[0]) 
@@ -280,10 +334,19 @@ func engine_callback(event_type: String, data: Array) -> void:
 				if fetched_name != null and str(fetched_name) != "":
 					card_name = str(fetched_name)
 
+			# --- SAFE OPTIONAL 3RD ARGUMENT ---
+			var icon_bbcode := ""
+			# Only look for data[2] if the array actually has a 3rd element
+			if data.size() > 2 and str(data[2]) in ICON_MAP:
+				icon_bbcode = ICON_MAP[str(data[2])] + " "
+			# ----------------------------------
+
 			print("  [*] %s: %s" % [card_name, data[1]])
 
 			if current_panel:
-				var msg := "%s : %s" % [card_name, str(data[1])]
+				# Formats exactly as: "card name, ICON, text"
+				# If no icon is passed, it cleanly falls back to "card name, text"
+				var msg := "%s, %s%s" % [card_name, icon_bbcode, str(data[1])]
 				current_panel.append_console_log(msg)
 		
 		"tokens_updated":

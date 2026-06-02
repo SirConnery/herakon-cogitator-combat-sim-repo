@@ -19,7 +19,7 @@ static func get_database() -> Dictionary:
 	# =========================================================================
 	db[FactionID.SPACE_MARINES] = {
 		"name": "Space Marines",
-		"debug_deck": [], # place card number here. That card becomes your combat_deck with 10 copies. 
+		"debug_deck": [1012], # place card number here. That card becomes your combat_deck with 10 copies. 
 		"upgrade_deck": [1006,1007,1008,1009,1010,1011,1012,1013,1014],
 		"starting_combat_deck": [1001,1001,1002,1002,1003,1003,1004,1004,1005,1005],
 		"combat_deck": [],

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cytd1cyk5m2mg"
-path="res://.godot/imported/handshake.png-05e411550dac45f845c3ef3ce05a70a2.ctex"
+uid="uid://gnlrlamg1kuo"
+path="res://.godot/imported/parachute.png-e05c2da318e38a8badcda09a518f8bae.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/handshake.png"
-dest_files=["res://.godot/imported/handshake.png-05e411550dac45f845c3ef3ce05a70a2.ctex"]
+source_file="res://assets/icons/parachute.png"
+dest_files=["res://.godot/imported/parachute.png-e05c2da318e38a8badcda09a518f8bae.ctex"]
 
 [params]
 
