@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://d3rua641fsvtr"]
 
-[ext_resource type="Theme" uid="uid://cav3wmfutntd8" path="res://themes/grimdark_graph_panels.tres" id="1_a0b6o"]
+[ext_resource type="Theme" uid="uid://cav3wmfutntd8" path="res://themes/main.tres" id="1_a0b6o"]
 
 [node name="MainFactionName" type="Label" unique_id=1435456809]
 anchors_preset = 15

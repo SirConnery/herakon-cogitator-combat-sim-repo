@@ -1,0 +1,11 @@
+[gd_resource type="FontVariation" format=3 uid="uid://d4bko4kk02snf"]
+
+[ext_resource type="FontFile" uid="uid://bmlk1yn67lu0r" path="res://fonts/OpenSans-SemiBold.ttf" id="1_3osmn"]
+[ext_resource type="FontFile" uid="uid://l23ksotf0f4m" path="res://fonts/NotoColorEmoji_WindowsCompatible.ttf" id="2_3osmn"]
+
+[resource]
+fallbacks = Array[Font]([ExtResource("2_3osmn")])
+base_font = ExtResource("1_3osmn")
+opentype_features = {
+1667329140: 0
+}

@@ -1,5 +1,44 @@
 extends Node
 
+const ARROWS_COUNTERCLOCKWISE = preload("uid://865pnryo3ujp")
+const BOOM = preload("uid://bb86pf3ujv2ll")
+const BRAIN = preload("uid://cib2wu76oigcs")
+const CARD_INDEX = preload("uid://cgj0u2io8yxbh")
+const CHECKERED_FLAG = preload("uid://cgqk18tlfu8ki")
+const COIN = preload("uid://cruigmoxlb8r0")
+const CROSSED_SWORDS = preload("uid://bdhga5ctungo4")
+const FLOWER_PLAYING_CARDS = preload("uid://fsarkovhf8ll")
+const GAME_DIE = preload("uid://b51b7ogv3v08x")
+const GUARD = preload("uid://c7y0855sdtlee")
+const HANDSHAKE = preload("uid://cytd1cyk5m2mg")
+const LARGE_BLUE_SQUARE = preload("uid://c3mh1p2tbkpbn")
+const LARGE_RED_SQUARE = preload("uid://cqy2rgwfkk0k0")
+const MEDAL = preload("uid://cq63x40y4n0ki")
+const SHIELD = preload("uid://bnr4nvio4fy5f")
+const SKULL = preload("uid://bbthodxg0r8d2")
+const WARNING = preload("uid://eoi5qeurd3od")
+const WAVING_WHITE_FLAG = preload("uid://cdxydf02sdra5")
+
+# 🎰 INLINE BBCODE TEXTURE PATH STRINGS (Sized to match console lines)
+@onready var IMG_SWORD: String = "[img=18]" + CROSSED_SWORDS.get_path() + "[/img]"
+@onready var IMG_SHIELD: String = "[img=18]" + SHIELD.get_path() + "[/img]"
+@onready var IMG_MEDAL: String = "[img=18]" + MEDAL.get_path() + "[/img]"
+@onready var IMG_BOOM: String = "[img=18]" + BOOM.get_path() + "[/img]"
+@onready var IMG_BRAIN: String = "[img=18]" + BRAIN.get_path() + "[/img]"
+@onready var IMG_DIE: String = "[img=18]" + GAME_DIE.get_path() + "[/img]"
+@onready var IMG_REROLL: String = "[img=18]" + ARROWS_COUNTERCLOCKWISE.get_path() + "[/img]"
+@onready var IMG_CARDS_PLAYED: String = "[img=18]" + FLOWER_PLAYING_CARDS.get_path() + "[/img]"
+@onready var IMG_DISCARD: String = "[img=18]" + CARD_INDEX.get_path() + "[/img]"
+@onready var IMG_TOKEN: String = "[img=18]" + COIN.get_path() + "[/img]"
+@onready var IMG_ROUTED: String = "[img=18]" + WAVING_WHITE_FLAG.get_path() + "[/img]"
+@onready var IMG_SKULL: String = "[img=18]" + SKULL.get_path() + "[/img]"
+@onready var IMG_RALLY: String = "[img=18]" + HANDSHAKE.get_path() + "[/img]"
+@onready var IMG_WARNING: String = "[img=18]" + WARNING.get_path() + "[/img]"
+@onready var IMG_FLAG: String = "[img=18]" + CHECKERED_FLAG.get_path() + "[/img]"
+@onready var IMG_GUARD: String = "[img=18]" + GUARD.get_path() + "[/img]"
+@onready var IMG_RED_SQUARE: String = "[img=18]" + LARGE_RED_SQUARE.get_path() + "[/img]"
+@onready var IMG_BLUE_SQUARE: String = "[img=18]" + LARGE_BLUE_SQUARE.get_path() + "[/img]"
+
 var active_round_panels: Array[CombatRoundPanel] = []
 var active_round_index: int = 0
 var context: Dictionary = {}
@@ -59,6 +98,9 @@ func _get_panel() -> CombatRoundPanel:
 func _role_color(role: String) -> String:
 	return "🟥" if role == "Attacker" else "🟦"
 
+func _role_image(role: String) -> String:
+	return IMG_RED_SQUARE if role == "Attacker" else IMG_BLUE_SQUARE
+
 #endregion
 
 
@@ -97,7 +139,6 @@ func engine_callback(event_type: String, data: Array) -> void:
 			print("💂   Units unrouted and routed -> %s: %s | %s" % [data[0], data[1], data[2]])
 			
 			if current_panel != null:
-				# PERFORMANCE FIX: Direct lookup evaluation using cached startup names
 				var is_attacker: bool = (data[0] == cached_atk_name)
 				var phase_context: String = data[3] if data.size() > 3 else "all"
 				
@@ -136,21 +177,17 @@ func engine_callback(event_type: String, data: Array) -> void:
 				current_panel.update_dice_displays(is_attacker, data[1], data[2], data[3], "damage_step")
 		
 		"bonus_dice_rolled":
-			var msg := "🎲 -> %s dice results: +%d ⚔️ | +%d 🛡️ | +%d 🎖️" % [data[0], data[1], data[2], data[3]]
-			print(msg)
+			print("🎲 -> %s dice results: +%d ⚔️ | +%d 🛡️ | +%d 🎖️" % [data[0], data[1], data[2], data[3]])
 			
 			if current_panel:
+				var msg := "%s +%d %s +%d %s +%d %s" % [IMG_DIE, data[1], IMG_SWORD, data[2], IMG_SHIELD, data[3], IMG_MEDAL]
 				current_panel.append_console_log(msg)
 		
 		"dice_rerolled_log":
-			var msg := "🔄 [%s] Reroll: Lost 1 %s die -> Gained 1 %s die" % [
-				data[0], 
-				data[1], 
-				data[2]
-			]
-			print(msg)
+			print("🔄 [%s] Reroll: Lost 1 %s die -> Gained 1 %s die" % [data[0], data[1], data[2]])
 			
 			if current_panel:
+				var msg := "%s -1 %s +1 %s" % [IMG_REROLL, str(data[1]), str(data[2])]
 				current_panel.append_console_log(msg)
 		# =========================================================
 		# CARDS
@@ -189,11 +226,10 @@ func engine_callback(event_type: String, data: Array) -> void:
 				if discarded_fetched != null and str(discarded_fetched) != "":
 					discarded_card_name = str(discarded_fetched)
 			
-			var msg := "    [*] %s: ↳ 📇 Discard forced! %s chose and recycled '%s' from card slot %d back into their combat deck." % [
-				active_card_name, data[1], discarded_card_name, data[3]
-			]
-			print(msg)
+			print("    [*] %s: ↳ 📇 Discard forced! %s chose and recycled '%s' from card slot %d back into their combat deck." % [active_card_name, data[1], discarded_card_name, data[3]])
+			
 			if current_panel:
+				var msg := "%s ↳ %s %s %d" % [active_card_name, IMG_DISCARD, discarded_card_name, data[3]]
 				current_panel.append_console_log(msg)
 		# =========================================================
 		# EXTRA ICONS
@@ -215,6 +251,9 @@ func engine_callback(event_type: String, data: Array) -> void:
 			print("\n🔄--- COMBAT ROUND %d ---" % (round_num + 1))
 		
 		"assess_damage_step_start":
+			if current_panel:
+				var msg := "%s" % [IMG_RED_SQUARE]
+				current_panel.append_console_log(msg)
 			print("-- Assess Damage Step started. -- ")
 		
 		# =========================================================
@@ -241,10 +280,10 @@ func engine_callback(event_type: String, data: Array) -> void:
 				if fetched_name != null and str(fetched_name) != "":
 					card_name = str(fetched_name)
 
-			var msg := "  [*] %s: %s" % [card_name, data[1]]
-			print(msg)
+			print("  [*] %s: %s" % [card_name, data[1]])
 
 			if current_panel:
+				var msg := "%s : %s" % [card_name, str(data[1])]
 				current_panel.append_console_log(msg)
 		
 		"tokens_updated":
@@ -254,6 +293,7 @@ func engine_callback(event_type: String, data: Array) -> void:
 			var phase_context: String = data[3] if data.size() > 3 else "damage_step"
 			
 			print("🪙 %s tokens updated (%s) -> %d ⚔️ | %d 🛡️" % [role_label, phase_context, offence, defence])
+
 
 			if current_panel:
 				if phase_context == "round_start":
@@ -268,8 +308,7 @@ func engine_callback(event_type: String, data: Array) -> void:
 		# PHASE A: PRE DAMAGE
 		"damage_pre_calculated":
 			print("\n--- [PRE-DAMAGE SNAPSHOT] ---")
-			print("%s %s -> ⚔️ %d | 🛡️ %d"
-				% [_role_color(data[0]), data[0], data[1], data[2]])
+			print("%s %s -> ⚔️ %d | 🛡️ %d" % [_role_color(data[0]), data[0], data[1], data[2]])
 
 
 		# PHASE B: RESOLVED DAMAGE
@@ -285,22 +324,22 @@ func engine_callback(event_type: String, data: Array) -> void:
 		# DAMAGE APPLICATION EVENTS
 		# =========================================================
 		"unit_routed":
-			var message := "🏳️ %s '%s' routed (took %d dmg)" % [data[0], data[1], data[2]]
-			print(message)
+			print("🏳️ %s '%s' routed (took %d dmg)" % [data[0], data[1], data[2]])
 			if current_panel:
+				var message := "%s %d %s %s" % [str(data[1]), data[2], IMG_BOOM, IMG_ROUTED]
 				current_panel.append_console_log(message)
 
 		"unit_destroyed":
 			var cond := "ROUTED" if data[3] else "HEALTHY"
-			var message := "💀 %s '%s' (%s) destroyed (%d dmg)" % [data[0], data[1], cond, data[2]]
-			print(message)
+			print("💀 %s '%s' (%s) destroyed (%d dmg)" % [data[0], data[1], cond, data[2]])
 			if current_panel:
+				var message := "%s %d %s %s" % [str(data[1]), data[2], IMG_BOOM, IMG_SKULL]
 				current_panel.append_console_log(message)
 
 		"damage_absorbed":
-			var message := "🛡️ %s '%s' absorbed %d damage while routed" % [data[0], data[1], data[2]]
-			print(message)
+			print("🛡️ %s '%s' absorbed %d damage while routed" % [data[0], data[1], data[2]])
 			if current_panel:
+				var message := "%s %d %s" % [str(data[1]), data[2], IMG_SHIELD]
 				current_panel.append_console_log(message)
 
 		"unit_rallied":
@@ -310,15 +349,10 @@ func engine_callback(event_type: String, data: Array) -> void:
 			if controller:
 				card_name = controller.get_card_metadata(data[3], "card_name")
 
-			var message := "🤝 %s rallied '%s' (%d HP) via %s" % [data[0], data[1], data[2], card_name]
-			print(message)
+			print("🤝 %s rallied '%s' (%d HP) via %s" % [data[0], data[1], data[2], card_name])
 			if current_panel:
+				var message := "%s %d %s %s" % [str(data[1]), data[2], str(card_name), IMG_RALLY]
 				current_panel.append_console_log(message)
-
-
-		# =========================================================
-		# ROUND END STATUS
-		# =========================================================
 
 
 		# =========================================================
@@ -328,9 +362,9 @@ func engine_callback(event_type: String, data: Array) -> void:
 			var target_idx: int = min(active_round_index, active_round_panels.size() - 1)
 			var target_panel = active_round_panels[target_idx] if target_idx >= 0 else null
 			
-			var message := "⚠️ SUDDEN DEATH: one side eliminated"
-			print(message)
+			print("⚠️ SUDDEN DEATH: one side eliminated")
 			if target_panel:
+				var message := "%s" % IMG_WARNING
 				target_panel.append_console_log(message)
 			
 			for i in range(active_round_index + 1, active_round_panels.size()):
@@ -342,27 +376,27 @@ func engine_callback(event_type: String, data: Array) -> void:
 			var target_idx: int = min(active_round_index, active_round_panels.size() - 1)
 			var target_panel = active_round_panels[target_idx] if target_idx >= 0 else null
 			
-			var message := "🏁 VICTORY BY WIPEOUT: %s" % data[0]
-			print(message)
+			print("🏁 VICTORY BY WIPEOUT: %s" % data[0])
 			if target_panel:
+				var message := "%s %s" % [IMG_FLAG, str(data[0])]
 				target_panel.append_console_log(message)
 
 		"victory_mutual_annihilation":
 			var target_idx: int = min(active_round_index, active_round_panels.size() - 1)
 			var target_panel = active_round_panels[target_idx] if target_idx >= 0 else null
 			
-			var message := "💥 MUTUAL ANNIHILATION"
-			print(message)
+			print("💥 MUTUAL ANNIHILATION")
 			if target_panel:
+				var message := "%s" % IMG_BOOM
 				target_panel.append_console_log(message)
 
 		"tiebreaker_morale":
 			var target_idx: int = min(active_round_index, active_round_panels.size() - 1)
 			var target_panel = active_round_panels[target_idx] if target_idx >= 0 else null
 			
-			var message := "--- TIEBREAKER ---\nATK %d | DEF %d" % [data[0], data[1]]
-			print(message)
+			print("--- TIEBREAKER ---\nATK %d | DEF %d" % [data[0], data[1]])
 			if target_panel:
+				var message := "%d | %d" % [data[0], data[1]]
 				target_panel.append_console_log(message)
 
 #endregion

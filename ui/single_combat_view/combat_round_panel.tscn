@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cxk130wfvphau"]
 
 [ext_resource type="Script" uid="uid://dudn6wdbmjlcl" path="res://ui/single_combat_view/combat_round_panel.gd" id="1_st8rj"]
-[ext_resource type="Theme" uid="uid://cav3wmfutntd8" path="res://themes/grimdark_graph_panels.tres" id="2_y4f1u"]
+[ext_resource type="Theme" uid="uid://cav3wmfutntd8" path="res://themes/main.tres" id="2_y4f1u"]
 
 [node name="CombatRoundPanel" type="PanelContainer" unique_id=167201415]
 anchors_preset = 15
@@ -55,14 +55,20 @@ size_flags_vertical = 0
 [node name="CombatRoundTextLayout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/Layout/RoundStartHeaderPanel" unique_id=1083360860]
 layout_mode = 2
 
-[node name="CombatRoundTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/Layout/RoundStartHeaderPanel/CombatRoundTextLayout" unique_id=474673868]
+[node name="CombatRoundTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/Layout/RoundStartHeaderPanel/CombatRoundTextLayout" unique_id=587381334]
 layout_mode = 2
+bbcode_enabled = true
 text = "Combat Round"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="CombatRoundValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/Layout/RoundStartHeaderPanel/CombatRoundTextLayout" unique_id=1421745184]
+[node name="CombatRoundValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/Layout/RoundStartHeaderPanel/CombatRoundTextLayout" unique_id=48553457]
 layout_mode = 2
+bbcode_enabled = true
 text = "1"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="FactionName" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/Layout" unique_id=820626325]
@@ -72,10 +78,12 @@ size_flags_vertical = 4
 [node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/Layout/FactionName" unique_id=1117379639]
 layout_mode = 2
 
-[node name="FactionNameValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/Layout/FactionName/Layout" unique_id=1014806879]
+[node name="FactionNameValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/HeaderPanel/Layout/FactionName/Layout" unique_id=129432264]
 layout_mode = 2
 size_flags_vertical = 0
-text = "N/A"
+bbcode_enabled = true
+text = "Space Marines"
+fit_content = true
 horizontal_alignment = 1
 
 [node name="HSpacer" type="MarginContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout" unique_id=1998929140]
@@ -89,10 +97,13 @@ size_flags_vertical = 0
 [node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/UnitsUnrouted" unique_id=1402107613]
 layout_mode = 2
 
-[node name="UnitsUnroutedTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/UnitsUnrouted/Layout" unique_id=462373535]
+[node name="UnitsUnroutedTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/UnitsUnrouted/Layout" unique_id=1153770186]
 modulate = Color(0.6392157, 0.9019608, 0.20784314, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Units Unrouted"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="UnitsUnroutedValue" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/UnitsUnrouted/Layout" unique_id=1565292664]
@@ -100,10 +111,13 @@ layout_mode = 2
 theme = ExtResource("2_y4f1u")
 theme_type_variation = &"single_unit_container"
 
-[node name="Unit1" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue" unique_id=231221015]
+[node name="Unit1" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue" unique_id=2130329667]
 layout_mode = 2
 size_flags_horizontal = 6
+bbcode_enabled = true
 text = "None"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="UnitsRouted" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout" unique_id=1581859057]
@@ -124,10 +138,13 @@ layout_mode = 2
 theme = ExtResource("2_y4f1u")
 theme_type_variation = &"single_unit_container"
 
-[node name="Unit1" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/UnitsRouted/Layout/UnitsRoutedValue" unique_id=1162169411]
+[node name="Unit1" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/UnitsRouted/Layout/UnitsRoutedValue" unique_id=1676800541]
 layout_mode = 2
 size_flags_horizontal = 6
+bbcode_enabled = true
 text = "None"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="CardsPanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout" unique_id=531842303]
@@ -137,15 +154,21 @@ size_flags_vertical = 0
 [node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/CardsPanel" unique_id=1310386956]
 layout_mode = 2
 
-[node name="CardsTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/CardsPanel/Layout" unique_id=1920819375]
+[node name="CardsTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/CardsPanel/Layout" unique_id=2138195793]
 modulate = Color(0.5764706, 0.77254903, 0.99215686, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Cards"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="IconsFromCardsValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/CardsPanel/Layout" unique_id=1454509266]
+[node name="IconsFromCardsValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/CardsPanel/Layout" unique_id=1365479955]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="DicePanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout" unique_id=341133080]
@@ -155,15 +178,21 @@ size_flags_vertical = 0
 [node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/DicePanel" unique_id=592788647]
 layout_mode = 2
 
-[node name="BaseDiceRollsTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/DicePanel/Layout" unique_id=2083544996]
+[node name="BaseDiceRollsTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/DicePanel/Layout" unique_id=442264425]
 modulate = Color(0.5764706, 0.77254903, 0.99215686, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Dice"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="BaseDiceRollsValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/DicePanel/Layout" unique_id=1379975017]
+[node name="BaseDiceRollsValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/DicePanel/Layout" unique_id=91887713]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="Tokens" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout" unique_id=738567126]
@@ -173,15 +202,21 @@ size_flags_vertical = 0
 [node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/Tokens" unique_id=1540412743]
 layout_mode = 2
 
-[node name="TokensTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/Tokens/Layout" unique_id=400321391]
+[node name="TokensTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/Tokens/Layout" unique_id=1245836749]
 modulate = Color(0.5764706, 0.77254903, 0.99215686, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Tokens"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="TokensValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/Tokens/Layout" unique_id=1757529339]
+[node name="TokensValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/Tokens/Layout" unique_id=1081818192]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="ExtraIcons" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout" unique_id=1506100337]
@@ -191,15 +226,21 @@ size_flags_vertical = 0
 [node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/ExtraIcons" unique_id=1329128519]
 layout_mode = 2
 
-[node name="ExtraIconsTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/ExtraIcons/Layout" unique_id=1919838303]
+[node name="ExtraIconsTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/ExtraIcons/Layout" unique_id=1689606518]
 modulate = Color(0.5764706, 0.77254903, 0.99215686, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Extra"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="ExtraIconsValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/ExtraIcons/Layout" unique_id=2143773139]
+[node name="ExtraIconsValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/ExtraIcons/Layout" unique_id=1466852211]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="MoraleFromUnitsPanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout" unique_id=366707335]
@@ -208,17 +249,23 @@ layout_mode = 2
 [node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel" unique_id=520299915]
 layout_mode = 2
 
-[node name="MoraleFromUnitsTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel/Layout" unique_id=1252523448]
+[node name="MoraleFromUnitsTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel/Layout" unique_id=2000217387]
 modulate = Color(0.99215686, 0.8784314, 0.2784314, 1)
 layout_mode = 2
 size_flags_vertical = 0
+bbcode_enabled = true
 text = "Unit Morale"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="MoraleFromUnitsValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel/Layout" unique_id=284487100]
+[node name="MoraleFromUnitsValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel/Layout" unique_id=1144440172]
 layout_mode = 2
 size_flags_vertical = 0
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="CardsPlayed" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/RoundStartStats/Layout" unique_id=668082997]
@@ -240,11 +287,14 @@ modulate = Color(0, 0.65882355, 1, 1)
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="RoundStartTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/RoundStartTitleContainer" unique_id=372788740]
+[node name="RoundStartTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/RoundStartTitleContainer" unique_id=797510059]
 layout_mode = 2
+bbcode_enabled = true
 text = "Assess
 Damage
 Step"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="HSpacer" type="MarginContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout" unique_id=1466805567]
@@ -258,10 +308,13 @@ size_flags_vertical = 0
 [node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/UnitsUnrouted" unique_id=722569274]
 layout_mode = 2
 
-[node name="UnitsUnroutedTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/UnitsUnrouted/Layout" unique_id=1539884566]
+[node name="UnitsUnroutedTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/UnitsUnrouted/Layout" unique_id=1322332070]
 modulate = Color(0.6392157, 0.9019608, 0.20784314, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Units Unrouted"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="UnitsUnroutedValue" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/UnitsUnrouted/Layout" unique_id=785774992]
@@ -269,10 +322,13 @@ layout_mode = 2
 theme = ExtResource("2_y4f1u")
 theme_type_variation = &"single_unit_container"
 
-[node name="Unit1" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue" unique_id=275595912]
+[node name="Unit1" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue" unique_id=2014176568]
 layout_mode = 2
 size_flags_horizontal = 6
+bbcode_enabled = true
 text = "None"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="UnitsRouted" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout" unique_id=93748027]
@@ -282,10 +338,13 @@ size_flags_vertical = 0
 [node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/UnitsRouted" unique_id=622053713]
 layout_mode = 2
 
-[node name="UnitsRoutedTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/UnitsRouted/Layout" unique_id=335212150]
+[node name="UnitsRoutedTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/UnitsRouted/Layout" unique_id=1977827235]
 modulate = Color(0.9843137, 0.57254905, 0.23529412, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Units Routed"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="UnitsRoutedValue" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/UnitsRouted/Layout" unique_id=344371039]
@@ -293,10 +352,13 @@ layout_mode = 2
 theme = ExtResource("2_y4f1u")
 theme_type_variation = &"single_unit_container"
 
-[node name="Unit1" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/UnitsRouted/Layout/UnitsRoutedValue" unique_id=390387836]
+[node name="Unit1" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/UnitsRouted/Layout/UnitsRoutedValue" unique_id=1425697563]
 layout_mode = 2
 size_flags_horizontal = 6
+bbcode_enabled = true
 text = "None"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="CardsPanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout" unique_id=1401569253]
@@ -306,15 +368,21 @@ size_flags_vertical = 0
 [node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/CardsPanel" unique_id=1972703602]
 layout_mode = 2
 
-[node name="CardsTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/CardsPanel/Layout" unique_id=414323947]
+[node name="CardsTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/CardsPanel/Layout" unique_id=602652914]
 modulate = Color(0.5764706, 0.77254903, 0.99215686, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Cards"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="IconsFromCardsValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/CardsPanel/Layout" unique_id=1021391572]
+[node name="IconsFromCardsValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/CardsPanel/Layout" unique_id=677499035]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="DicePanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout" unique_id=689086855]
@@ -324,15 +392,21 @@ size_flags_vertical = 0
 [node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DicePanel" unique_id=1864160952]
 layout_mode = 2
 
-[node name="BaseDiceRollsTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DicePanel/Layout" unique_id=512925260]
+[node name="BaseDiceRollsTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DicePanel/Layout" unique_id=136499642]
 modulate = Color(0.5764706, 0.77254903, 0.99215686, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Dice"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="BaseDiceRollsValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DicePanel/Layout" unique_id=686717675]
+[node name="BaseDiceRollsValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DicePanel/Layout" unique_id=426750613]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="Tokens" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout" unique_id=61010526]
@@ -342,15 +416,21 @@ size_flags_vertical = 0
 [node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/Tokens" unique_id=1942158860]
 layout_mode = 2
 
-[node name="TokensTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/Tokens/Layout" unique_id=186144153]
+[node name="TokensTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/Tokens/Layout" unique_id=1888185898]
 modulate = Color(0.5764706, 0.77254903, 0.99215686, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Tokens"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="TokensValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/Tokens/Layout" unique_id=63731234]
+[node name="TokensValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/Tokens/Layout" unique_id=1597863049]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="ExtraIcons" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout" unique_id=2127510543]
@@ -360,15 +440,21 @@ size_flags_vertical = 0
 [node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/ExtraIcons" unique_id=518027609]
 layout_mode = 2
 
-[node name="ExtraIconsTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/ExtraIcons/Layout" unique_id=1864450987]
+[node name="ExtraIconsTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/ExtraIcons/Layout" unique_id=755172769]
 modulate = Color(0.5764706, 0.77254903, 0.99215686, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Extra"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="ExtraIconsValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/ExtraIcons/Layout" unique_id=1156615148]
+[node name="ExtraIconsValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/ExtraIcons/Layout" unique_id=1425793344]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="MoraleFromUnitsPanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout" unique_id=1818336631]
@@ -377,17 +463,23 @@ layout_mode = 2
 [node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel" unique_id=1602206375]
 layout_mode = 2
 
-[node name="MoraleFromUnitsTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel/Layout" unique_id=1471059032]
+[node name="MoraleFromUnitsTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel/Layout" unique_id=561685299]
 modulate = Color(0.99215686, 0.8784314, 0.2784314, 1)
 layout_mode = 2
 size_flags_vertical = 0
+bbcode_enabled = true
 text = "Unit Morale"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="MoraleFromUnitsValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel/Layout" unique_id=1772153594]
+[node name="MoraleFromUnitsValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel/Layout" unique_id=1112227851]
 layout_mode = 2
 size_flags_vertical = 0
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="DamageDealt" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout" unique_id=762518622]
@@ -397,399 +489,503 @@ size_flags_vertical = 0
 [node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DamageDealt" unique_id=1804286745]
 layout_mode = 2
 
-[node name="DamageSuffered" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DamageDealt/Layout" unique_id=598491517]
+[node name="DamageSuffered" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DamageDealt/Layout" unique_id=1792477149]
 modulate = Color(1, 0.15294118, 0.40392157, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Damage
 Suffered"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="DamageSufferedValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DamageDealt/Layout" unique_id=1691145087]
+[node name="DamageSufferedValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/AttackerCombatView/AssessDamageStep/Layout/DamageDealt/Layout" unique_id=611245479]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="DefenderCombatView" type="HBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn" unique_id=91200603]
+[node name="DefenderCombatView" type="HBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn" unique_id=1059927833]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="RoundStartStats" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView" unique_id=2136514916]
+[node name="RoundStartStats" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView" unique_id=182132979]
 layout_mode = 2
 size_flags_horizontal = 4
 
-[node name="Layout" type="HBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats" unique_id=118117874]
+[node name="Layout" type="HBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats" unique_id=1154033958]
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 0
 
-[node name="HeaderPanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=242716602]
+[node name="HeaderPanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=472421787]
 modulate = Color(0.9999998, 0.15485567, 0.40396515, 1)
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel" unique_id=563962409]
+[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel" unique_id=1567484879]
 layout_mode = 2
 
-[node name="RoundStartHeaderPanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout" unique_id=600777944]
+[node name="RoundStartHeaderPanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout" unique_id=413899779]
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="CombatRoundTextLayout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout/RoundStartHeaderPanel" unique_id=2037993051]
+[node name="CombatRoundTextLayout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout/RoundStartHeaderPanel" unique_id=1347081224]
 layout_mode = 2
 
-[node name="CombatRoundTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout/RoundStartHeaderPanel/CombatRoundTextLayout" unique_id=405757114]
+[node name="CombatRoundTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout/RoundStartHeaderPanel/CombatRoundTextLayout" unique_id=1725279032]
 layout_mode = 2
+bbcode_enabled = true
 text = "Combat Round"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="CombatRoundValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout/RoundStartHeaderPanel/CombatRoundTextLayout" unique_id=1123637771]
+[node name="CombatRoundValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout/RoundStartHeaderPanel/CombatRoundTextLayout" unique_id=714961457]
 layout_mode = 2
+bbcode_enabled = true
 text = "1"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="FactionName" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout" unique_id=355362394]
+[node name="FactionName" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout" unique_id=2035025396]
 layout_mode = 2
 size_flags_vertical = 4
 
-[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout/FactionName" unique_id=1480142419]
+[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout/FactionName" unique_id=1057889238]
 layout_mode = 2
 
-[node name="FactionNameValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout/FactionName/Layout" unique_id=338900795]
+[node name="FactionNameValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/HeaderPanel/Layout/FactionName/Layout" unique_id=1183130721]
 layout_mode = 2
 size_flags_vertical = 0
-text = "N/A"
+bbcode_enabled = true
+text = "Space Marines"
+fit_content = true
 horizontal_alignment = 1
 
-[node name="HSpacer" type="MarginContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=1989988498]
+[node name="HSpacer" type="MarginContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=310836551]
 layout_mode = 2
 theme_override_constants/margin_left = 5
 
-[node name="UnitsUnrouted" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=1743890260]
+[node name="UnitsUnrouted" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=951558357]
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsUnrouted" unique_id=1542822904]
+[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsUnrouted" unique_id=451122884]
 layout_mode = 2
 
-[node name="UnitsUnroutedTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsUnrouted/Layout" unique_id=1977641297]
+[node name="UnitsUnroutedTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsUnrouted/Layout" unique_id=1716240499]
 modulate = Color(0.6392157, 0.9019608, 0.20784314, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Units Unrouted"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="UnitsUnroutedValue" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsUnrouted/Layout" unique_id=1593745762]
+[node name="UnitsUnroutedValue" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsUnrouted/Layout" unique_id=1192387306]
 layout_mode = 2
 theme = ExtResource("2_y4f1u")
 theme_type_variation = &"single_unit_container"
 
-[node name="Unit1" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue" unique_id=1416502236]
+[node name="Unit1" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue" unique_id=464793248]
 layout_mode = 2
 size_flags_horizontal = 6
+bbcode_enabled = true
 text = "None"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="UnitsRouted" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=1333037650]
+[node name="UnitsRouted" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=1128877585]
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsRouted" unique_id=1487104061]
+[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsRouted" unique_id=1568169110]
 layout_mode = 2
 
-[node name="UnitsRoutedTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsRouted/Layout" unique_id=1997838825]
+[node name="UnitsRoutedTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsRouted/Layout" unique_id=334051182]
 modulate = Color(0.9843137, 0.57254905, 0.23529412, 1)
 layout_mode = 2
 text = "Units Routed"
 horizontal_alignment = 1
 
-[node name="UnitsRoutedValue" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsRouted/Layout" unique_id=225561277]
+[node name="UnitsRoutedValue" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsRouted/Layout" unique_id=1352653964]
 layout_mode = 2
 theme = ExtResource("2_y4f1u")
 theme_type_variation = &"single_unit_container"
 
-[node name="Unit1" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsRouted/Layout/UnitsRoutedValue" unique_id=1420744837]
+[node name="Unit1" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/UnitsRouted/Layout/UnitsRoutedValue" unique_id=496135769]
 layout_mode = 2
 size_flags_horizontal = 6
+bbcode_enabled = true
 text = "None"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="CardsPanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=1884613119]
+[node name="CardsPanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=1999678591]
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/CardsPanel" unique_id=2108393922]
+[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/CardsPanel" unique_id=613607554]
 layout_mode = 2
 
-[node name="CardsTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/CardsPanel/Layout" unique_id=590777295]
+[node name="CardsTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/CardsPanel/Layout" unique_id=640982450]
 modulate = Color(0.5764706, 0.77254903, 0.99215686, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Cards"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="IconsFromCardsValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/CardsPanel/Layout" unique_id=772969104]
+[node name="IconsFromCardsValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/CardsPanel/Layout" unique_id=849298683]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="DicePanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=1335852540]
+[node name="DicePanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=2095709357]
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/DicePanel" unique_id=956315098]
+[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/DicePanel" unique_id=28152085]
 layout_mode = 2
 
-[node name="BaseDiceRollsTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/DicePanel/Layout" unique_id=1482438662]
+[node name="BaseDiceRollsTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/DicePanel/Layout" unique_id=531224270]
 modulate = Color(0.5764706, 0.77254903, 0.99215686, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Dice"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="BaseDiceRollsValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/DicePanel/Layout" unique_id=1813812257]
+[node name="BaseDiceRollsValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/DicePanel/Layout" unique_id=1374318477]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="Tokens" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=64598751]
+[node name="Tokens" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=235779965]
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/Tokens" unique_id=543634939]
+[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/Tokens" unique_id=1250030964]
 layout_mode = 2
 
-[node name="TokensTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/Tokens/Layout" unique_id=1535623292]
+[node name="TokensTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/Tokens/Layout" unique_id=1094172633]
 modulate = Color(0.5764706, 0.77254903, 0.99215686, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Tokens"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="TokensValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/Tokens/Layout" unique_id=181103763]
+[node name="TokensValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/Tokens/Layout" unique_id=1987350075]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="ExtraIcons" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=1896352467]
+[node name="ExtraIcons" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=1665595029]
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/ExtraIcons" unique_id=220631609]
+[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/ExtraIcons" unique_id=940714534]
 layout_mode = 2
 
-[node name="ExtraIconsTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/ExtraIcons/Layout" unique_id=510888732]
+[node name="ExtraIconsTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/ExtraIcons/Layout" unique_id=774463562]
 modulate = Color(0.5764706, 0.77254903, 0.99215686, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Extra"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="ExtraIconsValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/ExtraIcons/Layout" unique_id=58038552]
+[node name="ExtraIconsValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/ExtraIcons/Layout" unique_id=301930416]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="MoraleFromUnitsPanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=4062690]
+[node name="MoraleFromUnitsPanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=928837429]
 layout_mode = 2
 
-[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel" unique_id=91394412]
+[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel" unique_id=1634047382]
 layout_mode = 2
 
-[node name="MoraleFromUnitsTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel/Layout" unique_id=1124897015]
+[node name="MoraleFromUnitsTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel/Layout" unique_id=2072830058]
 modulate = Color(0.99215686, 0.8784314, 0.2784314, 1)
 layout_mode = 2
 size_flags_vertical = 0
+bbcode_enabled = true
 text = "Unit Morale"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="MoraleFromUnitsValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel/Layout" unique_id=933126526]
+[node name="MoraleFromUnitsValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/MoraleFromUnitsPanel/Layout" unique_id=1576942091]
 layout_mode = 2
 size_flags_vertical = 0
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="CardsPlayed" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=1384948169]
+[node name="CardsPlayed" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout" unique_id=145555483]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="CardsPlayedImages" type="HBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/CardsPlayed" unique_id=1364991911]
+[node name="CardsPlayedImages" type="HBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/RoundStartStats/Layout/CardsPlayed" unique_id=1074384096]
 layout_mode = 2
 
-[node name="AssessDamageStep" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView" unique_id=144565975]
+[node name="AssessDamageStep" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView" unique_id=374015464]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Layout" type="HBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep" unique_id=117663202]
+[node name="Layout" type="HBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep" unique_id=187535516]
 layout_mode = 2
 
-[node name="RoundStartTitleContainer" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=280537479]
+[node name="RoundStartTitleContainer" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=1114133767]
 modulate = Color(0, 0.65882355, 1, 1)
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="RoundStartTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/RoundStartTitleContainer" unique_id=2118969496]
+[node name="RoundStartTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/RoundStartTitleContainer" unique_id=1886573540]
 layout_mode = 2
+bbcode_enabled = true
 text = "Assess
 Damage
 Step"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="HSpacer" type="MarginContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=517282210]
+[node name="HSpacer" type="MarginContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=622522660]
 layout_mode = 2
 theme_override_constants/margin_left = 5
 
-[node name="UnitsUnrouted" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=1437158336]
+[node name="UnitsUnrouted" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=840112394]
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsUnrouted" unique_id=1290668472]
+[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsUnrouted" unique_id=607183245]
 layout_mode = 2
 
-[node name="UnitsUnroutedTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsUnrouted/Layout" unique_id=1310151074]
+[node name="UnitsUnroutedTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsUnrouted/Layout" unique_id=2071881534]
 modulate = Color(0.6392157, 0.9019608, 0.20784314, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Units Unrouted"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="UnitsUnroutedValue" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsUnrouted/Layout" unique_id=767985810]
+[node name="UnitsUnroutedValue" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsUnrouted/Layout" unique_id=1691594979]
 layout_mode = 2
 theme = ExtResource("2_y4f1u")
 theme_type_variation = &"single_unit_container"
 
-[node name="Unit1" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue" unique_id=1984995729]
+[node name="Unit1" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsUnrouted/Layout/UnitsUnroutedValue" unique_id=718649117]
 layout_mode = 2
 size_flags_horizontal = 6
+bbcode_enabled = true
 text = "None"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="UnitsRouted" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=642737516]
+[node name="UnitsRouted" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=215758585]
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsRouted" unique_id=2056234117]
+[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsRouted" unique_id=326407224]
 layout_mode = 2
 
-[node name="UnitsRoutedTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsRouted/Layout" unique_id=909934138]
+[node name="UnitsRoutedTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsRouted/Layout" unique_id=860953352]
 modulate = Color(0.9843137, 0.57254905, 0.23529412, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Units Routed"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="UnitsRoutedValue" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsRouted/Layout" unique_id=521238784]
+[node name="UnitsRoutedValue" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsRouted/Layout" unique_id=1177237327]
 layout_mode = 2
 theme = ExtResource("2_y4f1u")
 theme_type_variation = &"single_unit_container"
 
-[node name="Unit1" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsRouted/Layout/UnitsRoutedValue" unique_id=1346037756]
+[node name="Unit1" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/UnitsRouted/Layout/UnitsRoutedValue" unique_id=830169184]
 layout_mode = 2
 size_flags_horizontal = 6
+bbcode_enabled = true
 text = "None"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="CardsPanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=1260226312]
+[node name="CardsPanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=1930686007]
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/CardsPanel" unique_id=847865175]
+[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/CardsPanel" unique_id=1171632978]
 layout_mode = 2
 
-[node name="CardsTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/CardsPanel/Layout" unique_id=1349190737]
+[node name="CardsTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/CardsPanel/Layout" unique_id=1331369561]
 modulate = Color(0.5764706, 0.77254903, 0.99215686, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Cards"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="IconsFromCardsValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/CardsPanel/Layout" unique_id=780925165]
+[node name="IconsFromCardsValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/CardsPanel/Layout" unique_id=1541246164]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="DicePanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=451468154]
+[node name="DicePanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=17918774]
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DicePanel" unique_id=753357394]
+[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DicePanel" unique_id=914565697]
 layout_mode = 2
 
-[node name="BaseDiceRollsTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DicePanel/Layout" unique_id=2021622547]
+[node name="BaseDiceRollsTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DicePanel/Layout" unique_id=882039939]
 modulate = Color(0.5764706, 0.77254903, 0.99215686, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Dice"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="BaseDiceRollsValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DicePanel/Layout" unique_id=147204245]
+[node name="BaseDiceRollsValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DicePanel/Layout" unique_id=2080479018]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="Tokens" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=289234888]
+[node name="Tokens" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=1232375465]
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/Tokens" unique_id=254306875]
+[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/Tokens" unique_id=1699724229]
 layout_mode = 2
 
-[node name="TokensTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/Tokens/Layout" unique_id=1713252677]
+[node name="TokensTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/Tokens/Layout" unique_id=374743006]
 modulate = Color(0.5764706, 0.77254903, 0.99215686, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Tokens"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="TokensValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/Tokens/Layout" unique_id=590571155]
+[node name="TokensValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/Tokens/Layout" unique_id=80201118]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="ExtraIcons" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=280928497]
+[node name="ExtraIcons" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=1815853030]
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/ExtraIcons" unique_id=1403364268]
+[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/ExtraIcons" unique_id=2023901101]
 layout_mode = 2
 
-[node name="ExtraIconsTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/ExtraIcons/Layout" unique_id=821204462]
+[node name="ExtraIconsTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/ExtraIcons/Layout" unique_id=2002014405]
 modulate = Color(0.5764706, 0.77254903, 0.99215686, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Extra"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="ExtraIconsValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/ExtraIcons/Layout" unique_id=1212033632]
+[node name="ExtraIconsValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/ExtraIcons/Layout" unique_id=1943602071]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="MoraleFromUnitsPanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=1660692125]
+[node name="MoraleFromUnitsPanel" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=1328718722]
 layout_mode = 2
 
-[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel" unique_id=603161113]
+[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel" unique_id=1763810086]
 layout_mode = 2
 
-[node name="MoraleFromUnitsTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel/Layout" unique_id=1281067678]
+[node name="MoraleFromUnitsTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel/Layout" unique_id=391176146]
 modulate = Color(0.99215686, 0.8784314, 0.2784314, 1)
 layout_mode = 2
 size_flags_vertical = 0
+bbcode_enabled = true
 text = "Unit Morale"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="MoraleFromUnitsValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel/Layout" unique_id=1403537407]
+[node name="MoraleFromUnitsValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/MoraleFromUnitsPanel/Layout" unique_id=559612536]
 layout_mode = 2
 size_flags_vertical = 0
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="DamageDealt" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=1750378426]
+[node name="DamageDealt" type="PanelContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout" unique_id=737726457]
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DamageDealt" unique_id=1599146914]
+[node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DamageDealt" unique_id=1674438446]
 layout_mode = 2
 
-[node name="DamageSuffered" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DamageDealt/Layout" unique_id=523493192]
+[node name="DamageSuffered" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DamageDealt/Layout" unique_id=329235940]
 modulate = Color(1, 0.15294118, 0.40392157, 1)
 layout_mode = 2
+bbcode_enabled = true
 text = "Damage
 Suffered"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
-[node name="DamageSufferedValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DamageDealt/Layout" unique_id=814215817]
+[node name="DamageSufferedValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/RivalStatsColumn/DefenderCombatView/AssessDamageStep/Layout/DamageDealt/Layout" unique_id=778231600]
 layout_mode = 2
+bbcode_enabled = true
 text = "0"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="HSpacer" type="MarginContainer" parent="CombatRoundMargin/RoundContentContainer" unique_id=69940346]
@@ -803,18 +999,24 @@ size_flags_horizontal = 3
 [node name="Layout" type="VBoxContainer" parent="CombatRoundMargin/RoundContentContainer/ConsoleLog" unique_id=692858591]
 layout_mode = 2
 
-[node name="ConsoleLogTitle" type="Label" parent="CombatRoundMargin/RoundContentContainer/ConsoleLog/Layout" unique_id=1484084876]
+[node name="ConsoleLogTitle" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/ConsoleLog/Layout" unique_id=1012762782]
 modulate = Color(0.99215686, 0.8784314, 0.2784314, 1)
 layout_mode = 2
 size_flags_vertical = 0
+bbcode_enabled = true
 text = "Console:"
+fit_content = true
+autowrap_mode = 0
 horizontal_alignment = 1
 
 [node name="ScrollContainer" type="ScrollContainer" parent="CombatRoundMargin/RoundContentContainer/ConsoleLog/Layout" unique_id=1501361481]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ConsoleLogValue" type="Label" parent="CombatRoundMargin/RoundContentContainer/ConsoleLog/Layout/ScrollContainer" unique_id=1007534928]
+[node name="ConsoleLogValue" type="RichTextLabel" parent="CombatRoundMargin/RoundContentContainer/ConsoleLog/Layout/ScrollContainer" unique_id=2067476696]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+bbcode_enabled = true
+fit_content = true
+autowrap_mode = 0
