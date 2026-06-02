@@ -74,12 +74,11 @@ func populate_diagnostics_dashboard() -> void:
 		
 	if data_processed:
 		return
-	data_processed = true
 	
 	sim_controller = ui.sim_controller
 	var binary_path := "res://export/simulation_ground_data.dat"
 	
-	#  Kept only your hard scene containers and tab sheets here to protect structural elements
+	# Kept only your hard scene containers and tab sheets here to protect structural elements
 	var all_containers: Array[Control] = [
 		overall_faction_winrates, attacker_win_rates, defender_win_rates,
 		overall_early_stage_win_rates, attacker_early_stage_win_rates, defender_early_stage_win_rates,
@@ -95,8 +94,16 @@ func populate_diagnostics_dashboard() -> void:
 		if container != null:
 			UI_Utils.clear_children(container)
 		
-	if not FileAccess.file_exists(binary_path):
+	# 🎯 WEB COMPATIBILITY FIX: Bypass FileAccess.file_exists() which returns false inside .pck web bundles.
+	var file = FileAccess.open(binary_path, FileAccess.READ)
+	
+	# Safely abort if the file doesn't exist or isn't baked into the build yet
+	if file == null:
+		push_error("❌ Diagnostics View Error: Unable to open data stream at: " + binary_path)
 		return
+
+	# Lock the calculation execution gate only after confirming the stream is active
+	data_processed = true
 
 	# 2. INITIALIZE TRACKING DATA STRUCTURE FOR LEADERBOARDS
 	var matrix_cache := {}
@@ -133,19 +140,28 @@ func populate_diagnostics_dashboard() -> void:
 		card_matchup_cache[f_id] = {}
 
 	# 3. HIGH-SPEED SINGLE PASS BINARY STREAM PARSER
-	var file = FileAccess.open(binary_path, FileAccess.READ)
+	# ⚡ WEB THREAD SAFETY: Setup frame-slicing variables to mitigate single-thread locks
+	var lines_processed_this_frame := 0
+	var chunk_size := 500
+
 	while file.get_position() < file.get_length():
 		var data = file.get_var()
+		lines_processed_this_frame += 1
 		
-		#  FIX: Adjusted step validation layout up to match the 7-element exporter payload
+		# ⚡ FRAME-SLICE YIELD: Yields processing back to main browser viewport loop to prevent visual hanging
+		if lines_processed_this_frame >= chunk_size:
+			lines_processed_this_frame = 0
+			await Engine.get_main_loop().process_frame
+		
+		# FIX: Adjusted step validation layout up to match the 7-element exporter payload
 		if data is Array and data.size() >= 7:
 			# data[0] is match_index (safely skipped for calculations)
-			var stage_id: int = data[1]       #  FIX: stage index is 1
-			var atk_id: int = data[2]         #  FIX: atk_id index is 2
-			var def_id: int = data[3]         #  FIX: def_id index is 3
-			var atk_won: bool = bool(data[4]) #  FIX: atk_won index is 4
-			var atk_deck: Array = data[5]     #  FIX: atk_deck index is 5
-			var def_deck: Array = data[6]     #  FIX: def_deck index is 6
+			var stage_id: int = data[1]       # FIX: stage index is 1
+			var atk_id: int = data[2]         # FIX: atk_id index is 2
+			var def_id: int = data[3]         # FIX: def_id index is 3
+			var atk_won: bool = bool(data[4]) # FIX: atk_won index is 4
+			var atk_deck: Array = data[5]     # FIX: atk_deck index is 5
+			var def_deck: Array = data[6]     # FIX: def_deck index is 6
 			
 			if matrix_cache[-1].has(atk_id) and matrix_cache[-1].has(def_id):
 				# Leaderboard global updates
