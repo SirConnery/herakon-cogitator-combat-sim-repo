@@ -244,6 +244,51 @@ func engine_callback(event_type: String, data: Array) -> void:
 			if current_panel:
 				var msg := "%s -1 %s +1 %s" % [IMG_REROLL, str(data[1]), str(data[2])]
 				current_panel.append_console_log(msg)
+		
+		"batch_dice_roll":
+			var card_id: int = data[0]
+			var target_role: String = data[1]
+			var is_all_flush: bool = data[2]
+			var actual_reroll_count: int = data[3]
+			var pool_label: String = data[4]
+			var removed_o: int = data[5]
+			var removed_d: int = data[6]
+			var removed_m: int = data[7]
+			var added_o: int = data[8]
+			var added_d: int = data[9]
+			var added_m: int = data[10]
+
+			var log_prefix := "Batch Roll Resolved %s:" % target_role if is_all_flush else "Tactical Reroll:"
+			
+			# Standard Terminal Output
+			print("🎲 %s Selected %d %s dice (-%d Offense, -%d Defense, -%d Morale). New results -> +%d Offense | +%d Defense | +%d Morale" % [
+				log_prefix, actual_reroll_count, pool_label, removed_o, removed_d, removed_m, added_o, added_d, added_m
+			])
+
+			if current_panel:
+				var card_name := "Card #" + str(card_id)
+				var controller = context.get("controller_ref")
+				if controller:
+					var fetched_name = controller.get_card_metadata(card_id, "card_name")
+					if fetched_name != null and str(fetched_name) != "":
+						card_name = str(fetched_name)
+
+				# Formatted BBCode console message using rich inline image tags
+				var summary_msg := "%s, %s %s Selected %d %s dice (-%d %s, -%d %s, -%d %s). \n New -> +%d %s | +%d %s | +%d %s" % [
+					card_name,
+					log_prefix,
+					IMG_DICE,
+					actual_reroll_count,
+					pool_label,
+					removed_o, IMG_SWORD,
+					removed_d, IMG_SHIELD,
+					removed_m, IMG_MEDAL,
+					added_o, IMG_SWORD,
+					added_d, IMG_SHIELD,
+					added_m, IMG_MEDAL
+				]
+				current_panel.append_console_log(summary_msg)
+				
 		# =========================================================
 		# CARDS
 		# =========================================================
@@ -459,7 +504,7 @@ func engine_callback(event_type: String, data: Array) -> void:
 			
 			print("--- TIEBREAKER ---\nATK %d | DEF %d" % [data[0], data[1]])
 			if target_panel:
-				var message := "-TIEBREAKER- Morale ATK %d | DEF %d" % [data[0], data[1]]
+				var message := "TIEBREAKER Morale ATK %d | DEF %d" % [data[0], data[1]]
 				target_panel.append_console_log(message)
 
 #endregion

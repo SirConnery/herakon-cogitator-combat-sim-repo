@@ -37,10 +37,9 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 tab_alignment = 2
-current_tab = 2
+current_tab = 0
 
 [node name="Overall" type="Control" parent="GroundVoidTabs/GroundUnits/MainSelectionTabs" unique_id=181917159]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -599,11 +598,10 @@ horizontal_alignment = 1
 visible = false
 layout_mode = 2
 tab_alignment = 2
-current_tab = 1
+current_tab = 0
 metadata/_tab_index = 1
 
 [node name="Overall" type="Control" parent="GroundVoidTabs/GroundUnits/MainSelectionTabs/Matchups/TabContainer/Attacker" unique_id=1861442272]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -662,6 +660,7 @@ text = "Overall win rate against opponents"
 horizontal_alignment = 1
 
 [node name="Early" type="Control" parent="GroundVoidTabs/GroundUnits/MainSelectionTabs/Matchups/TabContainer/Attacker" unique_id=1701503001]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
@@ -841,11 +840,10 @@ horizontal_alignment = 1
 visible = false
 layout_mode = 2
 tab_alignment = 2
-current_tab = 1
+current_tab = 0
 metadata/_tab_index = 2
 
 [node name="Overall" type="Control" parent="GroundVoidTabs/GroundUnits/MainSelectionTabs/Matchups/TabContainer/Defender" unique_id=797603683]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -904,6 +902,7 @@ text = "Overall win rate against opponents"
 horizontal_alignment = 1
 
 [node name="Early" type="Control" parent="GroundVoidTabs/GroundUnits/MainSelectionTabs/Matchups/TabContainer/Defender" unique_id=916936928]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
@@ -1080,6 +1079,7 @@ text = "Win rate against opponents when attacking"
 horizontal_alignment = 1
 
 [node name="Cards" type="Control" parent="GroundVoidTabs/GroundUnits/MainSelectionTabs" unique_id=400044699]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 2
 

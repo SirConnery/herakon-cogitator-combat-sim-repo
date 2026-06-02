@@ -1,14 +1,18 @@
 extends Control
 class_name SingleCombatView
 
+const GEAR = preload("uid://cdc5bhhw22cmp")
+const RADIOACTIVE_SIGN = preload("uid://ctwdrnea2fe2k")
+const WOOD = preload("uid://cs3n7qpeq2610")
+
 # --- SCENE REFERENCES ---
 @onready var round_panel_scene: PackedScene = preload("res://ui/single_combat_view/combat_round_panel.tscn")
 
 # --- UI ELEMENT NODES ---
 @onready var header_panel: PanelContainer = $MainLayout/HeaderPanel
-@onready var combat_area_value: Label = %CombatAreaValue
-@onready var combat_participants_value: Label = %CombatParticipantsValue
-@onready var game_stage_value: Label = %GameStageValue
+@onready var combat_area_value: RichTextLabel = %CombatAreaValue
+@onready var combat_participants_value: RichTextLabel = %CombatParticipantsValue
+@onready var game_stage_value: RichTextLabel = %GameStageValue
 
 
 @onready var attacker_drawn_cards_value: Label = $MainLayout/HeaderPanel/HeaderContainer/CardsDrawnToHandAtStart/AttackerDrawnCardsValue
@@ -499,15 +503,18 @@ func update_starting_cards_header(active_sim: SimController) -> void:
 	attacker_drawn_cards_value.text = ", ".join(atk_names)
 	defender_drawn_cards_value.text = ", ".join(def_names)
 
-
 func update_game_stage_header(stage_val: GameStageGenerator.Stage) -> void:
 	if game_stage_value == null: return
 		
 	var stage_text := ""
 	match stage_val:
-		GameStageGenerator.Stage.EARLY: stage_text = "🪵 Early Conflict"
-		GameStageGenerator.Stage.MID: stage_text = "⚙️ Mid-War Escalation"
-		GameStageGenerator.Stage.LATE: stage_text = "🌋 Late-Stage Armageddon"
-		_: stage_text = "❓ Unknown Stage"
+		GameStageGenerator.Stage.EARLY: 
+			stage_text = "[img=18]" + WOOD.get_path() + "[/img] Early Conflict"
+		GameStageGenerator.Stage.MID: 
+			stage_text = "[img=18]" + GEAR.get_path() + "[/img] Mid-War Escalation"
+		GameStageGenerator.Stage.LATE: 
+			stage_text = "[img=18]" + RADIOACTIVE_SIGN.get_path() + "[/img] Late-Stage Armageddon"
+		_: 
+			stage_text = "Unknown Stage"
 		
 	game_stage_value.text = stage_text
