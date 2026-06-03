@@ -100,7 +100,7 @@ Below is how each match is constructed.
 =======================================================
 Game Stage   |  Tier 0  |  Tier 1  |  Tier 2  |  Tier 3
 -------------------------------------------------------
-Early Game   |   65%    |   30%    |    5%    |    0%
+Early Game   |   65%   |   30%    |    5%    |    0%
 Mid Game     |   35%    |   40%    |   25%    |    0%
 Late Game    |   15%    |   25%    |   35%    |   25%
 -------------------------------------------------------
@@ -110,9 +110,9 @@ Late Game    |   15%    |   25%    |   35%    |   25%
 ===================================================================
 Game Stage   | 1 Card  | 2 Cards | 3 Cards | 4 Cards | 5 Cards
 -------------------------------------------------------------------
-Early Game   |   30%   |   50%   |   20%   |    0%   |    0%
-Mid Game     |    0%   |    0%   |   50%   |   50%   |    0%
-Late Game    |    0%   |    0%   |    0%   |   80%   |   20%
+Early Game   |   30% |   50%   |   20%   |    0%    |    0%
+Mid Game     |    0%   |    0%     |   50%   |   50%  |    0%
+Late Game    |    0%   |    0%     |    0%    |   80%  |   20%
 -------------------------------------------------------------------
 
 
@@ -120,67 +120,10 @@ Late Game    |    0%   |    0%   |    0%   |   80%   |   20%
 ==================================================
 Game Stage   |  Tier 0   |  Tier 2   |  Tier 3
 --------------------------------------------------
-Early Game   |  100.0%   |   0.0%    |   0.0%
-Mid Game     |   57.1%   |  42.9%    |   0.0%
-Late Game    |   23.8%   |  47.6%    |  28.6%
+Early Game   |  100.0%   |   0.0%      |   0.0%
+Mid Game      |   57.1%     |  42.9%    |   0.0%
+Late Game    |   23.8%     |  47.6%    |  28.6%
 --------------------------------------------------
-Current possible weaknesses of the engine:
--	Unit odds are equal among all factions. So swarmer factions will on average still have the same amount of units as in combat as all others.
-
-
-CARDS:
-General principles:
-All cards are currently played with pure random choice from hand
-Always rally, rout and spawn units instead of gaining dice or tokens first.
-Always spend dice to rally, rout or destroy. Or to avoid being routed or destroyed.
-All choosing dice are just a random roll between them.
-When spending dice, Morale is always chosen first to spend.
-Always spend dice to gain tokens.
-
-Special checks:
-Eldar Spiritseer’s Guidance damage immunity cancels spending dice to gain any tokens.
-Eldar Fire Dragon’s Vengeance cancels spending dice to gain defence tokens.
-
-Abilities ignored:
-Retreat choices are completely ignored unless forced by opponent (currently 0 cards).
-Abilities that reveal information about opponent cards in hand are ignored.
-Abilities that spawn units on other areas or move units to other areas are ignored.
-
-Special Card abilities clarifications
-SM
-Ambush
-Unit: If opponent has morale dice it is spent. Else the unit is destroyed.
-
-Fury of the Ultramar 
-General: Opponent rerolls 1 defence. Then 50/50 whether you also roll defence.
-
-Drop Pod Assault
-Unit: Spend 1 Morale and place 1 Space Marine here
-
-Break the Line
-Unit: Opponent chooses lowest value card. Prioritized 1st tier, 2nd amount of icons on the card, 3rd random.
-
-Emperor’s Glory
-In rounds 1-2 ignore unit ability. In round 3 convert all safe dice to Morale. Calculated with opponent known combined attack vs self combined defence. Rest of the dice are turned into morale.
-
-Chaos
-Mark of Nurgle
-Unit: Always gain 4 shield tokens if opponent has routed unit.
-
-Inhuman Strength
-Unit: If you have a tier 0 unit, destroy it and gain 4 offence tokens.
-
-Chaos United
-Unit: Spawns highest allowed tier unit.
-
-Orks
-Gretchin 
-Unit: Always destroy.
-
-Eldar
-Psychic Lance
-Unit: Always gain 4 tokens unless it is the 1st combat round and you are attacking.
-
 Current possible weaknesses of the engine:
 -	Unit odds are equal among all factions. So swarmer factions will on average still have the same amount of units as in combat as all others.
 
