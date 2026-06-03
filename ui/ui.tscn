@@ -92,32 +92,8 @@ If the damage pool is too large to be cleanly absorbed by a single unit in Step 
 Once the unit is sacrificed and the damage pool is reduced, the loop resets back to Step 1 with whatever damage is left over. It repeats this process until the damage pool hits 0 or all units are wiped out.
 
 
+Below is how each match is constructed.
 
-Foreword:
-This is documentation on how the combat sim works. You should be familiar with the game’s rules since they won’t be explained here.
--- 
-The data for diagnostics has been made with 10k iterations per matchup. So Faction (attacker) vs faction (defender) 10k times. Since each faction plays against each other as both attacker and defender total matches between them will be 20k.
-
-Below is the how each match is constructed.
-
-How damage is selected:
-When a side (attacker or defender) needs to allocate damage to their units the following is how the selection operates.
-
-Step 1: The \"Perfect Absorption\" Strategy (Zero Casualties)
-The AI scans all squads looking for a single, perfect target that can absorb the entire remaining damage pool in a single hit without dying.
-To choose this target, the engine checks if you have steady, unrouted units left on the field. It then applies a strict tactical hierarchy:
-•	Scenario A: The Front Line Holds (Unrouted Units Exist) If you have steady troops standing, already routed units are completely locked out and cannot take damage. The engine is forced to choose a healthy, unrouted unit with enough current Hit Points (HP) to survive the full damage pool.
-•	Scenario B: Complete Front-Line Collapse (No Unrouted Units Left) If every unit on your side of the battlefield is already routed the incoming damage hits an already routed unit that has enough HP to absorb the blow.
-If a perfect target is found in either scenario, it absorbs 100% of the damage pool, and the engine stops searching.
-
-
-
-Step 2: The \"Lethal Sacrifice\" Fallback (Casualty Management)
-If the damage pool is too large to be cleanly absorbed by a single unit in Step 1, the engine is forced to start killing units to chip away at the total damage. It looks for a Sacrifice Target to take a lethal blow.
-•	Damage Reduction: The engine selects a unit, records its remaining HP, and subtracts that exact amount from the incoming total_damage pool.
-•	Unit Destruction: The chosen unit's figure is completely destroyed and wiped from the battlefield.
-•	The \"Forced Overkill\" Rule (is_routing_lethal): If your game rules dictate that a panic/rout state is instantly fatal (is_routing_lethal = true), the engine will aggressively execute a healthy unit even if the remaining damage wouldn't normally kill it. It forces an overkill scenario because a partial hit would cause a panic state, which is treated as death anyway.
-Once the unit is sacrificed and the damage pool is reduced, the loop resets back to Step 1 with whatever damage is left over. It repeats this process until the damage pool hits 0 or all units are wiped out.
 
 
 1. Unit Tier Selection Odds
