@@ -2,6 +2,17 @@
 
 [ext_resource type="Script" uid="uid://dkuohb61xabhw" path="res://ui/diagnostics_view/diagnostics_view.gd" id="1_aepig"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_aepig"]
+bg_color = Color(0.48237246, 0.6695286, 0.7620726, 1)
+border_width_left = 10
+border_width_top = 10
+border_width_right = 10
+border_width_bottom = 10
+border_color = Color(0.03137255, 0.2, 0.26666668, 1)
+border_blend = true
+shadow_size = 1
+shadow_offset = Vector2(5, 5)
+
 [node name="DiagnosticsView" type="Control" unique_id=1986078317]
 layout_mode = 3
 anchors_preset = 15
@@ -1092,3 +1103,24 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 tab_alignment = 2
+
+[node name="PopupNotice" type="PopupPanel" parent="." unique_id=1763169910]
+oversampling_override = 1.0
+initial_position = 1
+size = Vector2i(235, 150)
+theme_override_styles/panel = SubResource("StyleBoxFlat_aepig")
+
+[node name="RichTextLabel" type="RichTextLabel" parent="PopupNotice" unique_id=678027510]
+custom_minimum_size = Vector2(200, 0)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+bbcode_enabled = true
+text = "It will take upwards of 15 seconds to load the statistics. You can click on other tabs while loading."
+fit_content = true

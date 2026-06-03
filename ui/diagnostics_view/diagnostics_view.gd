@@ -8,6 +8,7 @@ const MATCHUP_OVERALL_PANEL_SCENE = preload("uid://cu1crqrtqyfop")
 const FACTION_TAB_SCENE = preload("uid://n4uue0fn6735")
 const CARDS_ALL_FACTIONS_TOP_TEN = preload("uid://4jdu0mca08bf")
 
+@onready var popup_notice: PopupPanel = $PopupNotice
 
 # --- UI ELEMENT NODES (Scene Unique Names) ---
 @export_group("Global Win Rates")
@@ -62,7 +63,6 @@ var data_processed := false
 func _ready() -> void:
 	visibility_changed.connect(_on_visibility_changed)
 
-
 func _on_visibility_changed() -> void:
 	if visible:
 		populate_diagnostics_dashboard()
@@ -75,6 +75,7 @@ func populate_diagnostics_dashboard() -> void:
 	if data_processed:
 		return
 	
+	popup_notice.show()
 	sim_controller = ui.sim_controller
 	var binary_path := "res://export/simulation_ground_data.dat"
 	

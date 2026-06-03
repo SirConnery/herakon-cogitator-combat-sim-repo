@@ -1221,7 +1221,7 @@ static func _remove_dice_from_pool(target_side_data: Dictionary, target_role: St
 			log_current_dice_pools(on_event, atk_side, def_side, "Dice Loss")
 
 
-static func _convert_dice_in_pool(target_side_data: Dictionary, target_role: String, max_to_convert: int, target_pool_type: int, card_id: int, original_side_data: Dictionary, on_event: Callable, source_pool_type: int = -1) -> void:
+static func _convert_dice_in_pool(target_side_data: Dictionary, target_role: String, max_to_convert: int, target_pool_type: int, _card_id: int, original_side_data: Dictionary, on_event: Callable, source_pool_type: int = -1) -> void:
 	var stat_map := {1: Stat.OFFENCE, 2: Stat.DEFENCE, 3: Stat.MORALE}
 	if not target_pool_type in stat_map:
 		return
