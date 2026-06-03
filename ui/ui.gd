@@ -13,7 +13,7 @@ class_name UI
 func _ready() -> void:
 	sync_other_nodes()
 	G_SimEvents.mass_sim_completed.connect(_on_mass_sim_completed)
-	_disable_mass_combat_sim_for_web()
+	#_disable_mass_combat_sim_for_web()
 
 func _disable_mass_combat_sim_for_web() -> void:
 	main_tabs.set_tab_disabled(2, true)

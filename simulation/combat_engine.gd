@@ -200,10 +200,14 @@ static func run_full_match(state: Dictionary, card_db: Dictionary, on_event: Cal
 		if on_event.is_valid(): on_event.call("victory_by_wipeout", ["Defender"])
 		return false
 
-	# Final Tiebreaker aggregates entire 3-round timeline mapping
-	var final_atk_card_icons := _get_live_card_icons(atk, card_db, 2)
-	var final_def_card_icons := _get_live_card_icons(def, card_db, 2)
+	# --- FIXED: Fetch the exact snapshot round index dynamically (supports early breaks) ---
+	var final_round_idx: int = state.get("current_round_index", 2)
 
+	# Fetch the cumulative live pools exactly once for the final active round state
+	var final_atk_card_icons := _get_live_card_icons(atk, card_db, final_round_idx)
+	var final_def_card_icons := _get_live_card_icons(def, card_db, final_round_idx)
+
+	# Aggregate totals cleanly using the non-duplicated card morale indexes
 	final_atk_morale = _calculate_current_morale_from_units(atk) + atk[Stat.MORALE] + final_atk_card_icons[2]
 	final_def_morale = _calculate_current_morale_from_units(def) + def[Stat.MORALE] + final_def_card_icons[2]
 
